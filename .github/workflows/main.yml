@@ -1,0 +1,140 @@
+name: Unity CI/CD Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  UNITY_VERSION: "6000.1.0f1"
+  FILE_PATTERNS: "*.unity *.prefab *.mat *.asset *.anim *.controller"
+  DISCORD_MESSAGE: "Nouveau build Unity publié pour la version ${{ github.ref_name }} !"
+  RELEASE_BODY: "Nouveau build Unity pour la version ${{ github.ref_name }}."
+  RELEASE_NAME: "Unity Build"
+
+jobs:
+
+  setup:
+    name: Setup Build Config
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Setup complete."
+
+  check_conflicts:
+    name: Check for Unity file conflicts
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v3
+      - name: Detect merge conflict markers
+        run: |
+          echo "Checking for conflict markers in Unity files..."
+          grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ || true
+          CONFLICT_COUNT=$(grep -r -E '<<<<<<<|=======|>>>>>>>' --include=${{ env.FILE_PATTERNS }} ./ | wc -l)
+          echo "Found $CONFLICT_COUNT conflict markers."
+          if [ "$CONFLICT_COUNT" -gt 0 ]; then
+            echo "::error file=CONFLICT,::Conflict markers found in Unity files! Please resolve before merging."
+            exit 1
+          fi
+
+  build_windows:
+    name: Build Windows
+    needs: [check_conflicts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Windows
+        uses: game-ci/unity-builder@v4.3.0
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneWindows64
+      - run: |
+          mkdir -p release
+          zip -r release/UnityBuild_Windows.zip build/StandaloneWindows64/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WindowsBuild
+          path: release/UnityBuild_Windows.zip
+
+  build_mac:
+    name: Build Mac
+    needs: [check_conflicts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Mac
+        uses: game-ci/unity-builder@v4.3.0
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: StandaloneOSX
+      - run: |
+          mkdir -p release
+          zip -r release/UnityBuild_Mac.zip build/StandaloneOSX/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MacBuild
+          path: release/UnityBuild_Mac.zip
+
+  build_android:
+    name: Build Android
+    needs: [check_conflicts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Android
+        uses: game-ci/unity-builder@v4.3.0
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+      - run: |
+          mkdir -p release
+          zip -r release/UnityBuild_Android.zip build/Android/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AndroidBuild
+          path: release/UnityBuild_Android.zip
+
+  release_build:
+    name: Create or Update GitHub Release
+    needs: [build_windows, build_mac, build_android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.RELEASE_NAME }} ${{ github.ref_name }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
+          files: release/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify_team:
+    name: Notify Team
+    needs: release_build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify on Discord
+        uses: Ilshidur/action-discord@master
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          message: ${{ env.DISCORD_MESSAGE }}
+      - name: Notify on Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author
+          author_name: GitHub Actions
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
