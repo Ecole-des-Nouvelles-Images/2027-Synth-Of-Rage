@@ -1,16 +1,20 @@
+<h1 align="center">Synth of Rage (W.I.P.)</h1>
 
-# [Project Name]
+<div align="center">
+    <img alt="Static Badge" src="https://img.shields.io/badge/Unity-6.7-blue?logo=Unity&logoColor=White&logoSize=auto">
+    <img alt="GitHub Release" src="https://img.shields.io/github/v/release/Ecole-des-Nouvelles-Images/Unity-Template?display_name=tag&logo=gitlfs&logoSize=auto&labelColor=white">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/Ecole-des-Nouvelles-Images/Unity-Template">
+	<img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/Ecole-des-Nouvelles-Images/Unity-Template?color=lightgrey">
+</div>
 
-[A brief and engaging tagline or description of the game]
 
-[![Unity Version](https://img.shields.io/badge/Unity-2022.3.47-blue?style=flat&logo=unity)](https://unity.com/)
-[![GitHub Release](https://img.shields.io/github/v/release/Ecole-des-Nouvelles-Images/Unity-Template)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/releases)
-[![License](https://img.shields.io/github/license/Ecole-des-Nouvelles-Images/Unity-Template)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/LICENSE)
-[![Repo Size](https://img.shields.io/github/repo-size/Ecole-des-Nouvelles-Images/Unity-Template?color=lightgrey)](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template)
 
-![Main Banner](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/main-banner.png)
+![](./.metadata/banner_wip.png)
+
+
 
 ## Table of Contents
+
 1. [Introduction](#introduction)
 2. [Team](#team)
 3. [Gameplay](#gameplay)
@@ -23,63 +27,96 @@
 ---
 
 ## Introduction
-**[Project Name]** is a [genre of the game] developed by **[Team/Organization Name]** during **[timeframe]**.  
-This project was created as part of **[context, e.g., a school project, game jam, or indie initiative]**.  
-The development process included **[key phases, such as preproduction, production, etc.]**.
+**Synth of Rage** is bold mix of a <u>*beat-them-all*</u> and <u>*rythm*</u> game developed by **ENSI's students of the 2027 class** over a **year-long production**, that is, around 9 months full-time.
+This project is the endorsement of the **ENSI's Video Game 5-year curriculum**.
+
+The development tried to mimic the most of the **industry standards**, including a SCRUM project management model, latest technologies and tools provided by the **Unity Engine** and the best practices in terms of design, optimizations and deployment.
 
 ---
 
-## Team
-This game was brought to life by **[Team Name or "a group of X developers/artists"]**:
-- **[Name 1]**: [Role and contributions]
-- **[Name 2]**: [Role and contributions]
-- **[Name 3]**: [Role and contributions]
-- **[Name 4]**: [Role and contributions]
+## Team and contributions
 
-![Team](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/team-photo.png)
+This game was brought to life by **10 students and a handful of teachers and consultants**:
+
+The core team responsible the concept birth and development :
+
+- **Vincent MENEROUD**: *Product Owner* and *Lead developer*.
+- **Marine AMROUCHE**: *Art Director / Lead Artist*
+- **Christopher BARRERA**: *Lead Gameplay*
+- **Charlie BOYER**: *SCRUM Master* and *Technical Director*
+
+
+
+The team is also composed of a reinforcement of 6 student from the year below, who worked like a external contractor and without whom the project would not have been possible !
+
+>   [!NOTE]
+>
+>   W.I.P.
+
+
+
+The project was also supervised by the ENSI's educational team who ensured the QA role throughout the production.
+
+>   [!NOTE]
+>
+>   W.I.P.
+
+
+
+![Team](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/.metadata/team-photo.png)
 
 ---
 
 ## Gameplay
-[Describe the core gameplay loop, mechanics, and objectives of the game. Include details like number of players, perspective, and unique gameplay features.]
 
-### Phase 1: [Phase Name]
-[Describe the first phase of gameplay, objectives, and player actions.]
+>   [!NOTE]
+>
+>   W.I.P.
 
-### Phase 2: [Phase Name]
-[Describe the second phase, any escalating challenges, and goals.]
+
 
 ![Gameplay Screenshot](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/blob/main/MetaData/gameplay-screenshot.png)
 
 ---
 
 ## Universe
-[Provide a brief story or lore for the game world, highlighting key characters, locations, or events. Explain how the story ties into the gameplay.]
+
+>   [!NOTE]
+>
+>   W.I.P.
 
 ---
 
 ## Release
-[Provide details about the platform, availability, and installation instructions. Mention if the game is available on PC, console, or mobile, and provide links to download or install.]
-
-This game supports **[platform requirements, e.g., Android 5.1+]**.
+>   [!NOTE]
+>
+>   W.I.P.
 
 ---
 
 ## Development
-This project is currently **[status: finished, in development, etc.]**. Future updates might include **[examples of planned features or fixes]**.  
+This project is currently <u>**starting**</u>.
 
-If you encounter any bugs or have suggestions, please open an **[issue ticket](https://github.com/Ecole-des-Nouvelles-Images/Unity-Template/issues/new)**.
+>   [!TIP]
+>
+>   Some updates might happen during the active development like several **playtests**.
+>   You will be welcomed to try-out the game and give your opinion at such time.
+>
+>   Thanks for your interest and stay tuned !
 
 ---
 
 ## Special Thanks
-We would like to thank:
-- **[Name 1]**: [Contribution, e.g., mentorship, inspiration]
-- **[Name 2]**: [Contribution]
-- **[Name 3]**: [Contribution]
+
+The contributions wouldn't be complete without the support and the engagement of our friends and teachers, all of whom disserve a special thanks :
+>   [!NOTE]
+>
+>   W.I.P.
 
 ---
 
 ## Recommendations
-For the best experience, we recommend playing with **[optimal player setup, equipment, or difficulty settings]**.  
-[Additional recommendations, such as tutorials or preparation tips.]
+
+>   [!NOTE]
+>
+>   W.I.P.
