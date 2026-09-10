@@ -1,0 +1,840 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'><style type='text/css'>html {overflow-x: initial !important;}</style>
+<style type='text/css'  id="style-base">:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #B5D6FC; --select-text-font-color: auto; --monospace: "Lucida Console",Consolas,"Courier",monospace; --title-bar-height: 20px; }
+.mac-os-11 { --title-bar-height: 28px; }
+html { font-size: 14px; background-color: var(--bg-color); color: var(--text-color); font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI Emoji", "SF Pro", sans-serif; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5 { white-space: pre-wrap; }
+body { margin: 0px; padding: 0px; height: auto; inset: 0px; font-size: 1rem; line-height: 1.42857; overflow-x: hidden; background: inherit; }
+iframe { margin: auto; }
+a.url { word-break: break-all; }
+a:active, a:hover { outline: 0px; }
+.in-text-selection, ::selection { text-shadow: none; background: var(--select-text-bg-color); color: var(--select-text-font-color); }
+#write { margin: 0px auto; height: auto; width: inherit; word-break: normal; overflow-wrap: break-word; position: relative; white-space: normal; overflow-x: visible; padding-top: 36px; }
+#write.first-line-indent p { text-indent: 2em; }
+#write.first-line-indent li p, #write.first-line-indent p *, #write.first-line-indent svg * { text-indent: 0px; }
+#write.first-line-indent li { margin-left: 2em; }
+.for-image #write { padding-left: 8px; padding-right: 8px; }
+body.typora-export { padding-left: 30px; padding-right: 30px; }
+.typora-export .footnote-line, .typora-export li, .typora-export p { white-space: pre-wrap; }
+.typora-export .task-list-item input { pointer-events: none; }
+@media screen and (max-width: 500px) {
+  body.typora-export { padding-left: 0px; padding-right: 0px; }
+  #write { padding-left: 20px; padding-right: 20px; }
+}
+#write li > figure:last-child { margin-bottom: 0.5rem; }
+#write ol, #write ul { position: relative; }
+img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+img:not([height]) { height: auto; }
+button, input, select, textarea { color: inherit; font: inherit; }
+input[type="checkbox"], input[type="radio"] { line-height: normal; padding: 0px; }
+*, ::after, ::before { box-sizing: border-box; }
+svg sub, svg sup { position: static; }
+.nodeLabel p { padding-right: 2px; padding-left: 2px; }
+.typora-export .nodeLabel p { padding-right: 0px; padding-left: 0px; }
+foreignobject { overflow: visible; }
+p { line-height: inherit; }
+h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
+p { orphans: 4; }
+li p { orphans: 1; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.8rem; }
+h3 { font-size: 1.6rem; }
+h4 { font-size: 1.4rem; }
+h5 { font-size: 1.2rem; }
+h6 { font-size: 1rem; }
+.md-math-block, .md-rawblock, h1, h2, h3, h4, h5, h6, p { margin-top: 1rem; margin-bottom: 1rem; }
+.hidden { display: none; }
+.md-blockmeta { color: rgb(204, 204, 204); font-weight: 700; font-style: italic; }
+a { cursor: pointer; }
+sup.md-footnote { padding: 2px 4px; background-color: rgba(238, 238, 238, 0.7); color: rgb(85, 85, 85); border-radius: 4px; cursor: pointer; }
+sup.md-footnote a, sup.md-footnote a:hover { color: inherit; text-transform: inherit; text-decoration: inherit; }
+#write input[type="checkbox"] { cursor: pointer; width: inherit; height: inherit; }
+figure { overflow-x: auto; margin: 1.2em 0px; max-width: calc(100% + 16px); padding: 0px; }
+figure > table { margin: 0px; }
+thead, tr { break-inside: avoid; break-after: auto; }
+thead { display: table-header-group; }
+table { border-collapse: collapse; border-spacing: 0px; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
+table.md-table td { min-width: 32px; }
+.CodeMirror-gutters { border-right: 0px; background-color: inherit; }
+.CodeMirror-linenumber { user-select: none; }
+.CodeMirror { text-align: left; }
+.CodeMirror-placeholder { opacity: 0.3; }
+.CodeMirror pre { padding: 0px 4px; }
+.CodeMirror-lines { padding: 0px; }
+div.hr:focus { cursor: none; }
+#write pre { white-space: pre-wrap; }
+#write.fences-no-line-wrapping pre { white-space: pre; }
+#write pre.ty-contain-cm { white-space: normal; }
+.CodeMirror-gutters { margin-right: 4px; }
+.md-fences { font-size: 0.9rem; position: relative; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background: inherit; }
+.md-fences-adv-panel { width: 100%; margin-top: 10px; text-align: center; padding-top: 0px; padding-bottom: 8px; overflow-x: auto; }
+#write .md-fences.mock-cm { white-space: pre-wrap; }
+.md-fences.md-fences-with-lineno { padding-left: 0px; }
+#write.fences-no-line-wrapping .md-fences.mock-cm { white-space: pre; overflow-x: auto; }
+.md-fences.mock-cm.md-fences-with-lineno { padding-left: 8px; }
+.CodeMirror-line, twitterwidget { break-inside: avoid; }
+svg { break-inside: avoid; }
+.footnotes { opacity: 0.8; font-size: 0.9rem; margin-top: 1em; margin-bottom: 1em; }
+.footnotes + .footnotes { margin-top: 0px; }
+.md-reset { margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: top; background: 0px 0px; text-decoration: none; text-shadow: none; float: none; position: static; width: auto; height: auto; white-space: nowrap; cursor: inherit; -webkit-tap-highlight-color: transparent; line-height: normal; font-weight: 400; text-align: left; box-sizing: content-box; direction: ltr; }
+li div { padding-top: 0px; }
+blockquote { margin: 1rem 0px; }
+li .mathjax-block, li p { margin: 0.5rem 0px; }
+li blockquote { margin: 1rem 0px; }
+li { margin: 0px; position: relative; }
+blockquote > :last-child { margin-bottom: 0px; }
+blockquote > :first-child, li > :first-child { margin-top: 0px; }
+.footnotes-area { color: rgb(136, 136, 136); margin-top: 0.714rem; padding-bottom: 0.143rem; white-space: normal; }
+#write .footnote-line { white-space: pre-wrap; }
+@media print {
+  body, html { border: 1px solid transparent; height: 99%; break-after: avoid; break-before: avoid; font-variant-ligatures: no-common-ligatures; }
+  #write { margin-top: 0px; border-color: transparent !important; padding-top: 0px !important; padding-bottom: 0px !important; }
+  .typora-export * { print-color-adjust: exact; }
+  .typora-export #write { break-after: avoid; }
+  .typora-export #write::after { height: 0px; }
+  .is-mac table { break-inside: avoid; }
+  #write > p:nth-child(1) { margin-top: 0px; }
+  .typora-export-show-outline .typora-export-sidebar { display: none; }
+  figure { overflow-x: visible; }
+}
+.footnote-line { margin-top: 0.714em; font-size: 0.7em; }
+a img, img a { cursor: pointer; }
+pre.md-meta-block { font-size: 0.8rem; min-height: 0.8rem; white-space: pre-wrap; background: rgb(204, 204, 204); display: block; overflow-x: hidden; }
+p > .md-image:only-child:not(.md-img-error) img, p > img:only-child { display: block; margin: auto; }
+#write.first-line-indent p > .md-image:only-child:not(.md-img-error) img { left: -2em; position: relative; }
+p > .md-image:only-child { display: inline-block; width: 100%; }
+#write .MathJax_Display { margin: 0.8em 0px 0px; }
+.md-math-block { width: 100%; }
+.md-math-block:not(:empty)::after { display: none; }
+.MathJax_ref { fill: currentcolor; }
+[contenteditable="true"]:active, [contenteditable="true"]:focus, [contenteditable="false"]:active, [contenteditable="false"]:focus { outline: 0px; box-shadow: none; }
+.md-task-list-item { position: relative; list-style-type: none; }
+.task-list-item.md-task-list-item { padding-left: 0px; }
+.md-task-list-item > input { position: absolute; top: 0px; left: 0px; margin-left: -1.2em; margin-top: calc(1em - 10px); border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; }
+.math { font-size: 1rem; }
+.md-toc { min-height: 3.58rem; position: relative; font-size: 0.9rem; border-radius: 10px; }
+.md-toc-content { position: relative; margin-left: 0px; }
+.md-toc-content::after, .md-toc::after { display: none; }
+.md-toc-item { display: block; color: rgb(65, 131, 196); }
+.md-toc-item a { text-decoration: none; }
+.md-toc-inner:hover { text-decoration: underline; }
+.md-toc-inner { display: inline-block; cursor: pointer; }
+.md-toc-h1 .md-toc-inner { margin-left: 0px; font-weight: 700; }
+.md-toc-h2 .md-toc-inner { margin-left: 2em; }
+.md-toc-h3 .md-toc-inner { margin-left: 4em; }
+.md-toc-h4 .md-toc-inner { margin-left: 6em; }
+.md-toc-h5 .md-toc-inner { margin-left: 8em; }
+.md-toc-h6 .md-toc-inner { margin-left: 10em; }
+@media screen and (max-width: 48em) {
+  .md-toc-h3 .md-toc-inner { margin-left: 3.5em; }
+  .md-toc-h4 .md-toc-inner { margin-left: 5em; }
+  .md-toc-h5 .md-toc-inner { margin-left: 6.5em; }
+  .md-toc-h6 .md-toc-inner { margin-left: 8em; }
+}
+a.md-toc-inner { font-size: inherit; font-style: inherit; font-weight: inherit; line-height: inherit; }
+.footnote-line a:not(.reversefootnote) { color: inherit; }
+.reversefootnote { font-family: ui-monospace, sans-serif; }
+.md-attr { display: none; }
+.md-fn-count::after { content: "."; }
+code, pre, samp, tt { font-family: var(--monospace); }
+kbd { margin: 0px 0.1em; padding: 0.1em 0.6em; font-size: 0.8em; color: rgb(36, 39, 41); background: rgb(255, 255, 255); border: 1px solid rgb(173, 179, 185); border-radius: 3px; box-shadow: rgba(12, 13, 14, 0.2) 0px 1px 0px, rgb(255, 255, 255) 0px 0px 0px 2px inset; white-space: nowrap; vertical-align: middle; }
+.md-comment { color: rgb(162, 127, 3); opacity: 0.6; font-family: var(--monospace); }
+code { text-align: left; vertical-align: initial; }
+a.md-print-anchor { white-space: pre !important; border-width: medium !important; border-style: none !important; border-color: currentcolor !important; display: inline-block !important; position: absolute !important; width: 1px !important; right: 0px !important; outline: 0px !important; background: 0px 0px !important; text-decoration: initial !important; text-shadow: initial !important; }
+.os-windows.monocolor-emoji .md-emoji { font-family: "Segoe UI Symbol", sans-serif; }
+.md-diagram-panel > svg { max-width: 100%; }
+[lang="flow"] svg, [lang="mermaid"] svg { max-width: 100%; height: auto; }
+[lang="mermaid"] .node text { font-size: 1rem; }
+table tr th { border-bottom: 0px; }
+video { max-width: 100%; display: block; margin: 0px auto; }
+iframe { max-width: 100%; width: 100%; border-width: medium; border-style: none; border-color: currentcolor; border-image: initial; }
+.highlight td, .highlight tr { border: 0px; }
+mark { background: rgb(255, 255, 0); color: rgb(0, 0, 0); }
+.md-html-inline .md-plain, .md-html-inline strong, mark .md-inline-math, mark strong { color: inherit; }
+.md-expand mark .md-meta { opacity: 0.3 !important; }
+mark .md-meta { color: rgb(0, 0, 0); }
+@media print {
+  .typora-export h1, .typora-export h2, .typora-export h3, .typora-export h4, .typora-export h5, .typora-export h6 { break-inside: avoid; }
+}
+.md-diagram-panel .messageText { stroke: none !important; }
+.md-diagram-panel .start-state { fill: var(--node-fill); }
+.md-diagram-panel .edgeLabel rect { opacity: 1 !important; }
+.md-fences.md-fences-math { font-size: 1em; }
+.md-fences-advanced:not(.md-focus) { padding: 0px; white-space: nowrap; border: 0px; }
+.md-fences-advanced:not(.md-focus) { background: inherit; }
+.mermaid-svg { margin: auto; }
+.typora-export-show-outline .typora-export-content { max-width: 1440px; margin: auto; display: flex; flex-direction: row; }
+.typora-export-sidebar { width: 300px; font-size: 0.8rem; margin-top: 80px; margin-right: 18px; }
+.typora-export-show-outline #write { --webkit-flex: 2; flex: 2 1 0%; }
+.typora-export-sidebar .outline-content { position: fixed; top: 0px; max-height: 100%; overflow: hidden auto; padding-bottom: 30px; padding-top: 60px; width: 300px; }
+@media screen and (max-width: 1024px) {
+  .typora-export-sidebar, .typora-export-sidebar .outline-content { width: 240px; }
+}
+@media screen and (max-width: 800px) {
+  .typora-export-sidebar { display: none; }
+}
+.outline-content li, .outline-content ul { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; list-style: none; overflow-wrap: anywhere; }
+.outline-content ul { margin-top: 0px; margin-bottom: 0px; }
+.outline-content strong { font-weight: 400; }
+.outline-expander { width: 1rem; height: 1.42857rem; position: relative; display: table-cell; vertical-align: middle; cursor: pointer; padding-left: 4px; }
+.outline-expander::before { content: ""; position: relative; font-family: Ionicons; display: inline-block; font-size: 8px; vertical-align: middle; }
+.outline-item { padding-top: 3px; padding-bottom: 3px; cursor: pointer; }
+.outline-expander:hover::before { content: ""; }
+.outline-h1 > .outline-item { padding-left: 0px; }
+.outline-h2 > .outline-item { padding-left: 1em; }
+.outline-h3 > .outline-item { padding-left: 2em; }
+.outline-h4 > .outline-item { padding-left: 3em; }
+.outline-h5 > .outline-item { padding-left: 4em; }
+.outline-h6 > .outline-item { padding-left: 5em; }
+.outline-label { cursor: pointer; display: table-cell; vertical-align: middle; text-decoration: none; color: inherit; }
+.outline-label:hover { text-decoration: underline; }
+.outline-item:hover { border-color: rgb(245, 245, 245); background-color: var(--item-hover-bg-color); }
+.outline-item:hover { margin-left: -28px; margin-right: -28px; border-left: 28px solid transparent; border-right: 28px solid transparent; }
+.outline-item-single .outline-expander::before, .outline-item-single .outline-expander:hover::before { display: none; }
+.outline-item-open > .outline-item > .outline-expander::before { content: ""; }
+.outline-children { display: none; }
+.info-panel-tab-wrapper { display: none; }
+.outline-item-open > .outline-children { display: block; }
+.typora-export .outline-item { padding-top: 1px; padding-bottom: 1px; }
+.typora-export .outline-item:hover { margin-right: -8px; border-right: 8px solid transparent; }
+.typora-export .outline-expander::before { content: "+"; font-family: inherit; top: -1px; }
+.typora-export .outline-expander:hover::before, .typora-export .outline-item-open > .outline-item > .outline-expander::before { content: "−"; }
+.typora-export-collapse-outline .outline-children { display: none; }
+.typora-export-collapse-outline .outline-item-open > .outline-children, .typora-export-no-collapse-outline .outline-children { display: block; }
+.typora-export-no-collapse-outline .outline-expander::before { content: "" !important; }
+.typora-export-show-outline .outline-item-active > .outline-item .outline-label { font-weight: 700; }
+.md-inline-math-container mjx-container { zoom: 0.95; }
+mjx-container { break-inside: avoid; }
+.md-alert.md-alert-note { border-left-color: rgb(9, 105, 218); }
+.md-alert.md-alert-important { border-left-color: rgb(130, 80, 223); }
+.md-alert.md-alert-warning { border-left-color: rgb(154, 103, 0); }
+.md-alert.md-alert-tip { border-left-color: rgb(31, 136, 61); }
+.md-alert.md-alert-caution { border-left-color: rgb(207, 34, 46); }
+.md-alert { padding: 0px 1em; margin-bottom: 16px; color: inherit; border-left: 0.25em solid rgb(0, 0, 0); }
+.md-alert-text-note { color: rgb(9, 105, 218); }
+.md-alert-text-important { color: rgb(130, 80, 223); }
+.md-alert-text-warning { color: rgb(154, 103, 0); }
+.md-alert-text-tip { color: rgb(31, 136, 61); }
+.md-alert-text-caution { color: rgb(207, 34, 46); }
+.md-alert-text { font-size: 0.9rem; font-weight: 700; }
+.md-alert-text svg { fill: currentcolor; position: relative; top: 0.125em; margin-right: 1ch; overflow: visible; }
+.md-alert-text-container::after { content: attr(data-text); text-transform: capitalize; pointer-events: none; margin-right: 1ch; }
+
+</style>
+<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400&amp;subset=latin,latin-ext' type='text/css' />
+<style type='text/css'  id="style-theme_css">:root {
+    --side-bar-bg-color: #fafafa;
+    --control-text-color: #777;
+}
+
+@include-when-export url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext);
+
+/* open-sans-regular - latin-ext_latin */
+  /* open-sans-italic - latin-ext_latin */
+    /* open-sans-700 - latin-ext_latin */
+    /* open-sans-700italic - latin-ext_latin */
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: "Open Sans","Clear Sans", "Helvetica Neue", Helvetica, Arial, 'Segoe UI Emoji', 'SF Pro', sans-serif;
+    color: rgb(51, 51, 51);
+    line-height: 1.6;
+}
+
+#write {
+    max-width: 860px;
+  	margin: 0 auto;
+  	padding: 30px;
+    padding-bottom: 100px;
+}
+
+@media only screen and (min-width: 1400px) {
+	#write {
+		max-width: 1024px;
+	}
+}
+
+@media only screen and (min-width: 1800px) {
+	#write {
+		max-width: 1200px;
+	}
+}
+
+#write > ul:first-child,
+#write > ol:first-child{
+    margin-top: 30px;
+}
+
+a {
+    color: #4183C4;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: 1.4;
+    cursor: text;
+}
+h1:hover a.anchor,
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor,
+h5:hover a.anchor,
+h6:hover a.anchor {
+    text-decoration: none;
+}
+h1 tt,
+h1 code {
+    font-size: inherit;
+}
+h2 tt,
+h2 code {
+    font-size: inherit;
+}
+h3 tt,
+h3 code {
+    font-size: inherit;
+}
+h4 tt,
+h4 code {
+    font-size: inherit;
+}
+h5 tt,
+h5 code {
+    font-size: inherit;
+}
+h6 tt,
+h6 code {
+    font-size: inherit;
+}
+h1 {
+    font-size: 2.25em;
+    line-height: 1.2;
+    border-bottom: 1px solid #eee;
+}
+h2 {
+    font-size: 1.75em;
+    line-height: 1.225;
+    border-bottom: 1px solid #eee;
+}
+
+/*@media print {
+    .typora-export h1,
+    .typora-export h2 {
+        border-bottom: none;
+        padding-bottom: initial;
+    }
+
+    .typora-export h1::after,
+    .typora-export h2::after {
+        content: "";
+        display: block;
+        height: 100px;
+        margin-top: -96px;
+        border-top: 1px solid #eee;
+    }
+}*/
+
+h3 {
+    font-size: 1.5em;
+    line-height: 1.43;
+}
+h4 {
+    font-size: 1.25em;
+}
+h5 {
+    font-size: 1em;
+}
+h6 {
+   font-size: 1em;
+    color: #777;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table{
+    margin: 0.8em 0;
+}
+li>ol,
+li>ul {
+    margin: 0 0;
+}
+hr {
+    height: 2px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #e7e7e7;
+    border: 0 none;
+    overflow: hidden;
+    box-sizing: content-box;
+}
+
+li p.first {
+    display: inline-block;
+}
+ul,
+ol {
+    padding-left: 30px;
+}
+ul:first-child,
+ol:first-child {
+    margin-top: 0;
+}
+ul:last-child,
+ol:last-child {
+    margin-bottom: 0;
+}
+blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding: 0 15px;
+    color: #777777;
+}
+blockquote blockquote {
+    padding-right: 0;
+}
+table {
+    padding: 0;
+    word-break: initial;
+}
+table tr {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 0;
+}
+table tr:nth-child(2n),
+thead {
+    background-color: #f8f8f8;
+}
+table th {
+    font-weight: bold;
+    border: 1px solid #dfe2e5;
+    border-bottom: 0;
+    margin: 0;
+    padding: 6px 13px;
+}
+table td {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 6px 13px;
+}
+table th:first-child,
+table td:first-child {
+    margin-top: 0;
+}
+table th:last-child,
+table td:last-child {
+    margin-bottom: 0;
+}
+
+.CodeMirror-lines {
+    padding-left: 4px;
+}
+
+.code-tooltip {
+    box-shadow: 0 1px 1px 0 rgba(0,28,36,.3);
+    border-top: 1px solid #eef2f2;
+}
+
+.md-fences,
+code,
+tt {
+    border: 1px solid #e7eaed;
+    background-color: #f8f8f8;
+    border-radius: 3px;
+    padding: 0;
+    padding: 2px 4px 0px 4px;
+    font-size: 0.9em;
+}
+
+code {
+    background-color: #f3f4f4;
+    padding: 0 2px 0 2px;
+}
+
+.md-fences {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+}
+
+
+.md-task-list-item > input {
+  margin-left: -1.3em;
+}
+
+@media print {
+    html {
+        font-size: 13px;
+    }
+    pre {
+        page-break-inside: avoid;
+        word-wrap: break-word;
+    }
+}
+
+.md-fences {
+	background-color: #f8f8f8;
+}
+#write pre.md-meta-block {
+	padding: 1rem;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f7f7f7;
+    border: 0;
+    border-radius: 3px;
+    color: #777777;
+    margin-top: 0 !important;
+}
+
+.mathjax-block>.code-tooltip {
+	bottom: .375rem;
+}
+
+.md-mathjax-midline {
+    background: #fafafa;
+}
+
+#write>h3.md-focus:before{
+	left: -1.5625rem;
+	top: .375rem;
+}
+#write>h4.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h5.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h6.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+.md-image>.md-meta {
+    /*border: 1px solid #ddd;*/
+    border-radius: 3px;
+    padding: 2px 0px 0px 4px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.md-tag {
+    color: #a7a7a7;
+    opacity: 1;
+}
+
+.md-toc { 
+    margin-top:20px;
+    padding-bottom:20px;
+}
+
+.sidebar-tabs {
+    border-bottom: none;
+}
+
+#typora-quick-open {
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+}
+
+#typora-quick-open-item {
+    background-color: #FAFAFA;
+    border-color: #FEFEFE #e5e5e5 #e5e5e5 #eee;
+    border-style: solid;
+    border-width: 1px;
+}
+
+/** focus mode */
+.on-focus-mode blockquote {
+    border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+header, .context-menu, .megamenu-content, footer{
+    font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+.file-node-content:hover .file-node-icon,
+.file-node-content:hover .file-node-open-state{
+    visibility: visible;
+}
+
+.mac-seamless-mode #typora-sidebar {
+    background-color: #fafafa;
+    background-color: var(--side-bar-bg-color);
+}
+
+.mac-os #write{
+    caret-color: AccentColor;
+}
+
+.md-lang {
+    color: #b4654d;
+}
+
+/*.html-for-mac {
+    --item-hover-bg-color: #E6F0FE;
+}*/
+
+#md-notification .btn {
+    border: 0;
+}
+
+.dropdown-menu .divider {
+    border-color: #e5e5e5;
+    opacity: 0.4;
+}
+
+.ty-preferences .window-content {
+    background-color: #fafafa;
+}
+
+.ty-preferences .nav-group-item.active {
+    color: white;
+    background: #999;
+}
+
+.menu-item-container a.menu-style-btn {
+    background-color: #f5f8fa;
+    background-image: linear-gradient( 180deg , hsla(0, 0%, 100%, 0.8), hsla(0, 0%, 100%, 0)); 
+}
+</style>
+<style type='text/css'  id="style-lp">ol, ul {padding-left: 40px}</style>
+
+<title>Unity_Asset_Naming_Convention</title>
+</head>
+<body class='typora-export os-windows'><div class='typora-export-content'>
+<div id='write'  class=''><h1 id='unity-terminology--naming-conventions'><span>Unity Terminology &amp; Naming Conventions</span></h1><hr /><p><span style="font-size:210%; font-weight:800"><span>Foreword</span></span></p><p><span>This document is a tentative to standardize the naming of any assets within an Unity project.</span>
+<span>The objective is to keep a consistency across all objects, structures and codebases, like if a single person worked and named everything according to it&#39;s own logic.</span></p><p><span>This aims to improve the efficiency within a team/project, help external contributors to familiarize faster with the project structures and optimize </span><a href='https://docs.unity3d.com/6000.3/Documentation/Manual/search-overview.html'><span>Unity Search indexer</span></a><span> for faster queries, while remaining informative and act as an accessible cheat-sheet.</span></p><p><span style="font-size:140%; font-weight:700; margin-top:1em"><span>Disclaimer</span></span></p><p><span>This convention is made from experience and personal taste and is merely a guidance rather than enforced rules. You shouldn&#39;t feel locked behind them or be confused while using them.</span></p><p><span>Anyone is invited to question these rules and discuss it among your colleagues to find rules more adapted, more convenient or more strict, depending your day-to-day cases and project type/size.</span></p><p><span>The key thing to retain is to </span><u><span>share various rules</span></u><span> between team members across a project, </span><u><span>apply them consistently</span></u><span>, and </span><span style="color:#FF4765"><u><span>keep them end-to-end</span></u></span><span> !</span></p><p><span name="Reference" style="font-size:140%; font-weight:700; margin-top:1em"><span>Reference</span></span></p><p><span>This document is heavily inspired from the </span><a href='https://github.com/justinwasilenko/Unity-Style-Guide'><span>Unity Style Guide</span></a><span> made by </span><a href='https://github.com/justinwasilenko/'><span>justinwasilenko</span></a><span> and also tries to mimic the </span><a href='https://dev.epicgames.com/documentation/en-us/unreal-engine/recommended-asset-naming-conventions-in-unreal-engine-projects'><span>Unreal Engine Naming Convention</span></a><span> when applicable.</span></p><hr /><div style="page-break-after: always;margin-top:3em"></div><p><span style="font-size:210%; font-weight:800; margin-bottom:-0.5em"><span>Table of Content</span></span></p><div class='md-toc' mdtype='toc'><p class="md-toc-content" role="list"><span role="listitem" class="md-toc-item md-toc-h1" data-ref="n0"><a class="md-toc-inner" href="#unity-terminology--naming-conventions">Unity Terminology &amp; Naming Conventions</a></span><span role="listitem" class="md-toc-item md-toc-h2" data-ref="n18"><a class="md-toc-inner" href="#introduction">Introduction</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n19"><a class="md-toc-inner" href="#terminology">Terminology</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n38"><a class="md-toc-inner" href="#naming-style-and-cases">Naming Style and Cases</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n65"><a class="md-toc-inner" href="#scene-hierarchy">Scene Hierarchy</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n66"><a class="md-toc-inner" href="#scene-folders">Scene “folders”</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n68"><a class="md-toc-inner" href="#script-only-gameobjects">Script-only GameObjects</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n70"><a class="md-toc-inner" href="#dynamic-root">Dynamic root</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n73"><a class="md-toc-inner" href="#top-level-folder">Top-Level folder</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n85"><a class="md-toc-inner" href="#developer-folders">Developer folders</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n90"><a class="md-toc-inner" href="#redundant-and-shared-folders">Redundant and shared folders</a></span><span role="listitem" class="md-toc-item md-toc-h4" data-ref="n94"><a class="md-toc-inner" href="#scenes-folder-and-underscore-prefix">Scenes folder and underscore prefix</a></span><span role="listitem" class="md-toc-item md-toc-h2" data-ref="n101"><a class="md-toc-inner" href="#asset-naming-convention">Asset Naming Convention</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n211"><a class="md-toc-inner" href="#3d-assets">3D Assets</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n264"><a class="md-toc-inner" href="#2d-assets">2D Assets</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n322"><a class="md-toc-inner" href="#textures">Textures</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n400"><a class="md-toc-inner" href="#animation">Animation</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n433"><a class="md-toc-inner" href="#audio">Audio</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n461"><a class="md-toc-inner" href="#physics-and-visual-effects">Physics and Visual Effects</a></span><span role="listitem" class="md-toc-item md-toc-h3" data-ref="n499"><a class="md-toc-inner" href="#settings-and-miscellaneous">Settings and Miscellaneous</a></span></p></div><hr /><div style="page-break-after: always; margin-top:3em"></div><h2 id='introduction'><span>Introduction</span></h2><h3 id='terminology'><span>Terminology</span></h3><p><span>Unity, like all game engines, have unique concepts/systems with it&#39;s own terms.</span>
+<span>Below you&#39;ll find the most common terminology to avoid any major confusions and get some similarities compared to other engines.</span></p><details style="margin-bottom: 1.2em">
+    <summary style="margin-bottom: 1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Assets</h4></summary>
+    <em>Assets</em> are the "physical" files, all the resources that are created and/or added to a project and used to construct a game. They come in <u>several <b>types</b></u>, the most common being 3D models, 2D textures or sprites, audio clips, scripts, etc.<br>
+    Inside a project, nearly every file should be treated as an <em>asset</em>.
+</details><details style="margin-bottom: 1.2em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Game Objects</h4></summary>
+    In Unity, everything depends on a <em><b>GameObject</b></em>.<br>
+    <em>GameObjects</em> are <u>often rendered</u>, allowing you and your players to see them.<br>
+    They can be a character, a terrain, a light, etc…<br>
+    <br>
+    <em>GameObjects</em> can also be <u>invisible</u>, being a empty object where scripts are attached, executing game logic or representing an area to trigger events, or being a position where a character will spawn.
+</details><details style="margin-bottom: 1.2em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Scenes</h4></summary>
+    Often called maps or levels, a <em><b>Scene</b></em> contains a collection of <em>GameObjects</em> and <em>Prefabs</em>.<br>
+<br>
+<em>Scenes</em> are versatile:  you can either design a whole world into a single scene or create several levels throughout smaller ones.<br>
+They can also <u><b>exist side by side</b></u>. Thanks to this feature, you can split a level into multiple sections that can be <u>added on top</u> of each other and <u>unloaded</u> as needed.
+</details><details style="margin-bottom: 1.2em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Prefabs</h4></summary>
+    Unity allows you to <u>create and store</u> a single or a set of <em><b>GameObjects</b></em>, along with all their attached components, property values, and hierarchy of child objects.<br>
+    When saved, you get a <u>reusable asset</u> called a <em><b>Prefab</b></em>.<br>
+    <br>
+    <em>Prefabs</em> make designing objects and entities easier and facilitate the construction of more complex things by nesting <em>Prefabs</em> together.
+</details><details style="margin-bottom: 1.2em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Serialization</h4></summary>
+This is, <em>basically</em>, the process Unity undergoes to <u>save and reconstruct</u> your <em>Scenes</em> and <em>Assets</em>. The <em>serialization</em> also creates the link between the codebase data structures and GameObjects.<br>
+    <br>
+Game developers can use the <u>Serialization API</u> to save objects and data that Unity would normally fly over. This allow manipulations of data within the editor and external saves, among other things.<br>
+    <blockquote>
+        <em>For more information, see <a href="https://docs.unity3d.com/6000.3/Documentation/Manual/script-serialization.html">Unity's documentation on Serializable</a>.</em>
+    </blockquote>
+</details><details style="margin-bottom: 1.5em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Render Pipeline</h4></summary>
+    <div>The <b>Scriptable Render Pipeline</b> or <em><b>SRP</b></em> <span style="font-size:90%;color:grey">(rarely <em>RP</em>)</span> is the backbone of Unity's render system.<br>With <em>SRP</em>, game developers have access to the render pipeline themselves.<br>They can write a new <em>SRP</em> or customize an existing one, deeply influencing how a game might looks and <u>how objects are rendered</u>.<br>
+<br>At the time of writing <span style="font-size:90%;color:grey">(up to editor version 6000.3.x)</span>, Unity provides two production-ready yet customizable versions of the <em>SRP</em>:</div>
+    <ul>
+        <li><b>Universal Render Pipeline</b> or <em><b>URP</b></em> → Lightweight and ideal for all types of gameplay across a wide spectrum of devices, including low-end mobile or virtual reality headset for XR projects.</li>
+        <li><b>High-Definition Render Pipeline</b> or <em><b>HDRP</b></em> → Specialized pipeline for high-end devices and larger projects, using high-resolution graphics like <em>raytracing</em> or for intensive gameplay simulations.</li>
+    </ul>
+    <blockquote>
+        <em>For more information, see <a href="https://docs.unity3d.com/6000.3/Documentation/Manual/scriptable-render-pipeline-introduction.html">Unity's documentation on the SRP</a>.</em>
+    </blockquote>
+</details><div class="md-alert md-alert-note note"><p><span class='md-alert-text md-alert-text-note'><svg viewBox="0 0 16 16" version="1.1" width="1em" height="1em" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</span><br></p><p><span>A exhaustive and description glossary is made available by Unity → </span><a href='https://unity.com/fr/glossary'><span>Unity Glossary</span></a></p><p><span>A less descriptive terminology, used mainly for writing and format Unity technical documentation is available there → </span><a href='https://docs-style-guide.unity.com/category/terminology'><span>Unity Docs Style</span></a></p></div><div style="page-break-after: always; margin:1em 0 2em"></div><h3 id='naming-style-and-cases'><span>Naming Style and Cases</span></h3><p><span>There are a few different ways you can name things.</span>
+<span style="color:#FF4765"><span>You should always stick to a pre-existing naming style, if one is present</span></span><span>.</span>
+<span>Otherwise, you should select one yourself or as a team and </span><u><span>keep it</span></u><span>, </span><u><span>end-to-end</span></u><span>.</span></p><p><span>Here are some common casing types:</span></p><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">PascalCase</h4></summary>
+    Capitalize every word and remove all spaces.<br>
+    <span style="color: grey; margin-left:2em;">
+        → e.g. <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">GameObject</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">StyleGuide</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">ASeriesOfWords</pre>
+    </span>
+</details><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">camelCase</h4></summary>
+    The first letter is always lowercase but every following word starts with uppercase.<br>
+    <span style="color: grey; margin-left:2em;">
+        → e.g. <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">gameObject</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">styleGuide</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">aSerieOfWords</pre>
+    </span>
+</details><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">snake_case</h4></summary>
+    Words are always lowercase and are separated by an underscore.<br>
+    <span style="color: grey; margin-left:2em;">
+        → e.g. <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">game_object</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">style_guide</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">a_serie_of_words</pre>
+    </span>
+</details><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><h4 style="display: inline; margin: 0; padding: 0; vertical-align: middle;">Pascal_Snake_Case</h4></summary>
+    A fusion between the <em><b>PascalCase</b></em> and the <em><b>snake_case</b></em>.<br>
+    Inherit the capitalization of all words but they are separated by an underscore.<br>
+    <span style="color: grey; margin-left:2em;">
+        → e.g. <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">Game_Object</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">Style_Guide</pre>,&nbsp;
+        <pre style="display: inline; background-color:#e5e5e5; border-radius:5px; padding:5px; color:#262626">A_Serie_Of_Words</pre>
+    </span>
+</details><div class="md-alert md-alert-warning warning"><p><span class='md-alert-text md-alert-text-warning'><svg viewBox="0 0 16 16" version="1.1" width="1em" height="1em" aria-hidden="true"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</span><br></p><p><span>Some contexts or queries may be </span><em><strong><u><span>case-sensitive</span></u></strong></em><span>, meaning that naming will be important in how things are compared or evaluated.</span>
+<span class='md-tab'>	</span><span style="color: grey"><span>→ e.g. </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>GameObject</span></code><span> ≠ </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>gameobject</span></code><span> in a </span><em><span>case-sensitive</span></em><span> context</span></span><span>.</span></p></div><hr /><div style="page-break-after: always;margin-bottom:3em"></div><h2 style="margin-bottom:1em">Project Structure</h2><p><span>As said in the </span><a href='#Foreword'><span>Foreword</span></a><span>, this document do not intend to hold any golden rules.</span>
+<span>As such, the following proposed structure should serve as an example and/or a working basis for most project but anyone is </span><u><span>encouraged to adapt it</span></u><span> to their needs.</span></p><div class="md-alert md-alert-tip tip"><p><span class='md-alert-text md-alert-text-tip'><svg viewBox="0 0 16 16" version="1.1" width="1em" height="1em" aria-hidden="true"><path d="M8 1.5c-2.363 0-4 1.69-4 3.75 0 .984.424 1.625.984 2.304l.214.253c.223.264.47.556.673.848.284.411.537.896.621 1.49a.75.75 0 0 1-1.484.211c-.04-.282-.163-.547-.37-.847a8.456 8.456 0 0 0-.542-.68c-.084-.1-.173-.205-.268-.32C3.201 7.75 2.5 6.766 2.5 5.25 2.5 2.31 4.863 0 8 0s5.5 2.31 5.5 5.25c0 1.516-.701 2.5-1.328 3.259-.095.115-.184.22-.268.319-.207.245-.383.453-.541.681-.208.3-.33.565-.37.847a.751.751 0 0 1-1.485-.212c.084-.593.337-1.078.621-1.489.203-.292.45-.584.673-.848.075-.088.147-.173.213-.253.561-.679.985-1.32.985-2.304 0-2.06-1.637-3.75-4-3.75ZM5.75 12h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1 0-1.5ZM6 15.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Z"></path></svg>Tip</span><br></p><div style="color:grey">Explanations follows the suggested file-tree.<br>
+ You can use the <span style="font-weight:700; text-decoration: underline;">hyperlinks</span> to directly jumps to the associated description.</div></div><details style="padding:1.5em; border-radius:5px; background-color:#e5e5e5; margin-top:3em">
+    <summary id="scene-hierarchy"><b>Scene Hierarchy</b></summary>
+<pre style="tab-size: 4; margin-left:2em">
+<b><a href="#scene-hierarchy-scriptOnly">@System</a></b>
+<b><a href="#scene-hierarchy-scriptOnly">@Debug</a></b>
+<b><a href="#scene-hierarchy-scriptOnly">@Management</a></b>
+<b><a href="#scene-hierarchy-scriptOnly">@UI</a></b>
+  └── Layouts <span style="color:grey">	// Overlays only</span>
+Cameras <span style="color:grey">		// Cinematic or debug only</span>
+Lights
+  └── Volumes <span style="color:grey">	// Post-process</span>
+Particles
+Sound <span style="color:grey">			// 2D/Extra-diegetic only</span>
+World
+  ├── Global
+  └── ...
+Gameplay
+  ├── Player
+  └── ...
+<b><a href="#scene-hierarchy-dynamic">_Dynamic</a></b>
+</pre>
+</details><div style="page-break-after: always; margin-top:1.5em"></div><details style="padding:1.5em; border-radius:5px; background-color:#e5e5e5; margin-bottom:1em">
+    <summary id="project-hierarchy"><b>Project Hierarchy</b></summary>
+<pre style="tab-size: 4; margin-left:2em">
+Assets
+|
+├── <b><a href="#dev-folder" style="color:#0284c7; text-decoration:underline">_Dev</a></b>
+|	└── DeveloperName
+|		└── ... (work in progress assets)
+|
+├── <b><a href="#top-level-folder" style="color:#0284c7; text-decoration:underline">ProjectName</a></b>
+|	|
+|	├── <b><a href="#scene-folder" style="color:#0284c7; text-decoration:underline">_Scenes</a></b>
+|	|
+|	├── Audio
+|	|	├── <b><a href="#shared-folder" style="color:#0284c7; text-decoration:underline">_Common</a></b>
+|	|	|	├── Clips
+|	|	|	└── SFX
+|	|	├── Banks (Fmod/Wise/...)
+|	|	└── Mixers
+|	|	
+|	├── Characters
+|	|	├── <b><a href="#shared-folder" style="color:#0284c7; text-decoration:underline">_Common</a></b>
+|	|	|	├── Animations
+|	|	|	|	├── Locomotion
+|	|	|	|	├── Cinematic
+|	|	|	|	└── ...
+|	|	|	└── Audio
+|	|	|			
+|	|	└── Warrior
+|	|		├── Audio
+|	|		├── Animations
+|	|		├── Weapons
+|	|		└── ...
+|	|	
+|	├── Environment
+|	|	├── Architecture
+|	|	├── Foliage
+|	|	|	├── _Common
+|	|	|	|	├── Audio
+|	|	|	|	└── Effects
+|	|	|	├── Tree
+|	|	|	└── Grass
+|	|	├── Props
+|	|	└── ...
+|	|
+|	├── Lighting
+|	|	├── HDRI
+|	|	├──	LUT
+|	|	├── Textures
+|	|	└── Settings
+|	|
+|	├── <b><a href="#shared-folder" style="color:#0284c7; text-decoration:underline">MaterialLibrary</a></b>
+|	|	├── Debug
+|	|	└── Shaders
+|	|
+|	├── Resources
+|	|	├── RuntimeFonts
+|	|	└── ...
+|	|
+|	├── Scripts
+|	|
+|	├── Settings
+|	|	├── SRP
+|	|	├── Profiles
+|	|	└── ...
+|	|
+|	└── UI
+|		├── Art
+|		|	├── Buttons
+|		|	├── Panels
+|		|	└── Sprites
+|		├── Fonts
+|		└── Shaders
+|		
+├── <b><a href="#third-party-folder" style="color:#0284c7; text-decoration:underline">(ExpansionPack/DLC/Patches)</a></b>
+├── Plugins 
+└── SDK
+</pre>
+</details><div style="page-break-after: always;margin-top:3em"></div><h3 id='scene-hierarchy'><span>Scene Hierarchy</span></h3><h4 id='scene-folders'><span>Scene “folders”</span></h4><p><span>Use </span><strong><span>empty</span></strong><span> GameObjects with </span><strong><span>regular naming</span></strong><span> to make “folders” within the scene then parent sub-objects to them. Don&#39;t use affixes or names with symbols like </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>–--Camera---</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>[Debug]</span></code><span>.</span></p><h4 id='script-only-gameobjects'><span id="scene-hierarchy-scriptOnly"><span>Script-only GameObjects</span></span></h4><p><span>When a GameObject serves only as a container for </span><em><strong><span>scripts</span></strong></em><span>. It should have the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><b><span>@</span></b></code><span> prefix.</span>
+<span>This should be applied regardless the parenting level of the object (parent/child).</span></p><h4 id='dynamic-root'><span id="scene-hierarchy-dynamic"><span>Dynamic root</span></span></h4><p><span>When </span><u><span>instantiating objects at </span><strong><span>runtime</span></strong></u><span>, make sure to parent them under the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Dynamic</span></code><span> GameObject (or one of it&#39;s children). This will make easier to inspecting the hierarchy when debugging.</span></p><h3 style="margin-top:2em">Project Hierarchy</h3><h4 id='top-level-folder'><span id="top-level-folder"><span>Top-Level folder</span></span></h4><p><span>If your project is named </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>GenericShooter</span></code><span>, you should find a top-level folder </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Assets/GenericShooter/</span></code><span>. There are multiple benefits, as suggested by </span><a href='#Reference'><span>justinwasilenko</span></a><span>:</span></p><ul><li><p><strong><span>No global assets</span></strong></p><p><span>This encourages a strict structure layout and avoid re-organizing several assets across different root/parent folders, and breaking potential links.</span></p></li><li><p><strong><span>Reduce Migration Conflicts</span></strong></p><p><span>It is common for a team to copy and pull assets from one project to another.</span>
+<span>By placing all project-related assets into a named top-level folder, it avoid potential naming conflicts or duplicates from external source, and also, facilitate custom packages exportations between Unity&#39;s versions in case of migration.</span></p></li><li><p><a id="third-party-folder" style="color:#262626;text-decoration:none"><b><span>3</span><sup><span>rd</span></sup><span> Party content, DLC or Patches more maintainable</span></b></a></p><p><span>Unity samples, third-party content or templates are not guaranteed to conform to the top-level folder rule. Even if that was the case, structures can change between version upgrades. Separating them from the project&#39;s files ensure the project will never break when importing external content.</span></p></li></ul><h4 id='developer-folders'><span id="dev-folder"><span>Developer folders</span></span></h4><p><span>Developer folders are a convenient way to allow experimental or </span><strong><span>test assets</span></strong><span> while keeping them organized and aside the project hierarchy.</span></p><p><span>Under a common </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Dev</span></code><span> folder, each team member can own a named folder to put any temporary assets. Theses folders can also be added to </span><strong><span>source control</span></strong><span> and tracked, if required.</span></p><p><span>Another benefit of developer folders reside in the exclusion of </span><em><span>WIP</span></em><span> assets from the final product. By doing so, designers won&#39;t misuse any assets, avoid reworking whole chunks every time an asset changes.</span></p><p><span>Only when assets are finalized (and/or approved), they are “promoted” inside the product top-level folder.</span></p><h4 id='redundant-and-shared-folders'><span id="shared-folder"><span>Redundant and shared folders</span></span></h4><p><span>Being strict on the on the naming system enable to let go of many redundant folders like </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Meshes</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Textures</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Materials</span></code><span>. All assets being prefixed, they instantly hint their type at glance and are </span><strong><span>shorter to type when searching</span></strong><span> for them. As also said previously, the </span><a href='https://docs.unity3d.com/6000.3/Documentation/Manual/search-overview.html'><span>Unity Search indexer</span></a><span> will also save time when resolving queries.</span></p><p><span>When assets do not belong to any subset of assets or are reused across the whole project, they should be located inside a </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>MaterialLibrary</span></code><span> folder.</span>
+<span>This is useful for generic and common materials but this folder it also intended for </span><em><span>utility textures</span></em><span>, </span><em><span>shader functions</span></em><span> or </span><em><span>sub-graphs</span></em><span>, </span><em><span>test models</span></em><span>, etc…</span></p><p><span>Alternatively, assets that are shared or relative to a subset of object </span><span style="color:grey;font-size:90%"><span>(</span><em><span>Characters, Audio, Architecture, etc…</span></em><span>)</span></span><span> should fall within a </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Common folder</span></code><span>, specific to that scope.</span>
+<span>    </span><span style="color:grey;"><span>→ e.g. </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Character/</span><span>_</span><span>Common/Animations/</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Lighting/</span><span>_</span><span>Common/GlobalSettings.asset</span></code></span></p><h4 id='scenes-folder-and-underscore-prefix'><span id="scene-folder"><span>Scenes folder and underscore prefix</span></span></h4><p><em><strong><span>Scenes</span></strong></em><span> are very special assets. They need to be easily available for developers in order to be integrated into a </span><em><strong><span>build</span></strong></em><span>. Designers must also not confuse them when working on them.</span></p><p><span>For that matter, </span><u><strong><span>all </span><em><span>scene</span></em><span> assets</span></strong></u><span> must be located within a single folder </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Scenes</span></code><span>.</span></p><p><span>This folder should move back up the hierarchy and always come first to avoid any confusion with other folders, hence the underscore </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span></code><span> prefix.</span></p><p><span>It might be handy to isolate other special folders with the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span></code><span> prefix. This is notably the case for </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Common</span></code><span> folders and the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Dev</span></code><span> root folder .</span></p><hr /><div style="page-break-after: always;margin-top:3em"></div><h2 id='asset-naming-convention'><span>Asset Naming Convention</span></h2><p><span>All assets must be strictly named according to the following naming pattern:</span></p><div style="text-align: center">
+    <pre style="margin: 0 10em;padding:5px;background-color:#e5e5e5;border-radius:5px;"><span style="color:red; font-weight: bold;">Prefix</span>_BaseAssetName_<span style="color:#BD00FF; font-weight: bold;">Variant</span>_<span style="color:#00bbff;font-weight: bold;:">Suffix</span></pre>
+</div><p><span>This naming convention </span><u><strong><span>must be applied both</span></strong></u><span> when naming </span><em><span>GameObjects</span></em><span> inside a scene and for the naming of </span><em><span>assets files</span></em><span> within the project hierarchy.</span></p><blockquote><p><span>Correctly naming objects in scenes gives their corresponding name when making a Prefab and inversely, adding a correctly named </span><em><span>Prefab</span></em><span> within a scene keep its hierarchy clean and coherent.</span></p></blockquote><p><u><b><span>In this pattern :</span></b></u></p><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><b style="color:red">Prefix</b></summary>
+    <div style="margin-bottom:1em">
+        <b style="color:red">Prefixes</b> indicate the type of an asset. They often  are the acronym of the type's full denomination. <a href="#affix-tables">Go to affixes tables for more.</a>
+    </div>
+    <blockquote class="alert" style="padding: 10px 15px; border-left: 4px solid #9a6700;">
+        <div class="alert-title" style="margin-bottom:1em">
+            <span style="color:#9a6700;font-size:14px;font-weight:700;"> <span style="font-size:18px;">⚠</span> Warning</span>
+        </div>
+        <div>Native and/or custom types may have the same acronym <span style="font-size:90%">(e.g. <code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;">AudioClips</code> vs <code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;">AnimationController</code>)</span>. A conflict occur as they would both use the <code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;">AC_</code> prefix.<br>In this convention, the necessary should be done to <u>keep <span style="color:red"><em>prefixes</em></span> unique</u>, although this might come at the cost of exhaustiveness.<br/><br/>
+<span style="color:grey">Other conventions may allow this discrepancy for the sake of simplicity.</span></div>
+    </blockquote>
+</details><details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><b style="color:#BD00FF">Variants</b></summary>
+    <div>An object can have multiple <b style="color:#bd00ff">Variants</b>. They are logical groups representing subset of the base asset like different <em>sizes</em>, <em>shapes</em>, <em>species</em>, <em>age/era</em>, <em>rarity</em>, etc… <span style="font-size:90%">(e.g. <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Cat_MaineCoon</code>, <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Cat_Persian</code>, <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Cat_Siamese</code>, ...)</span>.<br> Variants can also be <u><em>chained</em></u> <span style="font-size:90%">(e.g. <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SK_Player_Skin_Legendary_SkinName</code>)</span>.<br>
+<br>In case of generic subsets, <em style="color:#bd00ff">variants</em> should be named incrementally <span style="font-size:90%">(e.g <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Rock_Volcanic_01</code>, <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Rock_Volcanic_02</code>, ...)</span>. You can also use letters on limited subsets <span style="font-size:90%">(e.g. <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Wall_A</code>, <code style="background-color:#e5e5e5;border-radius:5px; padding: 4px;">SM_Wall_B</code>, ...).</span> Favor consistency and ideally numbers over letters.
+    </div>
+</details>
+<details style="margin-bottom:1.5em">
+    <summary style="margin-bottom:1em"><b style="color:#00bbff">Suffix</b></summary>
+    <b style="color:#00bbff">Suffixes</b> are similar to <em style="color:#BD00FF">variants</em> and are use to describe a set of similar assets.<br>They flags <u>more informations</u> about an <u>asset's type</u>.<br><br>The more flagrant usage of <em style="color:#00bbff">suffixes</em> is with <code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;">Texture</code> assets.<br>A mesh can require multiples textures. There are all marked with the <em style="color:red">prefix</em> <code style="background-color:#e5e5e5;color:#262626; font-size:90%; border-radius:5px; padding: 4px;">T_</code>.<br>To define the <u><b>type/role</b></u> of each texture, we commonly use the following suffixes:<br>
+    <ul>
+        <li><code style="background-color:#e5e5e5;color:#262626; font-size:90%; border-radius:5px; padding: 4px;">_Albedo</code> or <code style="background-color:#e5e5e5;color:#262626; font-size:90%; border-radius:5px; padding: 4px;">_BC</code> for the base color.</li>
+        <li><code style="background-color:#e5e5e5;color:#262626; font-size:90%; border-radius:5px; padding: 4px;">_N</code> for normal maps.</li>
+        <li><code style="background-color:#e5e5e5;color:#262626; font-size:90%; border-radius:5px; padding: 4px;">_ORM</code> for packed oclussion, roughness and metallic textures</li>
+        <li>...</li>
+    </ul>
+</details>
+<h3 id="asset-table-common" style="margin-top:3em">Scene Objects and common types</h3><p><span>Aside </span><em><span>Scenes</span></em><span> and </span><em><span>Prefabs</span></em><span>, these following objects lives inside scenes and do not exist as an asset. Nonetheless, naming them correctly is important to keep a clean </span><a href="#scene-hierarchy"><span>scene hierarchy</span></a><span>.</span></p><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Scene</span></td><td><span style="color:grey"><span>N/A</span></span></td><td><span style="color:grey"><span>N/A</span></span></td><td><span style="font-size:90%"><span>Should be in the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Scene</span></code><span> folder.</span><br><span>Doesn&#39;t have peculiar affixes.</span></span></td></tr><tr><td><span>Prefabs</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>P_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Prefab Instances</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PI_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>When adding a prefab to a scene, take care of change the prefix to </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PI_</span></code><span> to help distinguish it from the prefab root asset when making changes.</span></span></td></tr><tr><td><span>GameObjects (single)</span></td><td><span>*</span></td><td><span>*</span></td><td><span style="font-size:90%"><span>Lone GameObjects are not required to have an affix.</span><br /><span>However, it may be advisable to add one to not confuse these objects from the </span><a href="#scene-hierarchy"><span>scene hierarchy</span></a><span>.</span></span></td></tr><tr><td><span>Camera (Cinemachine)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>C</span><span>_</span></code><span>,</span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>CM</span><span>_</span></code><span>,</span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VCam_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>If you used the </span><em><span>Virtual Cameras</span></em><span>  from the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Cinemachine</span></code><span> package, use either </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VCam</span><span>_</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>CM_</span></code><span> but stick to one of them at all time.</span></span></td></tr><tr><td><span>Lights</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>L_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_2D</span></code></td><td><span style="font-size:90%"><span>If your project use 2D-3D hybrid lighting, precise 2D-typed elements with a suffix.</span></span></td></tr><tr><td><span>Reflection Probes</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LRP_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Keeping the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>L</span></code><span> in the prefix keeps the objects in the same range as other lighting objects.</span></span></td></tr><tr><td><span>Light Probe Groups</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LPG_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>* </span><em><span>Same as previous</span></em></span></td></tr><tr><td><span>Adaptive Probe Volumes</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>APV</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LAPV_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Favor </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>APV</span><span>_</span></code><span> if you have a general </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Lighting</span></code><span> root GameObject in your scenes.</span><br /><span>Otherwise, favor </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LAPV_</span></code><span> if you keep the GameObject unparented to such folder.</span></span></td></tr><tr><td><span id="scene-object-volume"><span>Volume (Post-Process)</span></span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>V</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PPV_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Volumes are part of Unity&#39;s post-process system. As such, using </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>V</span><span>_</span></code><span> can be sufficient. However, you may use </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PPV_</span></code><span> to align with other post-process assets such as </span><em><span>profiles</span></em><span>.</span></span></td></tr><tr><td><span>User Interface</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>UI_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>CO</span></code><span>,</span><br><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>CS</span></code><span>,</span><br><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_WS</span></code></td><td><span style="font-size:90%"><span>Every root objects regarding user interface should start with the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>UI_</span></code><span> prefix: either a root </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Canvas</span></code><span> component and/or an empty </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>GameObject</span></code><span> parent to that canvas.</span><br /><span>Use the respectives suffixes to precise the Render Mode between: </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Camera Overlay</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Camera Space</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>World Space</span></code><span>.</span></span></td></tr><tr><td><span>Tilemaps</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TM_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Grid</span></code></td><td><span style="font-size:90%"><span>Use </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TM</span><span>_</span></code><span> for all tilemap related objects, just append the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Grid</span></code><span> suffix to the root GameObject when making a Tilemap.</span><br /><a href="#asset-table-2D"><span>→ See 2D table for tile assets</span></a></span></td></tr><tr><td><span>Audio Sources</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AS_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><a href="#asset-table-audio"><span>→ See Audio table for more.</span></a></span></td></tr><tr><td><span>Audio Reverb Zones</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>ASR_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>URP Decal Projector</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>D</span><span>_</span></code><span>,</span><br/><span> </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>DJ_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Video Player</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VP</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VS_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>You may favor </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VS</span><span>_</span></code><span> to mean </span><em><span>Video Source</span></em><span> and align with </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AudioSources</span></code><span>.</span><br /><span>Stick to </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VP_</span></code><span> if strict naming is preferred.</span></span></td></tr><tr><td><span>UI Document/UI  Toolkit</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>UTK_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Panel  Input Configuration</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>UTK_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_InputConfig</span></code></td><td>&nbsp;</td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='3d-assets'><span>3D Assets</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Static Mesh</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SM_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Non-static Mesh</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>NSM_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><u><span>To not be confused with </span><em><span>Skeletal Meshes</span></em></u><span>.</span><br /><span>Keep the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>NSM_</span></code><span>  prefix for meshes with movable parts or animations that doesn&#39;t involve a control rig.</span><br /><span>You can also opt to use it to distinguish </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Static Meshes</span></code><span> that aren&#39;t intended to be marked as </span><u><em><span>static</span></em></u><span> in the engine.</span></span></td></tr><tr><td><span>Skeletal Mesh</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SK_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Rig/Skeleton</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>RIG</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SKEL_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Unity doesn&#39;t have a built-in type for rigs and instead use a component-based </span><em><span>Animation Rigging Workflow</span></em><span>.</span><br /><span>However, you may wish to have empty 3D models containing only the rig of objects. Use </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>RIG</span><span>_</span></code><span> or rarely </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SKEL_</span></code><span> to differenciate this objects from complete </span><em><span>Skeletal Meshes</span></em><span>.</span></span></td></tr><tr><td><span>Custom Mesh Collider</span></td><td>&nbsp;</td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_collider</span></code></td><td><span style="font-size:90%"><span>In the rare case where the collider is not integrated (and correctly named) within the mesh, take care of precising the suffix on the external model.</span></span></td></tr><tr><td><span>Materials</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>M</span><span>_</span></code><span>,</span><br><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>MSG_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>If you prefer distinguishing regular (built-in) materials from ones created through </span><em><span>Shader Graph</span></em><span>, use the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>MSG_</span></code><span> prefix.</span></span></td></tr><tr><td><span>Shader Graphs</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SG_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Shader Sub-graphs</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SGF_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>F</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Function</span></code></td><td><span style="font-size:90%"><span>When making </span><em><span>sub-graphs</span></em><span> (or functions), use either the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SGF_</span></code><span> prefix </span><u><strong><span>or</span></strong></u><span> one the suffixes, never both.</span><br /><br /><u><span>Examples:</span></u><br /><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SGF_RotateUVs</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SG_RotateUVs_Function</span></code></span></td></tr><tr><td><span>Shader file (HLSL/CG)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SL_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SL</span></code><span> stands for </span><em><span>Shader Language</span></em><span>.</span></span></td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='2d-assets'><span>2D Assets</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Texture</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Noise</span></code><span>,</span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Wind</span></code><span>,</span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Pattern</span></code><span>, …</span></td><td><span style="font-size:90%"><span>See the </span><a href="#Textures"><span>Texture table</span></a><span> for more details.</span><br /><span>For unique or independent textures, use a custom and appropriate suffix, like the provided examples.</span></span></td></tr><tr><td><span>Sprite</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPR_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>All other textures anything distinct are often converted in </span><em><span>sprites</span></em><span>. This the case when using illustrated characters/objects, icons, panels, and other UI elements.</span><br /><br /><span>With descriptive </span><em><span>names</span></em><span>, </span><span style="color:#BD00FF;"><em><span>variants</span></em></span><span> and </span><u><span>a good folder hierarchy</span></u><span>, sprites shouldn&#39;t require different prefixes or need a suffix.</span><br /><span>However, you are invited to do so if you handle many specific </span><em><span>categories</span></em><span> of sprites.</span></span></td></tr><tr><td><span>User Interface</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>UI_</span></code></td><td><span style="font-size:80%; color:grey;"><em><span>*optional</span></em></span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_GUI</span></code></td><td><span style="font-size:90%"><span>This flexible prefix can be added to elements part of the user-interface (</span><em><span>anything</span></em><span> that would live inside a </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Canvas</span></code><span> component).</span><br /><span>You can rarely find the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_GUI</span></code><span> suffix with the regular asset&#39;s prefix.</span></span></td></tr><tr><td><span>Tile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TL_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Tiles are essentially </span><em><span>sprites</span></em><span> but are treated quite differently and may come in special variants.</span><br /><span>As such, it is a good case where it can be useful to separate them from regular sprites.</span></span></td></tr><tr><td><span>Animated Tile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TLA_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>A</span></code><span>,</span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Animated</span></code></td><td><span style="font-size:90%"><span>Use either the complete prefix </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TLA</span><span>_</span></code><span> only or the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TL_</span></code><span> with one of the suffix.</span><br /><span>Using the latter leads to a more robust search and sort all tiles together but the former is faster to type.</span></span></td></tr><tr><td><span>Rule Tile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TLR_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>R</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Ruleset</span></code></td><td><span>* </span><span style="font-size:90%"><em><span>Same as above.</span></em></span></td></tr><tr><td><span>Tile Palette</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TLP_</span></code></td><td>&nbsp;</td><td><span>* </span><span style="font-size:90%"><em><span>Same as above.</span></em></span></td></tr><tr><td><span>Sprite Shape Profile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SSP_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Sprite Atlas</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPRA</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPR_Atlas_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Sprite Library Asset</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPR</span><span>_</span></code><span>,</span><br /><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPRL_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Library</span></code></td><td><span style="font-size:90%"><span>Either use the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Library</span></code><span> suffix with the regular sprite prefix or the qualified prefix </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPRL_</span></code><span>.</span><br /><br /><u><span>Examples:</span></u></span><br /><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPR_Weapon_Library</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SPRL_Weapons</span></code></td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='textures'><span>Textures</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Texture (Base Color)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_BC</span></code></td><td><span style="font-size:90%"><span>Also called </span><em><span>Diffuse</span></em><span> / </span><em><span>Albedo</span></em><span> but stick to </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_BC</span></code><span> regardless.</span></span></td></tr><tr><td><span>Texture (Metallic)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_M</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Roughness/ Smoothness)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>R</span></code><span>,</span><br/><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_S</span></code></td><td><span style="font-size:90%"><span>While </span><em><span>roughness</span></em><span> is commonly used in 3D modelling, Unity use the </span><em><span>smoothness</span></em><span>, which is the inverse of the former.</span><br /><br /><span>It is advised to keep </span><em><span>roughness</span></em><span> textures and make the conversion in a shader but do use the correct suffix to not mix them up if you do otherwise.</span></span></td></tr><tr><td><span>Texture (Normal)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_N</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Alpha)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_A</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Height)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_H</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Ambient Occlusion)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_AO</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Emission)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_E</span></code></td><td>&nbsp;</td></tr><tr><td><span>Texture (Mask)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Mask</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>MaskRGB</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_MaskRGBA</span></code></td><td><span style="font-size:90%"><span>Masks are often in grayscale but can also be utilitarian textures with</span><br /><span style="color:red"><span>R</span></span><span style="color:green"><span>G</span></span><span style="color:blue"><span>B</span></span><span>(</span><span style="color:grey"><span>A</span></span><span>) data.</span><br /><span>Use the correct prefix when additional channels are used.</span></span></td></tr><tr><td><span>Texture (Packed)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>T_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_*</span></code></td><td><span style="font-size:90%"><span>Grayscale textures can be packed together using the </span><span style="color:red"><span>R</span></span><span style="color:green"><span>G</span></span><span style="color:blue"><span>B</span></span><span style="color:grey"><span>A</span></span><span> channels, like RGBA masks.</span><br /><span>When packed, use a composite suffix of the textures in the order they appear in the </span><span style="color:red"><span>R</span></span><span style="color:green"><span>G</span></span><span style="color:blue"><span>B</span></span><span style="color:grey"><span>A</span></span><span> channels.</span><br /><br /><u><span>Example:</span></u><span> If you encode the </span><em><span>Occlusion</span></em><span> map in the </span><span style="color:red"><span>R</span></span><span> channel, the </span><em><span>Roughness</span></em><span> in </span><span style="color:green"><span>G</span></span><span> and the </span><em><span>Metallic</span></em><span> in </span><span style="color:blue"><span>B</span></span><span>. Your packed texture&#39; suffix should be: </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_ORM</span></code><span>.</span></span></td></tr><tr><td><span>Texture Cube</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>TC_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Media Texture  (or Movie Texture)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>MT_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Render Texture</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>RT</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>RT_Custom_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Not to be confused with a </span><a href='https://unity.com/glossary/render-target'><span>Render Target</span></a><span>.</span></span></td></tr><tr><td><span>Texture Light Profile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>IES_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>In the industry and notably in </span><em><span>Unreal Engine</span></em><span>, these are referred as </span><em><span>IES Profiles</span></em><span>.</span><br /><br /><span>In Unity, they can only be used with HDRP projects.</span><br /><a href='https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.5/manual/IES-Profile.html'><span>→ About IES Profiles</span></a><br /><a href='https://ieslibrary.com/'><span>→ Get IES Profiles on IESLibrary</span></a><span> or </span><a href='https://www.a23d.co/iesprofiles'><span>A23D</span></a></span></td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='animation'><span>Animation</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Animation Clip</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>A_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Animator Controller</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AC_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Animator Controller Override</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AC_Base</span></code><span> + </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Override</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Ov_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><em><span>Animator Controller Overrides</span></em><span> should begin the same way that the controller it derives from.</span><br /><span>After the asset base name, append the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Override</span><span>_</span></code><span> or </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>Ov_</span></code><span> prefix with the override own name.</span><br /><br /><u><span>Example:</span></u><span> </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AC_Transition_Ov_Crossfade</span></code><span>,</span><br /><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AC_Transition_Ov_CircleSwipe</span></code></span></td></tr><tr><td><span>Avatar Mask</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AV</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AVM_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>The </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>M</span></code><span> can be optional if </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>AV</span></code><span> is sufficient for </span><em><span>avatar</span></em><span> assets.</span></span></td></tr><tr><td><span>Morph Target</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>MT_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table></figure><div style="margin-top:3em"></div><h3 id='audio'><span>Audio</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Audio Clip</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SC_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Audio Mixer</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SMX_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Audio Random Container</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SRC_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Dialogues/Voice clips</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SC</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>DV_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>You can opt to use a different prefix for </span><em><span>voicelines</span></em><span> (like </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>DV_</span></code><span>), but ultimately, they remain </span><em><span>Audio Clips</span></em><span>.</span></span></td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='physics-and-visual-effects'><span>Physics and Visual Effects</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Physical Material</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PM_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_2D</span></code></td><td><span style="font-size:90%"><span>If your project is 2D-3D hybrid, precise 2D-typed elements with a suffix.</span></span></td></tr><tr><td><span>Particle System</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PS_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Visual Effect Graph</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VFX_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Don&#39;t be tempted to use </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VFX_</span></code><span> for </span><em><span>Particle Systems</span></em><span>.</span></span></td></tr><tr><td><span>VFX Graph Subgraph Block</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VFX_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>F</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>Function</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>B</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Block</span></code></td><td><span style="font-size:90%"><span>It may be preferred to use the </span><em><span>function</span></em><span> variant to align with the material terminology.</span></span></td></tr><tr><td><span>VFX Graph Subgraph Operator</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VFX_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_</span><span>O</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Operator</span></code></td><td>&nbsp;</td></tr><tr><td><span>VFX Graph Defaults</span></td><td><span style="font-size:90%"><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>VFX_Defaults_</span></code></span></td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table></figure><div style="page-break-after: always; margin-top:3em"></div><h3 id='settings-and-miscellaneous'><span>Settings and Miscellaneous</span></h3><figure class='table-figure'><table><thead><tr><th><span>Asset type</span></th><th><span>Prefix</span></th><th><span>Suffix</span></th><th><span>Notes</span></th></tr></thead><tbody><tr><td><span>Render Pipeline Assets</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>URP</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>HDRP</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SRP_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Reserve </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SRP_</span></code><span> only for custom-made </span><em><span>Render Pipelines</span></em></span></td></tr><tr><td><span>Render Pipeline Renderer Assets</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>URP</span><span>_</span></code><span>, </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>HDRP</span><span>_</span></code><span>,</span><br /><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SRP_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Renderer</span></code></td><td><span style="font-size:90%"><span>Use the exact name and prefix as the render pipeline asset and append the </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Renderer</span></code><span> suffix.</span></span></td></tr><tr><td><span>Post-process profile (legacy)</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PP_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Double check if you really use the legacy or the </span><a style="color:#0284c7" href="https://docs.unity3d.com/Packages/com.unity.postprocessing@3.5/manual/index.html"><b style="color:#0284c7"><span>v2 post-processing stack</span></b></a><span> before using </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PP_</span></code><span>.</span><br /><span>Otherwise, see below.</span></span></td></tr><tr><td><span>Volume Profile</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>PPV_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><a href="#scene-object-volume"><span>See </span><em><span>Volumes</span></em><span> in Scene Objects table</span></a><span>.</span></span></td></tr><tr><td><span>Lighting Settings</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LS_</span></code></td><td>&nbsp;</td><td><span style="font-size:90%"><span>Append the scene name after the prefix.</span></span></td></tr><tr><td><span>Light-mapper Settings</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>LS_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_Lightmapper</span></code></td><td><span style="font-size:90%"><span>To not be confused with </span><em><span>Lighting Settings</span></em><span>.</span></span></td></tr><tr><td><span>Input Action Assets</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>IA_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Scriptable Objects</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>SO_</span></code></td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td><span>Fonts</span></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>F_</span></code></td><td><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>_SDF</span></code></td><td><span style="font-size:90%"><span>Use the suffix when generating font atlases with </span><em><span>TextMeshPro</span></em><span>.</span><br /><br /><u><span>Exemples:</span></u><span> </span><br /><span>Font file </span><span style="font-size:80%;"><span>(</span><code>.ttf</code><span>, </span><code>.otf</code><span>, …)</span></span><span> → </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>F_Calibri</span></code><br /><span>Generated atlas → </span><code style="background-color:#e5e5e5;font-size:90%;border-radius:5px; padding: 4px;"><span>F_Calibri_SDF</span></code></span></td></tr></tbody></table></figure><p>&nbsp;</p><br/><hr /><div style="color:grey" align="right">
+    <em>Charlie BOYER</em><br>
+    Last updated: 02/02/2025
+</div><p>&nbsp;</p></div></div>
+</body>
+</html>
