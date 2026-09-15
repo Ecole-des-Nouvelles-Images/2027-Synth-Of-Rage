@@ -56,6 +56,12 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
             float horizontal = horizontalAction.action.ReadValue<float>();
             float vertical = verticalAction.action.ReadValue<float>();
 
+            GetComponent<SpriteRenderer>().flipX = horizontal switch
+            {
+                < 0f => true,
+                > 0f => false,
+                _ => GetComponent<SpriteRenderer>().flipX
+            };
             Vector3 movement = new Vector3(horizontal, 0f, vertical);
 
             // Évite d'aller plus vite en diagonale
