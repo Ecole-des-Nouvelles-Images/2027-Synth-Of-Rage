@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8809451748480722926}
   - component: {fileID: 1865826182344348133}
   - component: {fileID: 747342214242000186}
+  - component: {fileID: 4888161964274236508}
   m_Layer: 0
   m_Name: CM_AutoScroll
   m_TagString: Untagged
@@ -26,8 +27,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 457460772718070182}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.026176924, y: -0, z: -0, w: 0.99965733}
-  m_LocalPosition: {x: -1.3415121, y: 3.5483122, z: -10.008631}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.2845812, y: 3.5498152, z: -10.00745}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -99,7 +100,7 @@ MonoBehaviour:
     Position: {x: 0, y: 0, z: 0}
     Angular: 0
   AutomaticDolly:
-    Enabled: 1
+    Enabled: 0
     Method:
       rid: 7362843679126454473
   m_LegacyPosition: -1
@@ -111,7 +112,41 @@ MonoBehaviour:
     - rid: 7362843679126454473
       type: {class: SplineAutoDolly/FixedSpeed, ns: Unity.Cinemachine, asm: Unity.Cinemachine}
       data:
-        Speed: 0.1
+        Speed: 0
+--- !u!114 &4888161964274236508
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 457460772718070182}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62d54399b04b4fa48a73e121d4937dd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePanTilt
+  ReferenceFrame: 0
+  RecenterTarget: 0
+  PanAxis:
+    Value: 0
+    Center: 0
+    Range: {x: -180, y: 180}
+    Wrap: 1
+    Recentering:
+      Enabled: 0
+      Wait: 1
+      Time: 2
+    Restrictions: 0
+  TiltAxis:
+    Value: 0
+    Center: 0
+    Range: {x: -70, y: 70}
+    Wrap: 0
+    Recentering:
+      Enabled: 0
+      Wait: 1
+      Time: 2
+    Restrictions: 0
 --- !u!1 &2908535263631951750
 GameObject:
   m_ObjectHideFlags: 0
@@ -121,7 +156,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2956273144468647254}
-  - component: {fileID: 5333109839458904853}
+  - component: {fileID: 7607879073257738786}
   m_Layer: 0
   m_Name: CameraSystem
   m_TagString: Untagged
@@ -144,7 +179,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6764726889385194843}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5333109839458904853
+--- !u!114 &7607879073257738786
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -153,18 +188,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 2908535263631951750}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 07a7c5ad8c66fc643a36a1f883140601, type: 3}
+  m_Script: {fileID: 11500000, guid: 20e67c466014f2b459659e3f32e66b57, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Vincent.Camera_Setup.Scripts.VCameraSetup
+  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Vincent.Camera_Setup.Scripts.VCameraSetup_Follow
   autoScrollCamera: {fileID: 1865826182344348133}
   combatCamera: {fileID: 6365890498128684203}
   autoScrollDolly: {fileID: 747342214242000186}
-  autoScrollGlobalSpeed: 0.1
   combatDolly: {fileID: 3963825526516814532}
+  target: {fileID: 0}
+  followSmoothTime: 0.5
   combatEnabled: 0
-  combatKnots: 01000000i
+  combatKnots: 010000000200000003000000i
   combatTolerance: 0.01
-  combatDecelerationDistance: 0.25
 --- !u!1 &3547725516970822473
 GameObject:
   m_ObjectHideFlags: 0
@@ -193,13 +228,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3547725516970822473}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.104528464, y: -0, z: -0, w: 0.9945219}
-  m_LocalPosition: {x: -1.3471552, y: 3.8492315, z: -8.608839}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.2845812, y: 3.5498152, z: -10.00745}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6764726889385194843}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.939, y: 90, z: 0}
 --- !u!20 &7282077854202598418
 Camera:
   m_ObjectHideFlags: 0
@@ -403,39 +438,75 @@ MonoBehaviour:
       TangentIn:
         x: 0
         y: 0
-        z: -3.3339195
+        z: -3.3338487
       TangentOut:
         x: 0
         y: 0
-        z: 3.3339195
+        z: 3.3338487
       Rotation:
         value:
-          x: -0.006873773
-          y: 0.7070733
-          z: 0.006382731
-          w: 0.707078
+          x: 0.005275404
+          y: 0.70713574
+          z: -0.005274619
+          w: 0.7070384
     - Position:
         x: 20
-        y: 0.25
+        y: -0.45
         z: 0
       TangentIn:
         x: 0
         y: 0
-        z: -6.666666
+        z: -6.670816
       TangentOut:
         x: 0
         y: 0
-        z: 6.666666
+        z: 6.670816
       Rotation:
         value:
-          x: -0.0005867667
-          y: 0.70710653
-          z: -0.0005867667
-          w: 0.70710653
+          x: 0.013306024
+          y: 0.7068842
+          z: -0.013309111
+          w: 0.7070789
     - Position:
         x: 40
-        y: 0
+        y: -1.5
         z: 0
+      TangentIn:
+        x: 0
+        y: 0
+        z: -6.680454
+      TangentOut:
+        x: 0
+        y: 0
+        z: 6.680454
+      Rotation:
+        value:
+          x: 0.016188977
+          y: 0.7072616
+          z: -0.025776947
+          w: 0.7062963
+    - Position:
+        x: 60.00967
+        y: -2.8842852
+        z: -0.036197186
+      TangentIn:
+        x: 0
+        y: 0
+        z: -6.695611
+      TangentOut:
+        x: 0
+        y: 0
+        z: 6.695611
+      Rotation:
+        value:
+          x: 0.06105426
+          y: 0.7051193
+          z: -0.0021430203
+          w: 0.70645213
+    - Position:
+        x: 80.00967
+        y: -5.093195
+        z: -0.06297064
       TangentIn:
         x: 0
         y: 0
@@ -446,11 +517,15 @@ MonoBehaviour:
         z: 0
       Rotation:
         value:
-          x: -0.0008298311
+          x: -0.00062840054
           y: 0
-          z: -0
-          w: 0.99999964
+          z: -0.031779874
+          w: 0.99949473
     m_MetaData:
+    - Mode: 2
+      Tension: 0.5
+    - Mode: 2
+      Tension: 0.5
     - Mode: 2
       Tension: 0.5
     - Mode: 2
@@ -528,6 +603,7 @@ GameObject:
   - component: {fileID: 6924716697418689937}
   - component: {fileID: 6365890498128684203}
   - component: {fileID: 3963825526516814532}
+  - component: {fileID: 5234462839075032751}
   m_Layer: 0
   m_Name: CM_Combat
   m_TagString: Untagged
@@ -543,13 +619,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8731589084092968443}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.10452846, y: -0, z: -0, w: 0.9945219}
-  m_LocalPosition: {x: -1.3471552, y: 3.8492315, z: -8.608839}
+  m_LocalRotation: {x: 0.1305262, y: 0, z: 0, w: 0.99144495}
+  m_LocalPosition: {x: -1.260422, y: 5.1896377, z: -12.257451}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6764726889385194843}
-  m_LocalEulerAnglesHint: {x: 12, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: -0.03, y: 0, z: 0}
 --- !u!114 &6365890498128684203
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -609,14 +685,14 @@ MonoBehaviour:
     Spline: {fileID: 220450876053230759}
     Position: 0
     Units: 2
-  SplineOffset: {x: 0.6, y: 2, z: 0}
+  SplineOffset: {x: 4.25, y: 3.34, z: 0}
   CameraRotation: 0
   Damping:
     Enabled: 0
     Position: {x: 0, y: 0, z: 0}
     Angular: 0
   AutomaticDolly:
-    Enabled: 1
+    Enabled: 0
     Method:
       rid: 7362843679126454474
   m_LegacyPosition: -1
@@ -628,4 +704,38 @@ MonoBehaviour:
     - rid: 7362843679126454474
       type: {class: SplineAutoDolly/FixedSpeed, ns: Unity.Cinemachine, asm: Unity.Cinemachine}
       data:
-        Speed: 0.1
+        Speed: 0
+--- !u!114 &5234462839075032751
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8731589084092968443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62d54399b04b4fa48a73e121d4937dd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePanTilt
+  ReferenceFrame: 0
+  RecenterTarget: 0
+  PanAxis:
+    Value: 0
+    Center: 0
+    Range: {x: -180, y: 180}
+    Wrap: 1
+    Recentering:
+      Enabled: 0
+      Wait: 1
+      Time: 2
+    Restrictions: 0
+  TiltAxis:
+    Value: 15
+    Center: 0
+    Range: {x: -70, y: 70}
+    Wrap: 0
+    Recentering:
+      Enabled: 0
+      Wait: 1
+      Time: 2
+    Restrictions: 0
