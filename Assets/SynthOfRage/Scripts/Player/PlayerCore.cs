@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Serialization;
 
 namespace SynthOfRage.Scripts.Player
 {
@@ -9,7 +8,7 @@ namespace SynthOfRage.Scripts.Player
     {
         [Header("Dev Settings")]
         [SerializeField] private bool debugEnabled;
-        
+
         [Header("Input Actions")]
         [SerializeField] private InputActionReference moveAction;
         [SerializeField] private InputActionReference jumpAction;
@@ -23,13 +22,13 @@ namespace SynthOfRage.Scripts.Player
         // Events
         // ─────────────────────────────────────────────
 
-        public event Action<Vector2> OnMove;
-        public event Action OnJump;
-        public event Action OnDash;
-        public event Action OnAtkL;
-        public event Action OnAtkH;
-        public event Action<bool> OnGuard;
-        public event Action OnAtkSp;
+        public event Action<Vector2> OnPlayerMove;
+        public event Action OnPlayerJump;
+        public event Action OnPlayerDash;
+        public event Action OnPlayerAtkL;
+        public event Action OnPlayerAtkH;
+        public event Action<bool> OnPlayerGuard;
+        public event Action OnPlayerAtkSp;
 
         // ─────────────────────────────────────────────
         // Unity
@@ -52,8 +51,10 @@ namespace SynthOfRage.Scripts.Player
             dashAction.action.performed += HandleDash;
             atkLAction.action.performed += HandleAtkL;
             atkHAction.action.performed += HandleAtkH;
+
             guardAction.action.performed += HandleGuardStarted;
             guardAction.action.canceled += HandleGuardCanceled;
+
             atkSpAction.action.performed += HandleAtkSp;
         }
 
@@ -66,8 +67,10 @@ namespace SynthOfRage.Scripts.Player
             dashAction.action.performed -= HandleDash;
             atkLAction.action.performed -= HandleAtkL;
             atkHAction.action.performed -= HandleAtkH;
+
             guardAction.action.performed -= HandleGuardStarted;
             guardAction.action.canceled -= HandleGuardCanceled;
+
             atkSpAction.action.performed -= HandleAtkSp;
 
             moveAction.action.Disable();
@@ -86,59 +89,67 @@ namespace SynthOfRage.Scripts.Player
         private void HandleMove(InputAction.CallbackContext context)
         {
             Vector2 direction = context.ReadValue<Vector2>();
-            
-            if(debugEnabled)Debug.Log($"[PlayerCore] Move : {direction}");
 
-            OnMove?.Invoke(direction);
+            if (debugEnabled)
+                Debug.Log($"[PlayerCore] Move : {direction}");
+
+            OnPlayerMove?.Invoke(direction);
         }
 
         private void HandleJump(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] Jump");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] Jump");
 
-            OnJump?.Invoke();
+            OnPlayerJump?.Invoke();
         }
 
         private void HandleDash(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] Dash");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] Dash");
 
-            OnDash?.Invoke();
+            OnPlayerDash?.Invoke();
         }
 
         private void HandleAtkL(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] AtkL");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] AtkL");
 
-            OnAtkL?.Invoke();
+            OnPlayerAtkL?.Invoke();
         }
 
         private void HandleAtkH(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] AtkH");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] AtkH");
 
-            OnAtkH?.Invoke();
+            OnPlayerAtkH?.Invoke();
         }
 
         private void HandleGuardStarted(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] Guard : START");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] Guard : START");
 
-            OnGuard?.Invoke(true);
+            OnPlayerGuard?.Invoke(true);
         }
 
         private void HandleGuardCanceled(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] Guard : STOP");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] Guard : STOP");
 
-            OnGuard?.Invoke(false);
+            OnPlayerGuard?.Invoke(false);
         }
 
         private void HandleAtkSp(InputAction.CallbackContext context)
         {
-            if(debugEnabled)Debug.Log("[PlayerCore] AtkSp");
+            if (debugEnabled)
+                Debug.Log("[PlayerCore] AtkSp");
 
-            OnAtkSp?.Invoke();
+            OnPlayerAtkSp?.Invoke();
         }
     }
 }
