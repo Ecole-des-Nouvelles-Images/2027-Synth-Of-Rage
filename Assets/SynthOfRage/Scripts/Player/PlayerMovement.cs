@@ -23,11 +23,29 @@ namespace SynthOfRage.Scripts.Player
 
         [Header("Jump")]
         [SerializeField] private float jumpHeight = 2f;
+
+        [Tooltip("Gravité utilisée pour calculer la durée de référence du saut.")]
         [SerializeField] private float gravity = -20f;
+
+        [Tooltip("Courbe représentant la hauteur normalisée du saut.")]
+        [SerializeField]
+        private AnimationCurve jumpCurve =
+            new AnimationCurve(
+                new Keyframe(0f, 0f),
+                new Keyframe(0.5f, 1f),
+                new Keyframe(1f, 0f)
+            );
+
+        [Tooltip("Modifie la durée calculée à partir de la gravité.")]
+        [SerializeField] private float jumpDurationMultiplier = 1f;
 
         [Header("Dash")]
         [SerializeField] private float dashDistance = 4f;
         [SerializeField] private float dashDuration = 0.2f;
+
+        [Tooltip("Temps avant de pouvoir relancer un dash.")]
+        [SerializeField] private float dashCooldown = 0.5f;
+
         [SerializeField]
         private AnimationCurve dashCurve =
             AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
@@ -35,10 +53,29 @@ namespace SynthOfRage.Scripts.Player
         private CharacterController controller;
 
         private Vector2 moveInput;
+
+        // ==================================================
+        // JUMP
+        // ==================================================
+
+        private bool isJumping;
+        private float jumpTimer;
+        private float jumpDuration;
+        private float previousJumpHeight;
+
+        // ==================================================
+        // GRAVITY
+        // ==================================================
+
         private float verticalVelocity;
+
+        // ==================================================
+        // DASH
+        // ==================================================
 
         private bool isDashing;
         private float dashTimer;
+        private float dashCooldownTimer;
         private Vector3 dashDirection;
 
         private void Awake()
@@ -47,6 +84,8 @@ namespace SynthOfRage.Scripts.Player
 
             if (spriteRenderer == null)
                 spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+
+            CalculateJumpDuration();
         }
 
         private void OnEnable()
@@ -79,13 +118,15 @@ namespace SynthOfRage.Scripts.Player
         private void Update()
         {
             HandleMovement();
+            HandleJump();
             HandleGravity();
+            HandleDashCooldown();
             HandleDash();
         }
 
-        // ─────────────────────────────────────────────
-        // Input
-        // ─────────────────────────────────────────────
+        // ==================================================
+        // INPUT
+        // ==================================================
 
         private void HandlePlayerMove(Vector2 input)
         {
@@ -94,7 +135,9 @@ namespace SynthOfRage.Scripts.Player
             UpdateSpriteDirection(input);
 
             if (debugEnabled)
-                Debug.Log($"[PlayerMovement] Move Input : {moveInput}");
+                Debug.Log(
+                    $"[PlayerMovement] Move Input : {moveInput}"
+                );
         }
 
         private void HandlePlayerJump()
@@ -102,69 +145,114 @@ namespace SynthOfRage.Scripts.Player
             if (!controller.isGrounded)
                 return;
 
-            verticalVelocity =
-                Mathf.Sqrt(jumpHeight * -2f * gravity);
+            if (isJumping)
+                return;
+
+            if (isDashing)
+                return;
+
+            if (jumpHeight <= 0f)
+                return;
+
+            CalculateJumpDuration();
+
+            isJumping = true;
+            jumpTimer = 0f;
+            previousJumpHeight = 0f;
+
+            verticalVelocity = 0f;
 
             if (debugEnabled)
-                Debug.Log("[PlayerMovement] Jump");
+            {
+                Debug.Log(
+                    $"[PlayerMovement] Jump | " +
+                    $"Height : {jumpHeight} | " +
+                    $"Duration : {jumpDuration}"
+                );
+            }
         }
 
         private void HandlePlayerDash()
         {
+            // Impossible de démarrer un autre dash
+            // pendant le dash actuel.
             if (isDashing)
                 return;
 
+            // Cooldown encore actif.
+            if (dashCooldownTimer > 0f)
+            {
+                if (debugEnabled)
+                {
+                    Debug.Log(
+                        $"[PlayerMovement] Dash unavailable | " +
+                        $"Cooldown : {dashCooldownTimer:F2}s"
+                    );
+                }
+
+                return;
+            }
+
+            // --------------------------------------------------
+            // Interruption du saut
+            // --------------------------------------------------
+
+            if (isJumping)
+            {
+                isJumping = false;
+                jumpTimer = 0f;
+                previousJumpHeight = 0f;
+
+                if (debugEnabled)
+                {
+                    Debug.Log(
+                        "[PlayerMovement] Jump interrupted by Dash"
+                    );
+                }
+            }
+
+            // --------------------------------------------------
+            // Direction du dash
+            // --------------------------------------------------
+
             if (moveInput.sqrMagnitude > 0.01f)
             {
-                // Dash dans la direction donnée par le joueur.
-                dashDirection = GetMovementDirection(moveInput);
+                dashDirection =
+                    GetMovementDirection(moveInput);
             }
             else
             {
-                // Aucun input :
-                // dash dans le sens du personnage.
-                dashDirection = transform.right;
+                dashDirection =
+                    spriteRenderer != null && spriteRenderer.flipX
+                        ? -transform.right
+                        : transform.right;
             }
 
             dashDirection.y = 0f;
             dashDirection.Normalize();
 
+            // --------------------------------------------------
+            // Start Dash
+            // --------------------------------------------------
+
             dashTimer = 0f;
             isDashing = true;
 
+            // Le cooldown commence au début du dash.
+            dashCooldownTimer = dashCooldown;
+
             if (debugEnabled)
-                Debug.Log($"[PlayerMovement] Dash : {dashDirection}");
+            {
+                Debug.Log(
+                    $"[PlayerMovement] Dash : {dashDirection} | " +
+                    $"Cooldown : {dashCooldown}"
+                );
+            }
         }
 
-        // ─────────────────────────────────────────────
-        // Sprite
-        // ─────────────────────────────────────────────
-
-        private void UpdateSpriteDirection(Vector2 input)
-        {
-            if (spriteRenderer == null)
-                return;
-
-            // Gauche
-            if (input.x < -0.01f)
-            {
-                spriteRenderer.flipX = true;
-            }
-            // Droite
-            else if (input.x > 0.01f)
-            {
-                spriteRenderer.flipX = false;
-            }
-
-            // Aucun changement pour :
-            // - Avant
-            // - Arrière
-            // - Aucun input
-        }
-
-        // ─────────────────────────────────────────────
-        // Movement
-        // ─────────────────────────────────────────────
+        // ==================================================
+        // MOVEMENT
+        // ==================================================
 
         private void HandleMovement()
         {
@@ -198,37 +286,162 @@ namespace SynthOfRage.Scripts.Player
             );
         }
 
-        // ─────────────────────────────────────────────
-        // Gravity / Jump
-        // ─────────────────────────────────────────────
+        // ==================================================
+        // SPRITE
+        // ==================================================
+
+        private void UpdateSpriteDirection(Vector2 input)
+        {
+            if (spriteRenderer == null)
+                return;
+
+            if (input.x < -0.01f)
+            {
+                spriteRenderer.flipX = true;
+            }
+            else if (input.x > 0.01f)
+            {
+                spriteRenderer.flipX = false;
+            }
+        }
+
+        // ==================================================
+        // JUMP
+        // ==================================================
+
+        private void CalculateJumpDuration()
+        {
+            if (gravity >= 0f)
+            {
+                Debug.LogWarning(
+                    $"[{nameof(PlayerMovement)}] Gravity must be negative.",
+                    this
+                );
+
+                jumpDuration = 0.1f;
+                return;
+            }
+
+            float jumpVelocity =
+                Mathf.Sqrt(
+                    jumpHeight * -2f * gravity
+                );
+
+            float physicalJumpDuration =
+                (-2f * jumpVelocity) / gravity;
+
+            jumpDuration =
+                physicalJumpDuration *
+                jumpDurationMultiplier;
+
+            jumpDuration =
+                Mathf.Max(
+                    jumpDuration,
+                    0.01f
+                );
+        }
+
+        private void HandleJump()
+        {
+            // Le dash a la priorité sur le saut.
+            if (isDashing)
+                return;
+
+            if (!isJumping)
+                return;
+
+            float progress =
+                Mathf.Clamp01(
+                    jumpTimer / jumpDuration
+                );
+
+            float curveValue =
+                jumpCurve.Evaluate(progress);
+
+            float currentHeight =
+                curveValue * jumpHeight;
+
+            float deltaHeight =
+                currentHeight -
+                previousJumpHeight;
+
+            Vector3 jumpMovement =
+                Vector3.up * deltaHeight;
+
+            MoveWithDepthLimit(
+                jumpMovement
+            );
+
+            previousJumpHeight =
+                currentHeight;
+
+            jumpTimer += Time.deltaTime;
+
+            if (jumpTimer >= jumpDuration)
+            {
+                EndJump();
+            }
+        }
+
+        private void EndJump()
+        {
+            isJumping = false;
+
+            jumpTimer = 0f;
+            previousJumpHeight = 0f;
+
+            verticalVelocity = -2f;
+
+            if (debugEnabled)
+                Debug.Log(
+                    "[PlayerMovement] Jump End"
+                );
+        }
+
+        // ==================================================
+        // GRAVITY
+        // ==================================================
 
         private void HandleGravity()
         {
-            if (controller.isGrounded && verticalVelocity < 0f)
+            // Le dash bloque complètement la gravité.
+            if (isDashing)
+                return;
+
+            // Pendant le saut, la Jump Curve contrôle
+            // entièrement le mouvement vertical.
+            if (isJumping)
+                return;
+
+            if (controller.isGrounded)
             {
                 verticalVelocity = -2f;
+                return;
             }
 
-            verticalVelocity += gravity * Time.deltaTime;
+            verticalVelocity +=
+                gravity * Time.deltaTime;
 
-            Vector3 verticalMovement =
+            Vector3 gravityMovement =
                 Vector3.up *
-                verticalVelocity *
-                Time.deltaTime;
+                (verticalVelocity * Time.deltaTime);
 
-            MoveWithDepthLimit(verticalMovement);
+            MoveWithDepthLimit(
+                gravityMovement
+            );
         }
 
-        // ─────────────────────────────────────────────
-        // Dash
-        // ─────────────────────────────────────────────
+        // ==================================================
+        // DASH
+        // ==================================================
 
         private void HandleDash()
         {
             if (!isDashing)
                 return;
 
-            float previousTime = dashTimer;
+            float previousTime =
+                dashTimer;
 
             dashTimer += Time.deltaTime;
 
@@ -260,26 +473,45 @@ namespace SynthOfRage.Scripts.Player
                 dashDirection *
                 (dashDistance * deltaCurveValue);
 
-            MoveWithDepthLimit(dashMovement);
+            MoveWithDepthLimit(
+                dashMovement
+            );
 
             if (dashTimer >= dashDuration)
             {
                 dashTimer = 0f;
                 isDashing = false;
 
+                // La gravité pourra reprendre
+                // au prochain Update.
+                verticalVelocity = -2f;
+
                 if (debugEnabled)
-                    Debug.Log("[PlayerMovement] Dash End");
+                {
+                    Debug.Log(
+                        "[PlayerMovement] Dash End"
+                    );
+                }
             }
         }
 
-        // ─────────────────────────────────────────────
-        // Depth Limits
-        // ─────────────────────────────────────────────
+        private void HandleDashCooldown()
+        {
+            if (dashCooldownTimer <= 0f)
+                return;
+
+            dashCooldownTimer -= Time.deltaTime;
+
+            if (dashCooldownTimer < 0f)
+                dashCooldownTimer = 0f;
+        }
+
+        // ==================================================
+        // DEPTH LIMIT
+        // ==================================================
 
         private void MoveWithDepthLimit(Vector3 movement)
         {
-            // Si les limites sont désactivées ou qu'aucun
-            // MovementSpace n'est renseigné, déplacement normal.
             if (!useDepthLimits || movementSpace == null)
             {
                 controller.Move(movement);
@@ -289,14 +521,11 @@ namespace SynthOfRage.Scripts.Player
             Vector3 targetPosition =
                 transform.position + movement;
 
-            // Convertit la position monde dans le référentiel
-            // du MovementSpace.
             Vector3 localTargetPosition =
                 movementSpace.InverseTransformPoint(
                     targetPosition
                 );
 
-            // Limite uniquement la profondeur.
             localTargetPosition.z =
                 Mathf.Clamp(
                     localTargetPosition.z,
@@ -304,18 +533,18 @@ namespace SynthOfRage.Scripts.Player
                     maxDepth
                 );
 
-            // Reconvertit la position dans le monde.
             targetPosition =
                 movementSpace.TransformPoint(
                     localTargetPosition
                 );
 
-            // Calcule le mouvement réellement autorisé.
             Vector3 allowedMovement =
                 targetPosition -
                 transform.position;
 
-            controller.Move(allowedMovement);
+            controller.Move(
+                allowedMovement
+            );
         }
     }
 }
