@@ -56,6 +56,12 @@ MonoBehaviour:
   atkHAction: {fileID: -7214872041846288177, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
   guardAction: {fileID: 2202019535111302063, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
   atkSpAction: {fileID: -6602437060585558575, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  pauseAction: {fileID: 4706049752303940113, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  uiMoveAction: {fileID: -2462531927349032754, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  uiPauseAction: {fileID: -489303400436290807, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  validateAction: {fileID: 8072636543738171452, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  cancelAction: {fileID: 8027468513959796421, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
+  panelAction: {fileID: -6057888655048295252, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
 --- !u!114 &5795724003412888902
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -184,6 +190,15 @@ MonoBehaviour:
       weightedMode: 0
       inWeight: 0
       outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 1
+      inSlope: -0.03036219
+      outSlope: -0.03036219
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.17221187
     - serializedVersion: 3
       time: 1
       value: 1
