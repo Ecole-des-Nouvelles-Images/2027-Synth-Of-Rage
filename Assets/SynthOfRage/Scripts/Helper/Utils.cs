@@ -2,9 +2,9 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace SynthOfRage.Scripts.Utils
+namespace SynthOfRage.Scripts.Helper
 {
-    public static class CommandLibrary
+    public static class Utils
     {
         public static void QuitGame()
         {

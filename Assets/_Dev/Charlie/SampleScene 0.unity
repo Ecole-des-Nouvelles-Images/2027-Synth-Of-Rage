@@ -547,7 +547,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1191432658
+--- !u!1 &1256253743
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -555,8 +555,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1191432659}
-  - component: {fileID: 1191432660}
+  - component: {fileID: 1256253745}
+  - component: {fileID: 1256253744}
   m_Layer: 0
   m_Name: '@DebugConsole'
   m_TagString: Untagged
@@ -564,28 +564,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1191432659
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1191432658}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: -0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1191432660
+--- !u!114 &1256253744
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1191432658}
+  m_GameObject: {fileID: 1256253743}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0320ff4b415991d4aa615b0dfc92255c, type: 3}
@@ -593,14 +578,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Debug.DebugController
   _triggerKey:
     m_Name: Trigger Key
-    m_Type: 1
-    m_ExpectedControlType: Button
-    m_Id: 5c722132-8c75-4e93-ab47-f834573f15b9
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 8805fbc1-16a6-45b5-8e4c-1ee4dc5eeaf3
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings:
     - m_Name: 
-      m_Id: 8a6f8a95-0205-41a3-91e1-0e2e9e7ade71
+      m_Id: 9977b033-8934-48a3-b611-847f33822110
       m_Path: <Keyboard>/backquote
       m_Interactions: 
       m_Processors: 
@@ -611,14 +596,14 @@ MonoBehaviour:
     m_Priority: 0
   _returnKey:
     m_Name: Return Key
-    m_Type: 1
-    m_ExpectedControlType: Button
-    m_Id: 1743aad1-45d9-4436-ba98-ffb75f0c3548
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: d15e0553-5316-4ede-a674-ebd27d6f2de6
     m_Processors: 
     m_Interactions: 
     m_SingletonActionBindings:
     - m_Name: 
-      m_Id: eb8dba03-8c09-486f-b4f7-59954fa2f399
+      m_Id: 72e12ab8-f3d7-44e4-adf5-286a48a1a94c
       m_Path: <Keyboard>/enter
       m_Interactions: 
       m_Processors: 
@@ -627,6 +612,31 @@ MonoBehaviour:
       m_Flags: 0
     m_Flags: 0
     m_Priority: 0
+  _rewindKeys:
+    m_Name: Rewind Keys
+    m_Type: 0
+    m_ExpectedControlType: 
+    m_Id: 7934cf22-bff2-47a7-9a8b-31d5b485db54
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings: []
+    m_Flags: 0
+    m_Priority: 0
+--- !u!4 &1256253745
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1256253743}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -634,5 +644,5 @@ SceneRoots:
   - {fileID: 330585546}
   - {fileID: 410087041}
   - {fileID: 832575519}
-  - {fileID: 1191432659}
   - {fileID: 1185863963}
+  - {fileID: 1256253745}

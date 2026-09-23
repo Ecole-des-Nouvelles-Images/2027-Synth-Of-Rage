@@ -1,54 +1,40 @@
+#if UNITY_EDITOR || UNITY_INCLUDE_INSTRUMENTATION
+
 using System;
-using System.Collections;
-using UnityEngine;
 
 namespace SynthOfRage.Scripts.Debug
 {
     public abstract class DebugCommandBase
     {
-        private string _id;
-        private string _description;
-        private string _format;
-
-        public string ID => _id;
-        public string Description => _description;
-        public string Format => _format;
+        public string ID { get; }
+        public string Description { get; }
+        public string Format { get; }
 
         protected DebugCommandBase(string id, string description, string format)
         {
-            _id = id;
-            _description = description;
-            _format = format;
+            ID = id;
+            Description = description;
+            Format = format;
         }
+
+        public abstract void Invoke(string[] args);
     }
 
     public class DebugCommand : DebugCommandBase
     {
-        private Action _command;
+        private Action<string[]> _command;
         
-        public DebugCommand(string id, string description, string format, Action command) : base(id, description, format)
+        public DebugCommand(string id, string description, string format, Action<string[]> command) 
+            : base(id, description, format)
         {
             _command = command;
         }
 
-        public void Invoke()
+        public override void Invoke(string[] args)
         {
-            _command.Invoke();
-        }
-    }
-
-    public class DebugCommand<T> : DebugCommandBase
-    {
-        private Action<T> _command;
-        
-        public DebugCommand(string id, string description, string format, Action<T> cmdWithArg) : base(id, description, format)
-        {
-            _command = cmdWithArg;
-        }
-
-        public void Invoke(T arg)
-        {
-            _command.Invoke(arg);
+            _command.Invoke(args);
         }
     }
 }
+
+#endif
