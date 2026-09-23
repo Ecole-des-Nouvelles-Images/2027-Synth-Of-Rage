@@ -12,7 +12,7 @@ namespace SynthOfRage.Scripts.Player
         [SerializeField] private bool debugEnabled;
 
         // ─────────────────────────────────────────────
-        // Events
+        // Gameplay Events
         // ─────────────────────────────────────────────
 
         public event Action<Vector2> OnPlayerMove;
@@ -22,6 +22,39 @@ namespace SynthOfRage.Scripts.Player
         public event Action OnPlayerAtkH;
         public event Action<bool> OnPlayerGuard;
         public event Action OnPlayerAtkSp;
+        public event Action OnPlayerPause;
+
+        // ─────────────────────────────────────────────
+        // UI Events
+        // ─────────────────────────────────────────────
+
+        public event Action<Vector2> OnUIMove;
+        public event Action OnUIPause;
+        public event Action OnUIValidate;
+        public event Action OnUICancel;
+        public event Action OnUIPanelPrevious;
+        public event Action OnUIPanelNext;
+
+        // ─────────────────────────────────────────────
+        // Input Map Events
+        // ─────────────────────────────────────────────
+
+        public event Action<PlayerCore.PlayerInputMap> OnInputMapChanged;
+
+        // ─────────────────────────────────────────────
+        // Properties
+        // ─────────────────────────────────────────────
+
+        public PlayerCore.PlayerInputMap CurrentInputMap
+        {
+            get
+            {
+                if (playerCore == null)
+                    return PlayerCore.PlayerInputMap.Gameplay;
+
+                return playerCore.CurrentInputMap;
+            }
+        }
 
         // ─────────────────────────────────────────────
         // Unity
@@ -39,6 +72,7 @@ namespace SynthOfRage.Scripts.Player
                 return;
             }
 
+            // Gameplay
             playerCore.OnPlayerMove += HandlePlayerMove;
             playerCore.OnPlayerJump += HandlePlayerJump;
             playerCore.OnPlayerDash += HandlePlayerDash;
@@ -46,6 +80,18 @@ namespace SynthOfRage.Scripts.Player
             playerCore.OnPlayerAtkH += HandlePlayerAtkH;
             playerCore.OnPlayerGuard += HandlePlayerGuard;
             playerCore.OnPlayerAtkSp += HandlePlayerAtkSp;
+            playerCore.OnPlayerPause += HandlePlayerPause;
+
+            // UI
+            playerCore.OnUIMove += HandleUIMove;
+            playerCore.OnUIPause += HandleUIPause;
+            playerCore.OnUIValidate += HandleUIValidate;
+            playerCore.OnUICancel += HandleUICancel;
+            playerCore.OnUIPanelPrevious += HandleUIPanelPrevious;
+            playerCore.OnUIPanelNext += HandleUIPanelNext;
+
+            // Input Map
+            playerCore.OnInputMapChanged += HandleInputMapChanged;
         }
 
         private void OnDisable()
@@ -53,6 +99,7 @@ namespace SynthOfRage.Scripts.Player
             if (playerCore == null)
                 return;
 
+            // Gameplay
             playerCore.OnPlayerMove -= HandlePlayerMove;
             playerCore.OnPlayerJump -= HandlePlayerJump;
             playerCore.OnPlayerDash -= HandlePlayerDash;
@@ -60,16 +107,30 @@ namespace SynthOfRage.Scripts.Player
             playerCore.OnPlayerAtkH -= HandlePlayerAtkH;
             playerCore.OnPlayerGuard -= HandlePlayerGuard;
             playerCore.OnPlayerAtkSp -= HandlePlayerAtkSp;
+            playerCore.OnPlayerPause -= HandlePlayerPause;
+
+            // UI
+            playerCore.OnUIMove -= HandleUIMove;
+            playerCore.OnUIPause -= HandleUIPause;
+            playerCore.OnUIValidate -= HandleUIValidate;
+            playerCore.OnUICancel -= HandleUICancel;
+            playerCore.OnUIPanelPrevious -= HandleUIPanelPrevious;
+            playerCore.OnUIPanelNext -= HandleUIPanelNext;
+
+            // Input Map
+            playerCore.OnInputMapChanged -= HandleInputMapChanged;
         }
 
         // ─────────────────────────────────────────────
-        // PlayerCore Callbacks
+        // Gameplay Callbacks
         // ─────────────────────────────────────────────
 
         private void HandlePlayerMove(Vector2 direction)
         {
             if (debugEnabled)
-                Debug.Log($"[PlayerObserver] OnPlayerMove : {direction}");
+                Debug.Log(
+                    $"[PlayerObserver] OnPlayerMove : {direction}"
+                );
 
             OnPlayerMove?.Invoke(direction);
         }
@@ -109,7 +170,9 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerGuard(bool isGuarding)
         {
             if (debugEnabled)
-                Debug.Log($"[PlayerObserver] OnPlayerGuard : {isGuarding}");
+                Debug.Log(
+                    $"[PlayerObserver] OnPlayerGuard : {isGuarding}"
+                );
 
             OnPlayerGuard?.Invoke(isGuarding);
         }
@@ -120,6 +183,116 @@ namespace SynthOfRage.Scripts.Player
                 Debug.Log("[PlayerObserver] OnPlayerAtkSp");
 
             OnPlayerAtkSp?.Invoke();
+        }
+
+        private void HandlePlayerPause()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnPlayerPause");
+
+            OnPlayerPause?.Invoke();
+        }
+
+        // ─────────────────────────────────────────────
+        // UI Callbacks
+        // ─────────────────────────────────────────────
+
+        private void HandleUIMove(Vector2 direction)
+        {
+            if (debugEnabled)
+                Debug.Log(
+                    $"[PlayerObserver] OnUIMove : {direction}"
+                );
+
+            OnUIMove?.Invoke(direction);
+        }
+
+        private void HandleUIPause()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnUIPause");
+
+            OnUIPause?.Invoke();
+        }
+
+        private void HandleUIValidate()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnUIValidate");
+
+            OnUIValidate?.Invoke();
+        }
+
+        private void HandleUICancel()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnUICancel");
+
+            OnUICancel?.Invoke();
+        }
+
+        private void HandleUIPanelPrevious()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnUIPanelPrevious");
+
+            OnUIPanelPrevious?.Invoke();
+        }
+
+        private void HandleUIPanelNext()
+        {
+            if (debugEnabled)
+                Debug.Log("[PlayerObserver] OnUIPanelNext");
+
+            OnUIPanelNext?.Invoke();
+        }
+
+        // ─────────────────────────────────────────────
+        // Input Map Callback
+        // ─────────────────────────────────────────────
+
+        private void HandleInputMapChanged(
+            PlayerCore.PlayerInputMap inputMap
+        )
+        {
+            if (debugEnabled)
+            {
+                Debug.Log(
+                    $"[PlayerObserver] OnInputMapChanged : {inputMap}"
+                );
+            }
+
+            OnInputMapChanged?.Invoke(inputMap);
+        }
+
+        // ─────────────────────────────────────────────
+        // Input Map Control
+        // ─────────────────────────────────────────────
+
+        public void SwitchToGameplay()
+        {
+            if (playerCore == null)
+                return;
+
+            playerCore.SwitchToGameplay();
+        }
+
+        public void SwitchToUI()
+        {
+            if (playerCore == null)
+                return;
+
+            playerCore.SwitchToUI();
+        }
+
+        public void SwitchInputMap(
+            PlayerCore.PlayerInputMap inputMap
+        )
+        {
+            if (playerCore == null)
+                return;
+
+            playerCore.SwitchInputMap(inputMap);
         }
     }
 }
