@@ -36,7 +36,7 @@ namespace _Dev.Christopher.Scripts
         {
             if (other.CompareTag("Enemy"))
             {
-                Debug.Log("Hurtbox Entered "+other.name);
+                Destroy(other.gameObject);
             }
         }
 
