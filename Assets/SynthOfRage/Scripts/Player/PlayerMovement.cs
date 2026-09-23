@@ -110,7 +110,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (playerObserver == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerMovement)}] " +
                     "PlayerObserver reference is missing.",
                     this
@@ -167,7 +167,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerMovement] " +
                     $"Move Input : {moveInput}"
                 );
@@ -197,7 +197,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerMovement] Jump | " +
                     $"Height : {jumpHeight} | " +
                     $"Duration : {jumpDuration}"
@@ -214,7 +214,7 @@ namespace SynthOfRage.Scripts.Player
             {
                 if (debugEnabled)
                 {
-                    Debug.Log(
+                    UnityEngine.Debug.Log(
                         $"[PlayerMovement] " +
                         $"Dash unavailable | " +
                         $"Cooldown : {dashCooldownTimer:F2}s"
@@ -232,7 +232,7 @@ namespace SynthOfRage.Scripts.Player
 
                 if (debugEnabled)
                 {
-                    Debug.Log(
+                    UnityEngine.Debug.Log(
                         "[PlayerMovement] " +
                         "Jump interrupted by Dash"
                     );
@@ -264,7 +264,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerMovement] Dash : " +
                     $"{dashDirection} | " +
                     $"Cooldown : {dashCooldown}"
@@ -362,7 +362,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (gravity >= 0f)
             {
-                Debug.LogWarning(
+                UnityEngine.Debug.LogWarning(
                     $"[{nameof(PlayerMovement)}] " +
                     "Gravity must be negative.",
                     this
@@ -446,7 +446,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     "[PlayerMovement] Jump End"
                 );
             }
@@ -535,7 +535,7 @@ namespace SynthOfRage.Scripts.Player
 
                 if (debugEnabled)
                 {
-                    Debug.Log(
+                    UnityEngine.Debug.Log(
                         "[PlayerMovement] Dash End"
                     );
                 }
@@ -662,7 +662,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (currentMovementSpace == null)
             {
-                Debug.LogWarning(
+                UnityEngine.Debug.LogWarning(
                     $"[{nameof(PlayerMovement)}] " +
                     $"Le Movement Space '{movementSpace.name}' " +
                     "ne possède pas de composant MovementSpace. " +
@@ -678,7 +678,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (newMovementSpace == null)
             {
-                Debug.LogWarning(
+                UnityEngine.Debug.LogWarning(
                     $"[{nameof(PlayerMovement)}] " +
                     "Impossible d'assigner un Movement Space null.",
                     this
@@ -697,7 +697,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerMovement] " +
                     $"Movement Space changé : " +
                     $"{movementSpace.name}",

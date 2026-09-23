@@ -64,7 +64,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (playerCore == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerObserver)}] PlayerCore reference is missing.",
                     this
                 );
@@ -128,7 +128,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerMove(Vector2 direction)
         {
             if (debugEnabled)
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerObserver] OnPlayerMove : {direction}"
                 );
 
@@ -138,7 +138,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerJump()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerJump");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerJump");
 
             OnPlayerJump?.Invoke();
         }
@@ -146,7 +146,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerDash()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerDash");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerDash");
 
             OnPlayerDash?.Invoke();
         }
@@ -154,7 +154,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerAtkL()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerAtkL");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerAtkL");
 
             OnPlayerAtkL?.Invoke();
         }
@@ -162,7 +162,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerAtkH()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerAtkH");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerAtkH");
 
             OnPlayerAtkH?.Invoke();
         }
@@ -170,7 +170,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerGuard(bool isGuarding)
         {
             if (debugEnabled)
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerObserver] OnPlayerGuard : {isGuarding}"
                 );
 
@@ -180,7 +180,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerAtkSp()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerAtkSp");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerAtkSp");
 
             OnPlayerAtkSp?.Invoke();
         }
@@ -188,7 +188,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePlayerPause()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnPlayerPause");
+                UnityEngine.Debug.Log("[PlayerObserver] OnPlayerPause");
 
             OnPlayerPause?.Invoke();
         }
@@ -200,7 +200,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIMove(Vector2 direction)
         {
             if (debugEnabled)
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerObserver] OnUIMove : {direction}"
                 );
 
@@ -210,7 +210,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIPause()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnUIPause");
+                UnityEngine.Debug.Log("[PlayerObserver] OnUIPause");
 
             OnUIPause?.Invoke();
         }
@@ -218,7 +218,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIValidate()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnUIValidate");
+                UnityEngine.Debug.Log("[PlayerObserver] OnUIValidate");
 
             OnUIValidate?.Invoke();
         }
@@ -226,7 +226,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUICancel()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnUICancel");
+                UnityEngine.Debug.Log("[PlayerObserver] OnUICancel");
 
             OnUICancel?.Invoke();
         }
@@ -234,7 +234,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIPanelPrevious()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnUIPanelPrevious");
+                UnityEngine.Debug.Log("[PlayerObserver] OnUIPanelPrevious");
 
             OnUIPanelPrevious?.Invoke();
         }
@@ -242,7 +242,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIPanelNext()
         {
             if (debugEnabled)
-                Debug.Log("[PlayerObserver] OnUIPanelNext");
+                UnityEngine.Debug.Log("[PlayerObserver] OnUIPanelNext");
 
             OnUIPanelNext?.Invoke();
         }
@@ -257,7 +257,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerObserver] OnInputMapChanged : {inputMap}"
                 );
             }

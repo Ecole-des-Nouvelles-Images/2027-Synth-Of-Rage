@@ -236,7 +236,7 @@ namespace SynthOfRage.Scripts.Player
             Vector2 direction = context.ReadValue<Vector2>();
 
             if (debugEnabled)
-                Debug.Log($"[PlayerCore] Move : {direction}");
+                UnityEngine.Debug.Log($"[PlayerCore] Move : {direction}");
 
             OnPlayerMove?.Invoke(direction);
         }
@@ -244,7 +244,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleJump(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Jump");
+                UnityEngine.Debug.Log("[PlayerCore] Jump");
 
             OnPlayerJump?.Invoke();
         }
@@ -252,7 +252,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleDash(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Dash");
+                UnityEngine.Debug.Log("[PlayerCore] Dash");
 
             OnPlayerDash?.Invoke();
         }
@@ -260,7 +260,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleAtkL(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] AtkL");
+                UnityEngine.Debug.Log("[PlayerCore] AtkL");
 
             OnPlayerAtkL?.Invoke();
         }
@@ -268,7 +268,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleAtkH(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] AtkH");
+                UnityEngine.Debug.Log("[PlayerCore] AtkH");
 
             OnPlayerAtkH?.Invoke();
         }
@@ -276,7 +276,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleGuardStarted(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Guard : START");
+                UnityEngine.Debug.Log("[PlayerCore] Guard : START");
 
             OnPlayerGuard?.Invoke(true);
         }
@@ -284,7 +284,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleGuardCanceled(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Guard : STOP");
+                UnityEngine.Debug.Log("[PlayerCore] Guard : STOP");
 
             OnPlayerGuard?.Invoke(false);
         }
@@ -292,7 +292,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleAtkSp(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] AtkSp");
+                UnityEngine.Debug.Log("[PlayerCore] AtkSp");
 
             OnPlayerAtkSp?.Invoke();
         }
@@ -300,7 +300,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandlePause(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Pause : Gameplay -> UI");
+                UnityEngine.Debug.Log("[PlayerCore] Pause : Gameplay -> UI");
 
             OnPlayerPause?.Invoke();
 
@@ -316,7 +316,7 @@ namespace SynthOfRage.Scripts.Player
             Vector2 direction = context.ReadValue<Vector2>();
 
             if (debugEnabled)
-                Debug.Log($"[PlayerCore] UI Move : {direction}");
+                UnityEngine.Debug.Log($"[PlayerCore] UI Move : {direction}");
 
             OnUIMove?.Invoke(direction);
         }
@@ -324,7 +324,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIPause(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] Pause : UI -> Gameplay");
+                UnityEngine.Debug.Log("[PlayerCore] Pause : UI -> Gameplay");
 
             OnUIPause?.Invoke();
 
@@ -334,7 +334,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUIValidate(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] UI Validate");
+                UnityEngine.Debug.Log("[PlayerCore] UI Validate");
 
             OnUIValidate?.Invoke();
         }
@@ -342,7 +342,7 @@ namespace SynthOfRage.Scripts.Player
         private void HandleUICancel(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                Debug.Log("[PlayerCore] UI Cancel");
+                UnityEngine.Debug.Log("[PlayerCore] UI Cancel");
 
             OnUICancel?.Invoke();
         }
@@ -352,7 +352,7 @@ namespace SynthOfRage.Scripts.Player
             float direction = context.ReadValue<float>();
 
             if (debugEnabled)
-                Debug.Log($"[PlayerCore] UI Panel : {direction}");
+                UnityEngine.Debug.Log($"[PlayerCore] UI Panel : {direction}");
 
             if (direction < 0f)
             {
@@ -403,7 +403,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerCore] Input Map Changed : {CurrentInputMap}"
                 );
             }
@@ -419,7 +419,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (moveAction == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerCore)}] " +
                     "Gameplay Move Action reference is missing.",
                     this
@@ -432,7 +432,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (actionMap == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerCore)}] " +
                     "Gameplay Move Action does not belong to an Action Map.",
                     this
@@ -445,7 +445,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerCore] Gameplay Action Map : ENABLED ({actionMap.name})"
                 );
             }
@@ -465,7 +465,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerCore] Gameplay Action Map : DISABLED ({actionMap.name})"
                 );
             }
@@ -479,7 +479,7 @@ namespace SynthOfRage.Scripts.Player
         {
             if (uiMoveAction == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerCore)}] " +
                     "UI Move Action reference is missing.",
                     this
@@ -492,7 +492,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (actionMap == null)
             {
-                Debug.LogError(
+                UnityEngine.Debug.LogError(
                     $"[{nameof(PlayerCore)}] " +
                     "UI Move Action does not belong to an Action Map.",
                     this
@@ -505,7 +505,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerCore] UI Action Map : ENABLED ({actionMap.name})"
                 );
             }
@@ -525,7 +525,7 @@ namespace SynthOfRage.Scripts.Player
 
             if (debugEnabled)
             {
-                Debug.Log(
+                UnityEngine.Debug.Log(
                     $"[PlayerCore] UI Action Map : DISABLED ({actionMap.name})"
                 );
             }
