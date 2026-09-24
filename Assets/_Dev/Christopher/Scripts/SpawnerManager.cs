@@ -19,8 +19,8 @@ namespace _Dev.Christopher.Scripts
 
         private void OnDisable()
         {
-            GameManager.Instance.OnArenaEnter -= SpawnerActivator;
-            GameManager.Instance.OnArenaExit -= SpawnerDeactivator;
+            GameManager.Instance.OnArenaEnter -= SpawnerActivator; // TODO: Singleton instance is destroyed to early and can't be checked
+            GameManager.Instance.OnArenaExit -= SpawnerDeactivator; // TODO: Singleton instance is destroyed to early and can't be checked
         }
 
         private void SpawnerActivator()

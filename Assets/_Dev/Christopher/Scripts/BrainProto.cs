@@ -28,7 +28,6 @@ namespace _Dev.Christopher.Script
 
         void TargetPath()
         {
-        
             myNavMeshAgent.SetDestination(target.transform.position);
         }
     }

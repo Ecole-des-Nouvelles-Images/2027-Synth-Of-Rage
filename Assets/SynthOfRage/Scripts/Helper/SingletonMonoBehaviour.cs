@@ -16,7 +16,7 @@ namespace SynthOfRage.Scripts.Helper
         {
             get
             {
-                if (_instance == null)
+                if (!_instance)
                 {
                     T[] objs = FindObjectsByType<T>(FindObjectsInactive.Include);
 
@@ -27,7 +27,7 @@ namespace SynthOfRage.Scripts.Helper
                         throw new Exception($"[{typeof(T).Name}] There is more than one instance in the scene !");
                 }
 
-                if (!_instance)
+                if (!_instance) // TODO: This line doesn't allow checking for a missing singleton instance and will raise an exception
                 {
                     throw new Exception($"[{typeof(T).Name}] No singleton instance found in the scene !");
                 }

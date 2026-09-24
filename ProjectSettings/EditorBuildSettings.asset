@@ -6,11 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/_Dev/Charlie/SampleScene 0.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 1
-    path: Assets/_Dev/Charlie/SampleScene 1.unity
-    guid: 665c8d42f0d13ba458de9c165070c946
+    path: Assets/SynthOfRage/_Scenes/LevelTest.unity
+    guid: 9a23c70179b4e4640a7539804060783a
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 0ce4cdc14a17cf64b8a13996961a6a12, type: 2}
     com.unity.input.settings: {fileID: 11400000, guid: ee3ecf1474c67f74ebfc46847e97c8a9, type: 2}

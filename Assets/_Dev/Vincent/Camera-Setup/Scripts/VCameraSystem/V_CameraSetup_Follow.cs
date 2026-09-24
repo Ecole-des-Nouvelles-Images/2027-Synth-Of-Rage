@@ -221,9 +221,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
             GameManager.Instance.OnArenaExit += DisableCombat;
         }
 
-        private void OnDisable()
+        private void OnDestroy()
         {
-            GameManager.Instance.OnArenaExit -= DisableCombat;
+            GameManager.Instance.OnArenaExit -= DisableCombat; // TODO: Singleton instance is destroyed to early and can't be checked
         }
 
 
