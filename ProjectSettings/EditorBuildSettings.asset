@@ -12,5 +12,6 @@ EditorBuildSettings:
     path: Assets/_Dev/Charlie/SampleScene 1.unity
     guid: 665c8d42f0d13ba458de9c165070c946
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 0ce4cdc14a17cf64b8a13996961a6a12, type: 2}
     com.unity.input.settings: {fileID: 11400000, guid: ee3ecf1474c67f74ebfc46847e97c8a9, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
