@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts
@@ -5,13 +7,63 @@ namespace _Dev.Christopher.Scripts
     public class Spawner : MonoBehaviour
     {
 
-        public GameObject Enemy;
-    
-        [SerializeField]private Transform spawnPoint;
+        public List<GameObject> Enemy;
+        public float SpawnRate;
+        public bool _SquadEnable;
+        
+        private float _currentTime = 0;
+        private List<GameObject> _livingEnemies = new List<GameObject>();
+        private int _enemySpawnIndex = 0;
+        
 
-        public void SpawnEnemy()
+        private void Awake()
         {
-            Instantiate(Enemy, spawnPoint.position, spawnPoint.rotation);
+            transform.gameObject.SetActive(false);
+            if (Enemy == null || Enemy.Count == 0)
+            {
+                Debug.LogError("No enemy to spawn !!!");
+            }
+        }
+
+        private void Update()
+        {
+            if (_SquadEnable && _enemySpawnIndex < Enemy.Count)
+            {
+                if (_currentTime > 0)
+                {
+                    _currentTime -= Time.deltaTime;
+                
+                }
+                else
+                {
+                    SpawnEnemy();
+                }
+            }
+            UpdateLivingEnemies();
+        }
+
+        private void SpawnEnemy()
+        {
+            GameObject enemy = Instantiate(Enemy[_enemySpawnIndex], transform.position, transform.rotation);
+            _livingEnemies.Add(enemy);
+            _currentTime = SpawnRate;
+            _enemySpawnIndex++;
+        }
+
+        private void UpdateLivingEnemies()
+        {
+            for (int i = 0; i < _livingEnemies.Count; i++)
+            {
+                if (!_livingEnemies[i] || !_livingEnemies[i].activeInHierarchy)
+                {
+                    _livingEnemies.Remove(_livingEnemies[i]);
+                }
+            }
+
+            if (_livingEnemies.Count == 0)
+            {
+                //trigger end fight
+            }
         }
     }
 }
