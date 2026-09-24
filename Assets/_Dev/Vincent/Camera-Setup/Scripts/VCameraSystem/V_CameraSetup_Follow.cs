@@ -5,7 +5,6 @@ using UnityEngine.Splines;
 using SynthOfRage.Scripts.Player;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
 
-
 namespace _Dev.Vincent.Camera_Setup.Scripts
 {
     public class VCameraSetup_Follow : MonoBehaviour
@@ -77,6 +76,28 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
         [SerializeField]
         private float followSmoothTime = 0.15f;
+
+
+        // =========================================================
+        // MOVEMENT SPACE CAMERA ROTATION
+        // =========================================================
+
+        [Header("Movement Space Camera Rotation")]
+
+        [Tooltip(
+            "Permet à la caméra Auto Scroll de suivre progressivement " +
+            "la rotation Y du Movement Space actif."
+        )]
+        [SerializeField]
+        private bool followMovementSpaceRotation = true;
+
+        [Tooltip(
+            "Temps de lissage de la rotation Y de la caméra."
+        )]
+        [SerializeField]
+        private float movementSpaceCameraRotationSmoothTime = 0.15f;
+
+        private float movementSpaceCameraRotationVelocity;
 
 
         // =========================================================
@@ -176,6 +197,12 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
             ApplyInitialMovementSpace();
 
+            // -----------------------------------------------------
+            // INITIAL CAMERA ROTATION
+            // -----------------------------------------------------
+
+            ApplyMovementSpaceCameraRotationImmediate();
+
             Debug.Log(
                 $"[{nameof(VCameraSetup_Follow)}] " +
                 $"Initialisation OK | " +
@@ -246,6 +273,25 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
 
         // =========================================================
+        // LATE UPDATE
+        // =========================================================
+        //
+        // La rotation est appliquée en LateUpdate afin de laisser
+        // Cinemachine effectuer ses calculs de caméra avant notre
+        // synchronisation finale.
+        //
+        // =========================================================
+
+        private void LateUpdate()
+        {
+            if (combatMode)
+                return;
+
+            UpdateAutoScrollCameraRotation();
+        }
+
+
+        // =========================================================
         // AUTO SCROLL FOLLOW
         // =========================================================
 
@@ -287,6 +333,95 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
                     this
                 );
             }
+        }
+
+
+        // =========================================================
+        // MOVEMENT SPACE CAMERA ROTATION
+        // =========================================================
+
+        private void UpdateAutoScrollCameraRotation()
+        {
+            if (!followMovementSpaceRotation)
+                return;
+
+            if (autoScrollCamera == null)
+                return;
+
+            if (playerMovement == null)
+                return;
+
+            Transform currentMovementSpace =
+                playerMovement.GetMovementSpace();
+
+            if (currentMovementSpace == null)
+                return;
+
+            Transform cameraTransform =
+                autoScrollCamera.transform;
+
+            float targetY =
+                currentMovementSpace.eulerAngles.y;
+
+            float currentY =
+                cameraTransform.eulerAngles.y;
+
+            float smoothedY =
+                Mathf.SmoothDampAngle(
+                    currentY,
+                    targetY,
+                    ref movementSpaceCameraRotationVelocity,
+                    movementSpaceCameraRotationSmoothTime
+                );
+
+            Vector3 currentEuler =
+                cameraTransform.eulerAngles;
+
+            cameraTransform.rotation =
+                Quaternion.Euler(
+                    currentEuler.x,
+                    smoothedY,
+                    currentEuler.z
+                );
+        }
+
+
+        // =========================================================
+        // IMMEDIATE MOVEMENT SPACE CAMERA ROTATION
+        // =========================================================
+
+        private void ApplyMovementSpaceCameraRotationImmediate()
+        {
+            if (!followMovementSpaceRotation)
+                return;
+
+            if (autoScrollCamera == null)
+                return;
+
+            if (playerMovement == null)
+                return;
+
+            Transform currentMovementSpace =
+                playerMovement.GetMovementSpace();
+
+            if (currentMovementSpace == null)
+                return;
+
+            float targetY =
+                currentMovementSpace.eulerAngles.y;
+
+            Vector3 currentEuler =
+                autoScrollCamera.transform.eulerAngles;
+
+            autoScrollCamera.transform.rotation =
+                Quaternion.Euler(
+                    currentEuler.x,
+                    targetY,
+                    currentEuler.z
+                );
+
+            movementSpaceCameraRotationVelocity =
+                0f;
         }
 
 
@@ -712,6 +847,12 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
             autoScrollCamera.Prioritize();
 
+            // -----------------------------------------------------
+            // SYNCHRONISATION CAMERA / MOVEMENT SPACE
+            // -----------------------------------------------------
+
+            ApplyMovementSpaceCameraRotationImmediate();
+
             Debug.Log(
                 $"[{nameof(VCameraSetup_Follow)}] " +
                 $"Retour Auto Scroll | " +
@@ -931,7 +1072,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
                     $"Knot Index = " +
                     $"{knot.KnotIndex} | " +
                     $"Next Movement Space = " +
-                    $"{( knot.NextMovementSpace != null ? knot.NextMovementSpace.name : "NONE" )}",
+                    $"{(knot.NextMovementSpace != null ? knot.NextMovementSpace.name : "NONE")}",
                     this
                 );
             }
