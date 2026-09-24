@@ -573,12 +573,68 @@ namespace SynthOfRage.Scripts.Player
                     targetPosition
                 );
 
+            /*
+             * ---------------------------------------------------------
+             * MOVEMENT SPACE TRANSITION
+             * ---------------------------------------------------------
+             *
+             * On vérifie d'abord si le joueur dépasse une limite
+             * qui est configurée comme PASSABLE.
+             *
+             * Si une connexion existe :
+             *      -> on change de Movement Space
+             *      -> on recalcule la position locale
+             *
+             * Si aucune connexion n'existe :
+             *      -> le joueur continue normalement
+             *
+             * Une seule transition est effectuée par déplacement.
+             * Cela évite les boucles entre deux Movement Spaces.
+             * ---------------------------------------------------------
+             */
+
             if (currentMovementSpace != null)
             {
-                // =================================================
-                // DEPTH MIN
-                // =================================================
+                MovementSpace connectedMovementSpace =
+                    GetConnectedMovementSpace(
+                        localTargetPosition
+                    );
 
+                if (connectedMovementSpace != null)
+                {
+                    SetMovementSpace(
+                        connectedMovementSpace.transform
+                    );
+
+                    /*
+                     * Le Movement Space vient de changer.
+                     *
+                     * On doit donc recalculer la position cible
+                     * dans le nouveau repère local.
+                     */
+                    localTargetPosition =
+                        movementSpace.InverseTransformPoint(
+                            targetPosition
+                        );
+                }
+
+                /*
+                 * -----------------------------------------------------
+                 * LIMITES BLOQUANTES
+                 * -----------------------------------------------------
+                 *
+                 * Ces limites ne sont appliquées QUE si elles sont
+                 * activées.
+                 *
+                 * UseXXX == true
+                 *      => limite bloquante
+                 *
+                 * UseXXX == false
+                 *      => limite passable
+                 * -----------------------------------------------------
+                 */
+
+                // DEPTH MIN
                 if (
                     currentMovementSpace.UseDepthMin &&
                     localTargetPosition.z <
@@ -589,11 +645,7 @@ namespace SynthOfRage.Scripts.Player
                         currentMovementSpace.MinDepth;
                 }
 
-
-                // =================================================
                 // DEPTH MAX
-                // =================================================
-
                 if (
                     currentMovementSpace.UseDepthMax &&
                     localTargetPosition.z >
@@ -604,11 +656,7 @@ namespace SynthOfRage.Scripts.Player
                         currentMovementSpace.MaxDepth;
                 }
 
-
-                // =================================================
                 // SIDE LEFT
-                // =================================================
-
                 if (
                     currentMovementSpace.UseSideLeft &&
                     localTargetPosition.x <
@@ -619,11 +667,7 @@ namespace SynthOfRage.Scripts.Player
                         currentMovementSpace.MinSide;
                 }
 
-
-                // =================================================
                 // SIDE RIGHT
-                // =================================================
-
                 if (
                     currentMovementSpace.UseSideRight &&
                     localTargetPosition.x >
@@ -647,6 +691,79 @@ namespace SynthOfRage.Scripts.Player
             controller.Move(
                 allowedMovement
             );
+        }
+
+        private MovementSpace GetConnectedMovementSpace(
+            Vector3 localTargetPosition
+        )
+        {
+            if (currentMovementSpace == null)
+                return null;
+
+            /*
+             * ---------------------------------------------------------
+             * DEPTH MIN
+             * ---------------------------------------------------------
+             *
+             * Si la limite est passable et que le joueur la dépasse,
+             * on cherche le Movement Space connecté.
+             */
+
+            if (
+                !currentMovementSpace.UseDepthMin &&
+                localTargetPosition.z <
+                currentMovementSpace.MinDepth
+            )
+            {
+                return currentMovementSpace.DepthMinConnection;
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * DEPTH MAX
+             * ---------------------------------------------------------
+             */
+
+            if (
+                !currentMovementSpace.UseDepthMax &&
+                localTargetPosition.z >
+                currentMovementSpace.MaxDepth
+            )
+            {
+                return currentMovementSpace.DepthMaxConnection;
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * SIDE LEFT
+             * ---------------------------------------------------------
+             */
+
+            if (
+                !currentMovementSpace.UseSideLeft &&
+                localTargetPosition.x <
+                currentMovementSpace.MinSide
+            )
+            {
+                return currentMovementSpace.SideLeftConnection;
+            }
+
+            /*
+             * ---------------------------------------------------------
+             * SIDE RIGHT
+             * ---------------------------------------------------------
+             */
+
+            if (
+                !currentMovementSpace.UseSideRight &&
+                localTargetPosition.x >
+                currentMovementSpace.MaxSide
+            )
+            {
+                return currentMovementSpace.SideRightConnection;
+            }
+
+            return null;
         }
 
         private void CacheMovementSpaceComponent()

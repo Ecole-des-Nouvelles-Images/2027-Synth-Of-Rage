@@ -71,6 +71,45 @@ namespace SynthOfRage.Scripts.Player
 
 
         // =========================================================
+        // CONNECTED MOVEMENT SPACES
+        // =========================================================
+
+        [Header("Connected Movement Spaces")]
+
+        [Tooltip(
+            "Movement Space vers lequel le joueur est transféré " +
+            "lorsqu'il franchit la limite Depth Min. " +
+            "La limite doit être passable."
+        )]
+        [SerializeField]
+        private MovementSpace depthMinConnection;
+
+        [Tooltip(
+            "Movement Space vers lequel le joueur est transféré " +
+            "lorsqu'il franchit la limite Depth Max. " +
+            "La limite doit être passable."
+        )]
+        [SerializeField]
+        private MovementSpace depthMaxConnection;
+
+        [Tooltip(
+            "Movement Space vers lequel le joueur est transféré " +
+            "lorsqu'il franchit la limite Side Left. " +
+            "La limite doit être passable."
+        )]
+        [SerializeField]
+        private MovementSpace sideLeftConnection;
+
+        [Tooltip(
+            "Movement Space vers lequel le joueur est transféré " +
+            "lorsqu'il franchit la limite Side Right. " +
+            "La limite doit être passable."
+        )]
+        [SerializeField]
+        private MovementSpace sideRightConnection;
+
+
+        // =========================================================
         // VISUAL BOX
         // =========================================================
 
@@ -192,6 +231,23 @@ namespace SynthOfRage.Scripts.Player
 
         public float MaxSide =>
             maxSide;
+
+
+        // ---------------------------------------------------------
+        // CONNECTIONS
+        // ---------------------------------------------------------
+
+        public MovementSpace DepthMinConnection =>
+            depthMinConnection;
+
+        public MovementSpace DepthMaxConnection =>
+            depthMaxConnection;
+
+        public MovementSpace SideLeftConnection =>
+            sideLeftConnection;
+
+        public MovementSpace SideRightConnection =>
+            sideRightConnection;
 
 
         // =========================================================
@@ -409,11 +465,6 @@ namespace SynthOfRage.Scripts.Player
                         maxDepthCenter
                     );
 
-
-                // -------------------------------------------------
-                // DEPTH MIN LABEL
-                // -------------------------------------------------
-
                 Handles.color =
                     minDepthColor;
 
@@ -423,11 +474,6 @@ namespace SynthOfRage.Scripts.Player
                         ? $"Depth Min : {minDepth:F2} [LIMIT]"
                         : $"Depth Min : {minDepth:F2} [PASSABLE]"
                 );
-
-
-                // -------------------------------------------------
-                // DEPTH MAX LABEL
-                // -------------------------------------------------
 
                 Handles.color =
                     maxDepthColor;
@@ -521,11 +567,6 @@ namespace SynthOfRage.Scripts.Player
                         maxSideCenter
                     );
 
-
-                // -------------------------------------------------
-                // SIDE LEFT LABEL
-                // -------------------------------------------------
-
                 Handles.color =
                     leftColor;
 
@@ -535,11 +576,6 @@ namespace SynthOfRage.Scripts.Player
                         ? $"Side Left : {minSide:F2} [LIMIT]"
                         : $"Side Left : {minSide:F2} [PASSABLE]"
                 );
-
-
-                // -------------------------------------------------
-                // SIDE RIGHT LABEL
-                // -------------------------------------------------
 
                 Handles.color =
                     rightColor;
