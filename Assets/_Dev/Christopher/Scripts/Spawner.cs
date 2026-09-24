@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SynthOfRage.Scripts.Core;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts
@@ -62,7 +63,7 @@ namespace _Dev.Christopher.Scripts
 
             if (_livingEnemies.Count == 0)
             {
-                //trigger end fight
+                GameManager.Instance.OnArenaExit.Invoke();
             }
         }
     }

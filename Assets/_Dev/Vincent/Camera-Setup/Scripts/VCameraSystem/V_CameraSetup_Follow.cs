@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Cinemachine;
 using UnityEngine.Splines;
 using SynthOfRage.Scripts.Player;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
+using SynthOfRage.Scripts.Core;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts
 {
@@ -212,6 +214,16 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
             );
 
             ValidateCombatKnots();
+        }
+
+        private void OnEnable()
+        {
+            GameManager.Instance.OnArenaExit += DisableCombat;
+        }
+
+        private void OnDisable()
+        {
+            GameManager.Instance.OnArenaExit -= DisableCombat;
         }
 
 
@@ -500,6 +512,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
             combatMode = true;
             combatEnabled = true;
+            GameManager.Instance.OnArenaEnter.Invoke();
 
             int targetKnot =
                 combatKnot.KnotIndex;
@@ -1123,6 +1136,11 @@ namespace _Dev.Vincent.Camera_Setup.Scripts
 
                 autoScrollCamera.Prioritize();
             }
+        }
+        
+        private void DisableCombat()
+        {
+            combatEnabled = false;
         }
     }
 }
