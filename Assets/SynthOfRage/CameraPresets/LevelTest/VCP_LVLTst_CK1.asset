@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a1f09ffecf6ef2448fcd452abf9bffe, type: 3}
   m_Name: VCP_LVLTst_CK1
   m_EditorClassIdentifier: Assembly-CSharp::_Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.VCameraPreset
-  cameraOffset: {x: 0, y: 7.5, z: -15}
+  cameraOffset: {x: 0, y: 7.5, z: -12}
   cameraRotation: {x: 15, y: 0, z: 0}
   movementSpaceRotation: {x: 0, y: 0, z: 0}
-  fieldOfView: 80
+  fieldOfView: 70
