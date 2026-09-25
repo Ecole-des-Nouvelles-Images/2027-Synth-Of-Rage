@@ -44,11 +44,10 @@ namespace _Dev.Christopher.Scripts
             _characterController = transform.GetComponent<CharacterController>();
         }
 
-        // Update is called once per frame
-        void Update()
-        {
-            MyAnimator.SetBool(Move,_characterController.velocity != Vector3.zero);
-        }
+        // void Update()
+        // {
+        //     MyAnimator.SetBool(Move,_characterController.velocity != Vector3.zero);
+        // }
 
         private void HandleAtkLAnimation()
         {
