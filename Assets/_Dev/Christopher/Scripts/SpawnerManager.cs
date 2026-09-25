@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace _Dev.Christopher.Scripts
 { 
-    public class SpawnerManager : SingletonMonoBehaviour<GameManager> 
+    public class SpawnerManager : SingletonMonoBehaviour<SpawnerManager> 
     {
         public GameObject[] Spawners;
         
