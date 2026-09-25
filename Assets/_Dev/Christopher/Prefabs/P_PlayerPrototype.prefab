@@ -232,7 +232,7 @@ GameObject:
   - component: {fileID: 5375351107115829720}
   - component: {fileID: 5308613982395648816}
   m_Layer: 0
-  m_Name: Proto_Character-20260924
+  m_Name: P_PlayerPrototype
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

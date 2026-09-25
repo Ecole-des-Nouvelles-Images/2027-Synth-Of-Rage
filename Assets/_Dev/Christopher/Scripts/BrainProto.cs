@@ -5,30 +5,36 @@ namespace _Dev.Christopher.Script
 {
     public class BrainProto : MonoBehaviour
     {
-        NavMeshAgent myNavMeshAgent;
-        GameObject[] players;
-        GameObject target;
-    
-        void Start()
+        private static readonly int Move = Animator.StringToHash("Move");
+        private NavMeshAgent _myNavMeshAgent;
+        private GameObject _player;
+        private GameObject _target;
+
+        private Animator _animator;
+
+        private void Start()
         {
-        
-        
-            myNavMeshAgent = GetComponent<NavMeshAgent>();
+            _player = GameObject.FindGameObjectWithTag("Player");
+            _myNavMeshAgent = GetComponent<NavMeshAgent>();
+            _animator = GetComponentInChildren<Animator>();
+
+            _animator.SetBool(Move, true);
         }
 
         private void Update()
         {
-            players = GameObject.FindGameObjectsWithTag("Player");
-            if (players.Length != 0)
+            if (!_player)
             {
-                target = players[0];
-                TargetPath();
-            }
+                UnityEngine.Debug.Log("[BrainProto] Cannot find a Player to track");
+                return;
+            };
+            _target = _player;
+            TargetPath();
         }
 
-        void TargetPath()
+        private void TargetPath()
         {
-            myNavMeshAgent.SetDestination(target.transform.position);
+            _myNavMeshAgent.SetDestination(_target.transform.position);
         }
     }
 }

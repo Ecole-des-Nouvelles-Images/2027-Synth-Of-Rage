@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Scripts.Spawner
   Enemy:
-  - {fileID: 5774269381530590169, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
-  - {fileID: 5774269381530590169, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
+  - {fileID: 9200217704156353752, guid: c5decd909599c274eae9afc4a91bd7bc, type: 3}
+  - {fileID: 9200217704156353752, guid: c5decd909599c274eae9afc4a91bd7bc, type: 3}
   SpawnRate: 2
   _SquadEnable: 0

@@ -15,10 +15,12 @@ namespace _Dev.Christopher.Scripts
         private float _currentTime = 0;
         private List<GameObject> _livingEnemies = new List<GameObject>();
         private int _enemySpawnIndex = 0;
-        
+
+        private Transform _dynamicInstances;
 
         private void Awake()
         {
+            _dynamicInstances = GameObject.FindGameObjectWithTag("DynamicInstances").transform;
             transform.gameObject.SetActive(false);
             if (Enemy == null || Enemy.Count == 0)
             {
@@ -46,6 +48,7 @@ namespace _Dev.Christopher.Scripts
         private void SpawnEnemy()
         {
             GameObject enemy = Instantiate(Enemy[_enemySpawnIndex], transform.position, transform.rotation);
+            enemy.transform.parent = _dynamicInstances;
             _livingEnemies.Add(enemy);
             _currentTime = SpawnRate;
             _enemySpawnIndex++;
