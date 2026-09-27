@@ -16,11 +16,15 @@ namespace _Dev.Christopher.Scripts
         private List<GameObject> _livingEnemies = new List<GameObject>();
         private int _enemySpawnIndex = 0;
 
-        private Transform _dynamicInstances;
+        private Transform _dynamicContainer;
 
         private void Awake()
         {
-            _dynamicInstances = GameObject.FindGameObjectWithTag("DynamicInstances").transform;
+            _dynamicContainer = GameObject.FindGameObjectWithTag("DynamicInstances")?.transform;
+            if (!_dynamicContainer)
+                Debug.Log("[Spawner] An object with the DynamicInstances tag is missing in the scene !");
+            
+            
             transform.gameObject.SetActive(false);
             if (Enemy == null || Enemy.Count == 0)
             {
@@ -48,7 +52,7 @@ namespace _Dev.Christopher.Scripts
         private void SpawnEnemy()
         {
             GameObject enemy = Instantiate(Enemy[_enemySpawnIndex], transform.position, transform.rotation);
-            enemy.transform.parent = _dynamicInstances;
+            enemy.transform.parent = _dynamicContainer;
             _livingEnemies.Add(enemy);
             _currentTime = SpawnRate;
             _enemySpawnIndex++;
