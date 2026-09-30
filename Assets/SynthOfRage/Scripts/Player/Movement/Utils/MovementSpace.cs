@@ -1,11 +1,8 @@
 using System;
+using UnityEditor;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Player.Movement.Utils
 {
     public class MovementSpace : MonoBehaviour
     {

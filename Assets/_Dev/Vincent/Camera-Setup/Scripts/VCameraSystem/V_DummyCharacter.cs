@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
     [RequireComponent(typeof(CharacterController))]
     public class VDummyCharacter : MonoBehaviour

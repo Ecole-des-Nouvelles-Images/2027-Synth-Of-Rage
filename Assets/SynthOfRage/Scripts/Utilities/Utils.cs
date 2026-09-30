@@ -2,7 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace SynthOfRage.Scripts.Helper
+namespace SynthOfRage.Scripts.Utilities
 {
     public static class Utils
     {

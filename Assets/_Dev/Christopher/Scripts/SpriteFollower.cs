@@ -1,22 +1,25 @@
 using UnityEngine;
 
-public class SpriteFollower : MonoBehaviour
+namespace _Dev.Christopher.Scripts
 {
-    private Quaternion initialWorldRotation;
-
-    private void Awake()
+    public class SpriteFollower : MonoBehaviour
     {
-        // On récupère la rotation World exacte du sprite
-        // au moment de son initialisation.
-        initialWorldRotation =
-            transform.rotation;
-    }
+        private Quaternion initialWorldRotation;
 
-    private void LateUpdate()
-    {
-        // On force en permanence le sprite à conserver
-        // sa rotation World initiale.
-        transform.rotation =
-            initialWorldRotation;
+        private void Awake()
+        {
+            // On récupère la rotation World exacte du sprite
+            // au moment de son initialisation.
+            initialWorldRotation =
+                transform.rotation;
+        }
+
+        private void LateUpdate()
+        {
+            // On force en permanence le sprite à conserver
+            // sa rotation World initiale.
+            transform.rotation =
+                initialWorldRotation;
+        }
     }
 }
