@@ -8,11 +8,6 @@ Shader "Custom/Sprite3D/Lit"
         [MainColor]
         _Color("Color", Color) = (1,1,1,1)
 
-
-        // ============================================================
-        // SHADOWS
-        // ============================================================
-
         [Toggle]
         _ReceiveShadows("Receive Shadows", Float) = 1
 
@@ -21,34 +16,14 @@ Shader "Custom/Sprite3D/Lit"
 
         _ShadowAlphaClip("Shadow Alpha Clip", Range(0,1)) = 0.01
 
-
-        // ============================================================
-        // AMBIENT
-        // ============================================================
-
         _AmbientStrength("Ambient Strength", Range(0,1)) = 0.1
 
+        _EdgeWidth("Edge Width", Range(0.0005,0.05)) = 0.005
 
-        // ============================================================
-        // EDGE LIGHTING
-        // ============================================================
+        _EdgeSensitivity("Edge Sensitivity", Range(0,10)) = 2
 
-        _EdgeWidth(
-            "Edge Width",
-            Range(0.001, 0.1)
-        ) = 0.01
-
-        _EdgeSensitivity(
-            "Edge Sensitivity",
-            Range(0, 10)
-        ) = 2
-
-        _EdgeLightBoost(
-            "Edge Light Boost",
-            Range(0, 10)
-        ) = 2
+        _EdgeLightBoost("Edge Light Boost", Range(0,10)) = 3
     }
-
 
     SubShader
     {
@@ -59,9 +34,13 @@ Shader "Custom/Sprite3D/Lit"
             "RenderType" = "Transparent"
         }
 
-
         // ============================================================
-        // FORWARD LIT
+        // FORWARD ONLY
+        //
+        // The project uses Deferred.
+        // Transparent objects are rendered through the Forward path.
+        //
+        // UniversalForwardOnly is therefore intentional.
         // ============================================================
 
         Pass
@@ -70,14 +49,14 @@ Shader "Custom/Sprite3D/Lit"
 
             Tags
             {
-                "LightMode" = "UniversalForward"
+                "LightMode" = "UniversalForwardOnly"
             }
 
             Blend SrcAlpha OneMinusSrcAlpha
+
             Cull Off
             ZWrite Off
             ZTest LEqual
-
 
             HLSLPROGRAM
 
@@ -88,35 +67,49 @@ Shader "Custom/Sprite3D/Lit"
 
             #pragma multi_compile_instancing
 
+            // ========================================================
+            // MAIN LIGHT SHADOWS
+            //
+            // IMPORTANT:
+            // These must be ONE keyword set.
+            //
+            // Do NOT use three independent multi_compile directives.
+            // ========================================================
 
-            // --------------------------------------------------------
-            // Main light
-            // --------------------------------------------------------
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
 
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_SCREEN
+            // ========================================================
+            // ADDITIONAL LIGHTS
+            // ========================================================
 
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
 
-            // --------------------------------------------------------
-            // Additional lights
-            // --------------------------------------------------------
-
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            // ========================================================
+            // FORWARD+
+            //
+            // Required for compatibility with modern URP additional
+            // light handling.
+            // ========================================================
 
             #pragma multi_compile _ _FORWARD_PLUS
 
-            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+            // ========================================================
+            // SOFT SHADOWS
+            // ========================================================
 
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
-
-            // --------------------------------------------------------
+            // ========================================================
             // URP
-            // --------------------------------------------------------
+            // ========================================================
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
 
 
@@ -139,9 +132,10 @@ Shader "Custom/Sprite3D/Lit"
                 float4 positionCS : SV_POSITION;
 
                 float3 positionWS : TEXCOORD0;
-                float2 uv         : TEXCOORD1;
 
-                half4 color       : COLOR;
+                float2 uv : TEXCOORD1;
+
+                half4 color : COLOR;
 
                 float4 shadowCoord : TEXCOORD2;
 
@@ -168,6 +162,7 @@ Shader "Custom/Sprite3D/Lit"
                 half4 _Color;
 
                 half _ReceiveShadows;
+
                 half _CastShadows;
 
                 half _ShadowAlphaClip;
@@ -175,7 +170,9 @@ Shader "Custom/Sprite3D/Lit"
                 half _AmbientStrength;
 
                 half _EdgeWidth;
+
                 half _EdgeSensitivity;
+
                 half _EdgeLightBoost;
 
             CBUFFER_END
@@ -190,7 +187,11 @@ Shader "Custom/Sprite3D/Lit"
                 Varyings output;
 
                 UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                UNITY_TRANSFER_INSTANCE_ID(
+                    input,
+                    output
+                );
 
 
                 VertexPositionInputs positionInputs =
@@ -218,45 +219,41 @@ Shader "Custom/Sprite3D/Lit"
                     input.color * _Color;
 
 
+                // ====================================================
+                // SHADOW COORDINATES
+                //
+                // GetShadowCoord() handles the appropriate URP
+                // shadow mode for the active variant.
+                // ====================================================
+
                 output.shadowCoord =
-                    GetShadowCoord(positionInputs);
+                    GetShadowCoord(
+                        positionInputs
+                    );
 
 
                 return output;
             }
 
 
-            // ========================================================
+            // ============================================================
             // EDGE DETECTION
-            // ========================================================
+            // ============================================================
 
             half GetEdgeMask(float2 uv)
             {
-                // ----------------------------------------------------
-                // Texture texel size
-                // ----------------------------------------------------
-
-                float2 texelSize =
-                    _EdgeWidth;
-
-
-                // ----------------------------------------------------
-                // Sample alpha around current pixel
-                // ----------------------------------------------------
-
-                half alphaCenter =
-                    SAMPLE_TEXTURE2D(
-                        _MainTex,
-                        sampler_MainTex,
-                        uv
-                    ).a;
+                float2 offset =
+                    float2(
+                        _EdgeWidth,
+                        _EdgeWidth
+                    );
 
 
                 half alphaLeft =
                     SAMPLE_TEXTURE2D(
                         _MainTex,
                         sampler_MainTex,
-                        uv + float2(-texelSize.x, 0)
+                        uv + float2(-offset.x, 0)
                     ).a;
 
 
@@ -264,7 +261,7 @@ Shader "Custom/Sprite3D/Lit"
                     SAMPLE_TEXTURE2D(
                         _MainTex,
                         sampler_MainTex,
-                        uv + float2(texelSize.x, 0)
+                        uv + float2(offset.x, 0)
                     ).a;
 
 
@@ -272,7 +269,7 @@ Shader "Custom/Sprite3D/Lit"
                     SAMPLE_TEXTURE2D(
                         _MainTex,
                         sampler_MainTex,
-                        uv + float2(0, texelSize.y)
+                        uv + float2(0, offset.y)
                     ).a;
 
 
@@ -280,13 +277,9 @@ Shader "Custom/Sprite3D/Lit"
                     SAMPLE_TEXTURE2D(
                         _MainTex,
                         sampler_MainTex,
-                        uv + float2(0, -texelSize.y)
+                        uv + float2(0, -offset.y)
                     ).a;
 
-
-                // ----------------------------------------------------
-                // Alpha gradient
-                // ----------------------------------------------------
 
                 float2 gradient;
 
@@ -297,15 +290,12 @@ Shader "Custom/Sprite3D/Lit"
                     alphaUp - alphaDown;
 
 
-                float edge =
+                half edge =
                     length(gradient);
 
 
-                // ----------------------------------------------------
-                // Sensitivity
-                // ----------------------------------------------------
-
-                edge *= _EdgeSensitivity;
+                edge *=
+                    _EdgeSensitivity;
 
 
                 edge =
@@ -326,7 +316,7 @@ Shader "Custom/Sprite3D/Lit"
 
 
                 // ====================================================
-                // TEXTURE
+                // SPRITE
                 // ====================================================
 
                 half4 tex =
@@ -341,11 +331,23 @@ Shader "Custom/Sprite3D/Lit"
                     tex * input.color;
 
 
-                clip(color.a - 0.001);
+                // ====================================================
+                // TRANSPARENCY
+                // ====================================================
+
+                clip(
+                    color.a - 0.001
+                );
 
 
                 // ====================================================
                 // SPRITE NORMAL
+                //
+                // Sprite lies on XY.
+                // Base normal points toward -Z.
+                //
+                // abs(dot()) makes the lighting effectively
+                // double-sided.
                 // ====================================================
 
                 float3 normalWS =
@@ -355,14 +357,17 @@ Shader "Custom/Sprite3D/Lit"
 
 
                 normalWS =
-                    normalize(normalWS);
+                    normalize(
+                        normalWS
+                    );
 
 
                 // ====================================================
                 // INPUT DATA
                 // ====================================================
 
-                InputData inputData = (InputData)0;
+                InputData inputData =
+                    (InputData)0;
 
 
                 inputData.positionWS =
@@ -389,11 +394,12 @@ Shader "Custom/Sprite3D/Lit"
                 // LIGHTING
                 // ====================================================
 
-                half3 lighting = 0;
+                half3 lighting =
+                    0;
 
 
                 // ====================================================
-                // MAIN LIGHT
+                // MAIN DIRECTIONAL LIGHT
                 // ====================================================
 
                 Light mainLight =
@@ -417,6 +423,10 @@ Shader "Custom/Sprite3D/Lit"
                     );
 
 
+                // ====================================================
+                // MAIN LIGHT SHADOW
+                // ====================================================
+
                 half mainShadow =
                     lerp(
                         1.0h,
@@ -425,11 +435,18 @@ Shader "Custom/Sprite3D/Lit"
                     );
 
 
+                // ====================================================
+                // MAIN LIGHT CONTRIBUTION
+                // ====================================================
+
                 lighting +=
                     mainLight.color
-                    * mainNdotL
-                    * mainLight.distanceAttenuation
-                    * mainShadow;
+                    *
+                    mainNdotL
+                    *
+                    mainLight.distanceAttenuation
+                    *
+                    mainShadow;
 
 
                 // ====================================================
@@ -439,20 +456,22 @@ Shader "Custom/Sprite3D/Lit"
                 #if defined(_ADDITIONAL_LIGHTS)
 
                     // ------------------------------------------------
-                    // Forward+
+                    // FORWARD+
+                    //
+                    // In Forward+, additional directional lights
+                    // are handled separately from the regular
+                    // GetAdditionalLightsCount() loop.
                     // ------------------------------------------------
 
                     #if USE_FORWARD_PLUS
 
                         UNITY_LOOP
-
                         for (
                             uint lightIndex = 0;
-                            lightIndex <
-                                min(
-                                    URP_FP_DIRECTIONAL_LIGHTS_COUNT,
-                                    MAX_VISIBLE_LIGHTS
-                                );
+                            lightIndex < min(
+                                uint(URP_FP_DIRECTIONAL_LIGHTS_COUNT),
+                                uint(MAX_VISIBLE_LIGHTS)
+                            );
                             lightIndex++
                         )
                         {
@@ -460,11 +479,11 @@ Shader "Custom/Sprite3D/Lit"
                                 GetAdditionalLight(
                                     lightIndex,
                                     inputData.positionWS,
-                                    half4(1,1,1,1)
+                                    half4(1, 1, 1, 1)
                                 );
 
 
-                            float NdotL =
+                            float additionalNdotL =
                                 abs(
                                     dot(
                                         normalWS,
@@ -473,24 +492,29 @@ Shader "Custom/Sprite3D/Lit"
                                 );
 
 
-                            NdotL =
+                            additionalNdotL =
                                 saturate(
-                                    NdotL
+                                    additionalNdotL
                                 );
 
 
                             lighting +=
                                 light.color
-                                * NdotL
-                                * light.distanceAttenuation
-                                * light.shadowAttenuation;
+                                *
+                                additionalNdotL
+                                *
+                                light.distanceAttenuation
+                                *
+                                light.shadowAttenuation;
                         }
 
                     #endif
 
 
                     // ------------------------------------------------
-                    // Point / Spot
+                    // REGULAR ADDITIONAL LIGHTS
+                    //
+                    // Point lights / spot lights are handled here.
                     // ------------------------------------------------
 
                     uint pixelLightCount =
@@ -503,7 +527,12 @@ Shader "Custom/Sprite3D/Lit"
                             GetAdditionalLight(
                                 lightIndex,
                                 inputData.positionWS,
-                                half4(1,1,1,1)
+                                half4(
+                                    1,
+                                    1,
+                                    1,
+                                    1
+                                )
                             );
 
 
@@ -524,9 +553,12 @@ Shader "Custom/Sprite3D/Lit"
 
                         lighting +=
                             light.color
-                            * additionalNdotL
-                            * light.distanceAttenuation
-                            * light.shadowAttenuation;
+                            *
+                            additionalNdotL
+                            *
+                            light.distanceAttenuation
+                            *
+                            light.shadowAttenuation;
 
                     LIGHT_LOOP_END
 
@@ -545,11 +577,12 @@ Shader "Custom/Sprite3D/Lit"
 
                 lighting +=
                     ambient
-                    * _AmbientStrength;
+                    *
+                    _AmbientStrength;
 
 
                 // ====================================================
-                // EDGE DETECTION
+                // EDGE MASK
                 // ====================================================
 
                 half edgeMask =
@@ -562,21 +595,12 @@ Shader "Custom/Sprite3D/Lit"
                 // EDGE LIGHT BOOST
                 // ====================================================
 
-                // Important:
-                //
-                // We multiply the existing lighting instead of
-                // adding white.
-                //
-                // This means:
-                //
-                // red Point Light -> red edge
-                // blue Spot Light -> blue edge
-                // etc.
-
                 half edgeBoost =
                     1.0h
-                    + edgeMask
-                    * _EdgeLightBoost;
+                    +
+                    edgeMask
+                    *
+                    _EdgeLightBoost;
 
 
                 lighting *=
@@ -584,7 +608,7 @@ Shader "Custom/Sprite3D/Lit"
 
 
                 // ====================================================
-                // FINAL
+                // FINAL COLOR
                 // ====================================================
 
                 color.rgb *=
@@ -592,6 +616,157 @@ Shader "Custom/Sprite3D/Lit"
 
 
                 return color;
+            }
+
+            ENDHLSL
+        }
+
+
+        // ============================================================
+        // DEPTH NORMALS
+        // ============================================================
+
+        Pass
+        {
+            Name "DepthNormals"
+
+            Tags
+            {
+                "LightMode" = "DepthNormalsOnly"
+            }
+
+            Cull Off
+
+            ZWrite On
+
+
+            HLSLPROGRAM
+
+            #pragma target 4.5
+
+            #pragma vertex DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+
+            #pragma multi_compile_instancing
+
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+
+            TEXTURE2D(_MainTex);
+            SAMPLER(sampler_MainTex);
+
+
+            CBUFFER_START(UnityPerMaterial)
+
+                float4 _MainTex_ST;
+
+                half4 _Color;
+
+                half _ReceiveShadows;
+
+                half _CastShadows;
+
+                half _ShadowAlphaClip;
+
+                half _AmbientStrength;
+
+                half _EdgeWidth;
+
+                half _EdgeSensitivity;
+
+                half _EdgeLightBoost;
+
+            CBUFFER_END
+
+
+            Varyings DepthNormalsVert(
+                Attributes input
+            )
+            {
+                Varyings output;
+
+
+                UNITY_SETUP_INSTANCE_ID(input);
+
+
+                UNITY_TRANSFER_INSTANCE_ID(
+                    input,
+                    output
+                );
+
+
+                output.positionCS =
+                    TransformObjectToHClip(
+                        input.positionOS.xyz
+                    );
+
+
+                output.uv =
+                    TRANSFORM_TEX(
+                        input.uv,
+                        _MainTex
+                    );
+
+
+                return output;
+            }
+
+
+            half4 DepthNormalsFrag(
+                Varyings input
+            ) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+
+
+                half alpha =
+                    SAMPLE_TEXTURE2D(
+                        _MainTex,
+                        sampler_MainTex,
+                        input.uv
+                    ).a;
+
+
+                clip(
+                    alpha - _ShadowAlphaClip
+                );
+
+
+                float3 normalWS =
+                    TransformObjectToWorldNormal(
+                        float3(0, 0, -1)
+                    );
+
+
+                normalWS =
+                    normalize(
+                        normalWS
+                    );
+
+
+                return half4(
+                    normalWS * 0.5h + 0.5h,
+                    0
+                );
             }
 
             ENDHLSL
@@ -612,8 +787,10 @@ Shader "Custom/Sprite3D/Lit"
             }
 
             Cull Off
+
             ZWrite On
             ZTest LEqual
+
             ColorMask 0
 
 
@@ -633,7 +810,7 @@ Shader "Custom/Sprite3D/Lit"
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0;
+                float2 uv : TEXCOORD0;
 
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -642,7 +819,7 @@ Shader "Custom/Sprite3D/Lit"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float2 uv         : TEXCOORD0;
+                float2 uv : TEXCOORD0;
 
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -659,6 +836,7 @@ Shader "Custom/Sprite3D/Lit"
                 half4 _Color;
 
                 half _ReceiveShadows;
+
                 half _CastShadows;
 
                 half _ShadowAlphaClip;
@@ -666,18 +844,28 @@ Shader "Custom/Sprite3D/Lit"
                 half _AmbientStrength;
 
                 half _EdgeWidth;
+
                 half _EdgeSensitivity;
+
                 half _EdgeLightBoost;
 
             CBUFFER_END
 
 
-            Varyings ShadowVert(Attributes input)
+            Varyings ShadowVert(
+                Attributes input
+            )
             {
                 Varyings output;
 
+
                 UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+
+                UNITY_TRANSFER_INSTANCE_ID(
+                    input,
+                    output
+                );
 
 
                 output.positionCS =
@@ -697,7 +885,9 @@ Shader "Custom/Sprite3D/Lit"
             }
 
 
-            half4 ShadowFrag(Varyings input) : SV_Target
+            half4 ShadowFrag(
+                Varyings input
+            ) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
 
@@ -740,7 +930,9 @@ Shader "Custom/Sprite3D/Lit"
             }
 
             Cull Off
+
             ZWrite On
+
             ColorMask 0
 
 
@@ -760,7 +952,7 @@ Shader "Custom/Sprite3D/Lit"
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float2 uv         : TEXCOORD0;
+                float2 uv : TEXCOORD0;
 
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -769,7 +961,7 @@ Shader "Custom/Sprite3D/Lit"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
-                float2 uv         : TEXCOORD0;
+                float2 uv : TEXCOORD0;
 
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -786,6 +978,7 @@ Shader "Custom/Sprite3D/Lit"
                 half4 _Color;
 
                 half _ReceiveShadows;
+
                 half _CastShadows;
 
                 half _ShadowAlphaClip;
@@ -793,18 +986,28 @@ Shader "Custom/Sprite3D/Lit"
                 half _AmbientStrength;
 
                 half _EdgeWidth;
+
                 half _EdgeSensitivity;
+
                 half _EdgeLightBoost;
 
             CBUFFER_END
 
 
-            Varyings DepthVert(Attributes input)
+            Varyings DepthVert(
+                Attributes input
+            )
             {
                 Varyings output;
 
+
                 UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+
+                UNITY_TRANSFER_INSTANCE_ID(
+                    input,
+                    output
+                );
 
 
                 output.positionCS =
@@ -824,7 +1027,9 @@ Shader "Custom/Sprite3D/Lit"
             }
 
 
-            half4 DepthFrag(Varyings input) : SV_Target
+            half4 DepthFrag(
+                Varyings input
+            ) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
 
@@ -851,3 +1056,4 @@ Shader "Custom/Sprite3D/Lit"
 
     FallBack Off
 }
+
