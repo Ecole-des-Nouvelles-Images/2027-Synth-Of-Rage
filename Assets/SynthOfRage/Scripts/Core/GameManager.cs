@@ -1,11 +1,15 @@
 ﻿using System;
 using SynthOfRage.Scripts.Helper;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
 namespace SynthOfRage.Scripts.Core
 {
-    public class GameManager : SingletonMonoBehaviour<GameManager>
+    public partial class GameManager : SingletonMonoBehaviour<GameManager>
     {
+        [AutoStaticsCleanup]
+        public static Action OnPause;
+        
         public Action OnArenaEnter;
         public Action OnArenaExit;
 
