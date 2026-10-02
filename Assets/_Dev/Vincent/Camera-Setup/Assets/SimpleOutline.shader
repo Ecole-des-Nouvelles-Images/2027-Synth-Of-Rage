@@ -4,7 +4,7 @@ Shader "Custom/Toon/Outline"
     {
         [Header(Outline)]
         _OutlineColor ("Outline Color", Color) = (0.01,0.01,0.015,1)
-        _OutlineWidth ("Outline Width", Range(0.0001,0.2)) = 0.012
+        _OutlineWidth ("Outline Width", Range(0.0001,10)) = 0.012
 
         // 0 = extrusion par normales
         // 1 = extrusion radiale depuis le pivot, plus robuste aux hard edges
