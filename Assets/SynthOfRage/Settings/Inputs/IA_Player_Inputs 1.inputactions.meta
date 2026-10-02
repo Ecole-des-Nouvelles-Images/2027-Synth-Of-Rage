@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 052faaac586de48259a63d0c4782560b
+guid: 813b52bc174bfcf48a942f703dd1b133
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -9,6 +9,6 @@ ScriptedImporter:
   assetBundleVariant: 
   script: {fileID: 11500000, guid: 8404be70184654265930450def6a9037, type: 3}
   generateWrapperCode: 0
-  wrapperCodePath: 
+  wrapperCodePath: Assets/SynthOfRage/Inputs/Player/IA_Player_Inputs.cs
   wrapperClassName: 
   wrapperCodeNamespace: 

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using UnityEngine;
 using Unity.Cinemachine;
+using UnityEngine;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
     public class VCameraSetup : MonoBehaviour
     {

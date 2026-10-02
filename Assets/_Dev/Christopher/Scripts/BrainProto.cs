@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace _Dev.Christopher.Script
+namespace _Dev.Christopher.Scripts
 {
     public class BrainProto : MonoBehaviour
     {

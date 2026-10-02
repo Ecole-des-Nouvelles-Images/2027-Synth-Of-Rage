@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using UnityEngine;
-using Unity.Cinemachine;
-using UnityEngine.Splines;
-using SynthOfRage.Scripts.Player;
-using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
 using SynthOfRage.Scripts.Core;
+using SynthOfRage.Scripts.Player;
+using SynthOfRage.Scripts.Player.Movement.Utils;
+using Unity.Cinemachine;
+using UnityEngine;
+using UnityEngine.Splines;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour

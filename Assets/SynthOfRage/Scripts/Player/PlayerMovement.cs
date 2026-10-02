@@ -1,3 +1,4 @@
+using SynthOfRage.Scripts.Player.Movement.Utils;
 using UnityEngine;
 using UnityEngine.Serialization;
 

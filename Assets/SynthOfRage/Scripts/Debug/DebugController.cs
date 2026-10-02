@@ -2,13 +2,18 @@
 
 using System;
 using System.Collections.Generic;
-using SynthOfRage.Scripts.Helper;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 namespace SynthOfRage.Scripts.Debug
 {
-    public class DebugController : SingletonMonoBehaviour<DebugController>
+    /// <summary>
+    /// A runtime debug console directly available withing the game.<br/>
+    /// The commands and cheats are available through a <c>DebugCommandLibrary</c>.
+    /// </summary>
+    /// <remarks>⚠️ Only available inside development build (requires <c>UNITY_INCLUDE_INSTRUMENTATION</c>).</remarks>
+    /// <seealso cref="DebugCommandLibrary"/>
+    public class DebugController : Utilities.SingletonMonoBehaviour<DebugController>
     {
         [SerializeField] private InputAction _triggerKey;
         [SerializeField] private InputAction _returnKey;
@@ -20,7 +25,7 @@ namespace SynthOfRage.Scripts.Debug
         private string _input;
         private Vector2 _helpScroll;
 
-        private List<string> _rewindHistory = new();
+        private readonly List<string> _rewindHistory = new();
         private int _rewindIndex;
 
         protected override void Awake()
@@ -31,11 +36,8 @@ namespace SynthOfRage.Scripts.Debug
                 "help",
                 "Shows the list of available commands",
                 "help",
-                _ =>
-                {
-                    _showHelp = true;
-                })
-            );
+                _ => _showHelp = true
+            ));
 
             DontDestroyOnLoad(gameObject);
         }
@@ -134,6 +136,9 @@ namespace SynthOfRage.Scripts.Debug
             }
         }
 
+        /// <summary>
+        /// Parse the input submitted to the console.
+        /// </summary>
         private void HandleInput()
         {
             string[] tokens = _input.Split(new[] {' '}, StringSplitOptions.RemoveEmptyEntries);
@@ -158,7 +163,7 @@ namespace SynthOfRage.Scripts.Debug
                 return;
             }
 
-            UnityEngine.Debug.LogWarning($"Unknown command: {commandId}");
+            UnityEngine.Debug.LogWarning($"[DebugController] Unknown command: {commandId}");
         }
     }
 }
