@@ -33,7 +33,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AdditionalLightStrength: 1
+    - _AdditionalLightStrength: 3
     - _AmbientStrength: 0.25
     - _DirectLightStrength: 1
     - _HalftoneAngle: 45
@@ -55,10 +55,10 @@ Material:
     - _SpecularStrength: 0.25
     - _SpecularThreshold: 0.6
     m_Colors:
-    - _BaseColor: {r: 0, g: 1, b: 0.8619383, a: 1}
-    - _HalftoneColor: {r: 0.02, g: 0.02, b: 0.03, a: 1}
+    - _BaseColor: {r: 0.2495494, g: 0.23137255, b: 0.39607844, a: 1}
+    - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowColor: {r: 0.14999998, g: 0.16999996, b: 0.21999997, a: 1}
+    - _ShadowColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
