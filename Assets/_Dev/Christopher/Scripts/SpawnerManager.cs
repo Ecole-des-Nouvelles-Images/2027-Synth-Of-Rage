@@ -1,14 +1,13 @@
-using System;
 using SynthOfRage.Scripts.Core;
-using SynthOfRage.Scripts.Helper;
+using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts
-{ 
-    public class SpawnerManager : SingletonMonoBehaviour<SpawnerManager> 
+{
+    public class SpawnerManager : SingletonMonoBehaviour<SpawnerManager>
     {
         public GameObject[] Spawners;
-        
+
         private int _waveClearCounter = 0;
 
         private void OnEnable()

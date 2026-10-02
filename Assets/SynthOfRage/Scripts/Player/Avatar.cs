@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace SynthOfRage.Scripts.Player
 {
-    public partial class Player : MonoBehaviour
+    public partial class Avatar : MonoBehaviour
     {
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnMove;
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnJump;
@@ -17,5 +17,7 @@ namespace SynthOfRage.Scripts.Player
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnInteract;
         
         public float MoveSpeed;
+
+        public HealthModule HealthModule { get; private set; }
     }
 }

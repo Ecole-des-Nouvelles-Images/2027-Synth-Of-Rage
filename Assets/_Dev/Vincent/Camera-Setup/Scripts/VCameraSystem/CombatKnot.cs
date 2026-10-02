@@ -1,5 +1,5 @@
 using UnityEngine;
-using SynthOfRage.Scripts.Player;
+using SynthOfRage.Scripts.Player.Movement.Utils;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {

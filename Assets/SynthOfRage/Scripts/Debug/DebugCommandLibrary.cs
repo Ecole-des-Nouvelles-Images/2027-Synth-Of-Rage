@@ -3,10 +3,16 @@
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
-using SynthOfRage.Scripts.Helper;
+using SynthOfRage.Scripts.Player;
+using SynthOfRage.Scripts.Utilities;
 
 namespace SynthOfRage.Scripts.Debug
 {
+    /// <summary>
+    /// A static container of <c>DebugCommand</c> that will be available to the runtime debug console.
+    /// </summary>
+    /// <remarks>⚠️ Only relevant inside development build (requires <c>UNITY_INCLUDE_INSTRUMENTATION</c>).</remarks>
+    /// <seealso cref="DebugController"/>
     public static partial class DebugCommandLibrary
     {
         [AutoStaticsCleanup]
@@ -35,7 +41,18 @@ namespace SynthOfRage.Scripts.Debug
                     else
                         UnityEngine.Debug.LogWarning("Usage: load <level_index>");
                 }
-            )
+            ),
+            new DebugCommand(
+                "debug-input",
+                "Toggle the input event logging",
+                "debug-input",
+                args => AvatarController.ToggleInputEventsDebug()
+            ),
+            new DebugCommand(
+                "set-property",
+                "Directly assign any value to available properties",
+                "set-property <object> <property> <value>",
+                args => DebugUtils.SetProperty(args))
         };
     }
 }

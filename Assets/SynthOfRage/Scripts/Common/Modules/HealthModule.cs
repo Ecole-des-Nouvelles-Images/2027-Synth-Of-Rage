@@ -2,13 +2,13 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace SynthOfRage.Scripts.UI
+namespace SynthOfRage.Scripts.Common.Modules
 {
-    public class PlayerHealth : MonoBehaviour
+    public class HealthModule : MonoBehaviour
     {
         [SerializeField] private int _maxHP = 100;
         private int _hp;
-        
+
         [Header("UI Elements")]
         [SerializeField] private Slider _hpGauge;
 
@@ -65,6 +65,11 @@ namespace SynthOfRage.Scripts.UI
             {
                 HP = Mathf.Clamp(HP + delta, 0, MaxHP);
             }
+        }
+
+        public void SetValue(int value, bool clamped = true, bool setMaxHP = false)
+        {
+            throw new NotImplementedException();
         }
     }
 }

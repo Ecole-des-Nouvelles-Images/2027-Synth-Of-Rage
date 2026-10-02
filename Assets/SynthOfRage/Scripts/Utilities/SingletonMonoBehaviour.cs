@@ -2,7 +2,7 @@ using System;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.Helper
+namespace SynthOfRage.Scripts.Utilities
 {
     public partial class SingletonMonoBehaviour<T> : MonoBehaviour where T : Component
     {

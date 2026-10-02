@@ -1,3 +1,4 @@
+using SynthOfRage.Scripts.Player.Movement.Utils;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -8,17 +9,44 @@ namespace SynthOfRage.Scripts.Player
     {
         private static readonly int Move = Animator.StringToHash("Move");
 
-        [FormerlySerializedAs("playerObserver")] [Header("References")] [SerializeField]
+        // =========================================================
+        // REFERENCES
+        // =========================================================
+
+        [FormerlySerializedAs("playerObserver")]
+        [Header("References")]
+        [SerializeField]
         private PlayerObserver _playerObserver;
 
-        [FormerlySerializedAs("spriteRenderer")] [SerializeField] private SpriteRenderer _spriteRenderer;
-        [FormerlySerializedAs("movementSpace")] [SerializeField] private Transform _movementSpace;
+        [FormerlySerializedAs("spriteRenderer")]
+        [SerializeField]
+        private SpriteRenderer _spriteRenderer;
 
-        [FormerlySerializedAs("debugEnabled")] [Header("Dev Settings")]
-        [SerializeField] private bool _debugEnabled;
+        [FormerlySerializedAs("movementSpace")]
+        [SerializeField]
+        private Transform _movementSpace;
 
-        [FormerlySerializedAs("moveSpeed")] [Header("Movement")]
-        [SerializeField] private float _moveSpeed = 5f;
+        // =========================================================
+        // DEV SETTINGS
+        // =========================================================
+
+        [FormerlySerializedAs("debugEnabled")]
+        [Header("Dev Settings")]
+        [SerializeField]
+        private bool _debugEnabled;
+
+        // =========================================================
+        // MOVEMENT
+        // =========================================================
+
+        [FormerlySerializedAs("moveSpeed")]
+        [Header("Movement")]
+        [SerializeField]
+        private float _moveSpeed = 5f;
+
+        // =========================================================
+        // MOVEMENT SPACE ROTATION
+        // =========================================================
 
         [FormerlySerializedAs("followMovementSpaceRotation")]
         [Header("Movement Space Rotation")]
@@ -27,62 +55,123 @@ namespace SynthOfRage.Scripts.Player
         private bool _followMovementSpaceRotation = true;
 
         [FormerlySerializedAs("movementSpaceRotationSmoothTime")]
-        [Tooltip("Temps de lissage de la rotation du personnage.")]
-        [SerializeField] private float _movementSpaceRotationSmoothTime = 0.15f;
+        [Tooltip("Temps de lissage de la rotation du personnage hors blend.")]
+        [SerializeField]
+        private float _movementSpaceRotationSmoothTime = 0.15f;
 
-        [FormerlySerializedAs("jumpHeight")] [Header("Jump")]
-        [SerializeField] private float _jumpHeight = 2f;
+        // =========================================================
+        // JUMP
+        // =========================================================
+
+        [FormerlySerializedAs("jumpHeight")]
+        [Header("Jump")]
+        [SerializeField]
+        private float _jumpHeight = 2f;
 
         [FormerlySerializedAs("gravity")]
         [Tooltip("Gravité utilisée pour calculer la durée de référence du saut.")]
-        [SerializeField] private float _gravity = -20f;
+        [SerializeField]
+        private float _gravity = -20f;
 
         [FormerlySerializedAs("jumpCurve")]
         [Tooltip("Courbe représentant la hauteur normalisée du saut.")]
-        [SerializeField] private AnimationCurve _jumpCurve = new(new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 0f));
+        [SerializeField]
+        private AnimationCurve _jumpCurve = new(new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 0f));
 
         [FormerlySerializedAs("jumpDurationMultiplier")]
         [Tooltip("Modifie la durée calculée à partir de la gravité.")]
-        [SerializeField] private float _jumpDurationMultiplier = 1f;
+        [SerializeField]
+        private float _jumpDurationMultiplier = 1f;
 
-        [FormerlySerializedAs("dashDistance")] [Header("Dash")]
-        [SerializeField] private float _dashDistance = 4f;
+        // =========================================================
+        // DASH
+        // =========================================================
 
-        [FormerlySerializedAs("dashDuration")] [SerializeField] private float _dashDuration = 0.2f;
+        [FormerlySerializedAs("dashDistance")]
+        [Header("Dash")]
+        [SerializeField]
+        private float _dashDistance = 4f;
+
+        [FormerlySerializedAs("dashDuration")]
+        [SerializeField]
+        private float _dashDuration = 0.2f;
 
         [FormerlySerializedAs("dashCooldown")]
         [Tooltip("Temps avant de pouvoir relancer un dash.")]
-        [SerializeField] private float _dashCooldown = 0.5f;
+        [SerializeField]
+        private float _dashCooldown = 0.5f;
 
-        [FormerlySerializedAs("dashCurve")] [SerializeField] private AnimationCurve _dashCurve = AnimationCurve.EaseInOut( 0f, 0f, 1f, 1f);
+        [FormerlySerializedAs("dashCurve")]
+        [SerializeField]
+        private AnimationCurve _dashCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+        // =========================================================
+        // COMPONENTS
+        // =========================================================
 
         private CharacterController _controller;
         private Animator _animator;
 
+        // =========================================================
+        // MOVEMENT SPACE
+        // =========================================================
+
         private MovementSpace _currentMovementSpace;
+
+        // =========================================================
+        // MOVEMENT SPACE BLEND
+        // =========================================================
+
+        private bool _isMovementSpaceBlending;
+        private MovementSpace _blendSourceMovementSpace;
+        private MovementSpace.Boundary _blendSourceBoundary;
+
+        // =========================================================
+        // DASH STATE
+        // =========================================================
+
         private float _dashCooldownTimer;
         private Vector3 _dashDirection;
         private float _dashTimer;
-
         private bool _isDashing;
+
+        // =========================================================
+        // JUMP STATE
+        // =========================================================
 
         private bool _isJumping;
         private float _jumpDuration;
         private float _jumpTimer;
 
-        private Vector2 _moveInput;
+        // =========================================================
+        // INPUT / ROTATION
+        // =========================================================
 
+        private Vector2 _moveInput;
         private float _movementSpaceRotationVelocity;
         private float _previousJumpHeight;
         private float _verticalVelocity;
+
+        // =========================================================
+        // PUBLIC STATE
+        // =========================================================
+
+        public bool IsMovementSpaceBlending => _isMovementSpaceBlending;
+
+        // =========================================================
+        // AWAKE
+        // =========================================================
 
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
             _animator = GetComponentInChildren<Animator>();
-            
-            if (!_controller) UnityEngine.Debug.LogError("[PlayerMovement] CharacterController component is not found on Player !");
-            if (!_animator) UnityEngine.Debug.LogError("[PlayerMovement] Animator component is not found on Player !");
+
+            if (!_controller)
+                UnityEngine.Debug.LogError("[PlayerMovement] CharacterController component is not found on Player !");
+
+            if (!_animator)
+                UnityEngine.Debug.LogError("[PlayerMovement] Animator component is not found on Player !");
 
             if (_spriteRenderer == null)
                 _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -91,22 +180,29 @@ namespace SynthOfRage.Scripts.Player
             CalculateJumpDuration();
         }
 
+        // =========================================================
+        // UPDATE
+        // =========================================================
+
         private void Update()
         {
-            UpdateCharacterRotation();
-
             HandleMovement();
             HandleJump();
             HandleGravity();
             HandleDashCooldown();
             HandleDash();
+            UpdateCharacterRotation();
         }
+
+        // =========================================================
+        // ENABLE / DISABLE
+        // =========================================================
 
         private void OnEnable()
         {
             if (_playerObserver == null)
             {
-                UnityEngine.Debug.LogError($"[{nameof(PlayerMovement)}] " + "PlayerObserver reference is missing.", this);
+                UnityEngine.Debug.LogError($"[{nameof(PlayerMovement)}] PlayerObserver reference is missing.", this);
                 return;
             }
 
@@ -125,23 +221,40 @@ namespace SynthOfRage.Scripts.Player
             _playerObserver.OnPlayerDash -= HandlePlayerDash;
         }
 
+        // =========================================================
+        // PLAYER MOVE
+        // =========================================================
+
         private void HandlePlayerMove(Vector2 input)
         {
             _moveInput = Vector2.ClampMagnitude(input, 1f);
-            
-            _animator.SetBool(Move, _moveInput != Vector2.zero);
+
+            if (_animator)
+                _animator.SetBool(Move, _moveInput != Vector2.zero);
 
             UpdateSpriteDirection(input);
 
-            if (_debugEnabled)UnityEngine.Debug.Log("[PlayerMovement] " + $"Move Input : {_moveInput}");
+            if (_debugEnabled)
+                UnityEngine.Debug.Log("[PlayerMovement] " + $"Move Input : {_moveInput}");
         }
+
+        // =========================================================
+        // PLAYER JUMP
+        // =========================================================
 
         private void HandlePlayerJump()
         {
-            if (!_controller.isGrounded) return;
-            if (_isJumping) return;
-            if (_isDashing) return;
-            if (_jumpHeight <= 0f) return;
+            if (!_controller.isGrounded)
+                return;
+
+            if (_isJumping)
+                return;
+
+            if (_isDashing)
+                return;
+
+            if (_jumpHeight <= 0f)
+                return;
 
             CalculateJumpDuration();
 
@@ -153,6 +266,10 @@ namespace SynthOfRage.Scripts.Player
             if (_debugEnabled)
                 UnityEngine.Debug.Log("[PlayerMovement] Jump | " + $"Height : {_jumpHeight} | " + $"Duration : {_jumpDuration}");
         }
+
+        // =========================================================
+        // PLAYER DASH
+        // =========================================================
 
         private void HandlePlayerDash()
         {
@@ -174,7 +291,7 @@ namespace SynthOfRage.Scripts.Player
                 _previousJumpHeight = 0f;
 
                 if (_debugEnabled)
-                    UnityEngine.Debug.Log("[PlayerMovement] " + "Jump interrupted by Dash");
+                    UnityEngine.Debug.Log("[PlayerMovement] Jump interrupted by Dash");
             }
 
             if (_moveInput.sqrMagnitude > 0.01f)
@@ -190,19 +307,27 @@ namespace SynthOfRage.Scripts.Player
             _dashCooldownTimer = _dashCooldown;
 
             if (_debugEnabled)
-                UnityEngine.Debug.Log("[PlayerMovement] Dash : " + $"{_dashDirection} | " + $"Cooldown : {_dashCooldown}");
+                UnityEngine.Debug.Log("[PlayerMovement] Dash : " + $"{_dashDirection} | Cooldown : {_dashCooldown}");
         }
+
+        // =========================================================
+        // MOVEMENT
+        // =========================================================
 
         private void HandleMovement()
         {
-            if (_isDashing) return;
+            if (_isDashing)
+                return;
 
             Vector3 movement = GetMovementDirection(_moveInput);
-
             movement *= _moveSpeed;
 
             MoveWithMovementSpaceLimits(movement * Time.deltaTime);
         }
+
+        // =========================================================
+        // MOVEMENT DIRECTION
+        // =========================================================
 
         private Vector3 GetMovementDirection(Vector2 input)
         {
@@ -212,8 +337,12 @@ namespace SynthOfRage.Scripts.Player
 
             direction.y = 0f;
 
-            return Vector3.ClampMagnitude(direction, 1f );
+            return Vector3.ClampMagnitude(direction, 1f);
         }
+
+        // =========================================================
+        // SPRITE DIRECTION
+        // =========================================================
 
         private void UpdateSpriteDirection(Vector2 input)
         {
@@ -226,6 +355,10 @@ namespace SynthOfRage.Scripts.Player
                 _spriteRenderer.flipX = false;
         }
 
+        // =========================================================
+        // CHARACTER ROTATION
+        // =========================================================
+
         private void UpdateCharacterRotation()
         {
             if (!_followMovementSpaceRotation)
@@ -234,6 +367,12 @@ namespace SynthOfRage.Scripts.Player
             if (!_movementSpace)
                 return;
 
+            if (TryGetBlendRotation(out Quaternion targetRotation))
+            {
+                ApplyCharacterRotation(targetRotation);
+                return;
+            }
+
             float targetY = _movementSpace.eulerAngles.y;
             float currentY = transform.eulerAngles.y;
             float smoothedY = Mathf.SmoothDampAngle(currentY, targetY, ref _movementSpaceRotationVelocity, _movementSpaceRotationSmoothTime);
@@ -241,12 +380,128 @@ namespace SynthOfRage.Scripts.Player
             transform.rotation = Quaternion.Euler(0f, smoothedY, 0f);
         }
 
+        // =========================================================
+        // BLEND ROTATION
+        // =========================================================
+
+        private bool TryGetBlendRotation(out Quaternion targetRotation)
+        {
+            targetRotation = Quaternion.identity;
+
+            if (_isMovementSpaceBlending)
+            {
+                if (_blendSourceMovementSpace == null)
+                {
+                    ClearMovementSpaceBlend();
+                    return false;
+                }
+
+                if (_blendSourceMovementSpace.TryGetBlend(_blendSourceBoundary, transform.position, out MovementSpace.BlendResult result))
+                {
+                    targetRotation = result.Rotation;
+                    return true;
+                }
+
+                if (_debugEnabled)
+                    UnityEngine.Debug.Log("[PlayerMovement] " + $"Blend terminé | Source : {_blendSourceMovementSpace.name} | Current : {(_currentMovementSpace != null ? _currentMovementSpace.name : "NULL")}", this);
+
+                ClearMovementSpaceBlend();
+                return false;
+            }
+
+            if (_currentMovementSpace != null && _currentMovementSpace.TryGetAnyBlend(transform.position, out MovementSpace.BlendResult newBlend))
+            {
+                _blendSourceMovementSpace = newBlend.Source;
+                _blendSourceBoundary = newBlend.SourceBoundary;
+                _isMovementSpaceBlending = true;
+
+                if (_debugEnabled)
+                    UnityEngine.Debug.Log("[PlayerMovement] " + $"Blend commencé | {newBlend.Source.name} -> {newBlend.Target.name} | T = {newBlend.T:F3}", this);
+
+                targetRotation = newBlend.Rotation;
+                return true;
+            }
+
+            return false;
+        }
+
+        // =========================================================
+        // APPLY CHARACTER ROTATION
+        // =========================================================
+
+        private void ApplyCharacterRotation(Quaternion targetRotation)
+        {
+            float targetY = targetRotation.eulerAngles.y;
+
+            transform.rotation = Quaternion.Euler(0f, targetY, 0f);
+            _movementSpaceRotationVelocity = 0f;
+        }
+
+        // =========================================================
+        // CLEAR MOVEMENT SPACE BLEND
+        // =========================================================
+
+        private void ClearMovementSpaceBlend()
+        {
+            _isMovementSpaceBlending = false;
+            _blendSourceMovementSpace = null;
+            _movementSpaceRotationVelocity = 0f;
+        }
+
+        // =========================================================
+        // ACTIVE MOVEMENT SPACE BLEND
+        // =========================================================
+
+        public bool TryGetActiveMovementSpaceBlend(out MovementSpace.BlendResult result)
+        {
+            result = default;
+
+            if (_isMovementSpaceBlending && _blendSourceMovementSpace != null)
+            {
+                if (_blendSourceMovementSpace.TryGetBlend(_blendSourceBoundary, transform.position, out result))
+                    return true;
+
+                return false;
+            }
+
+            if (_currentMovementSpace != null && _currentMovementSpace.TryGetAnyBlend(transform.position, out result))
+                return true;
+
+            return false;
+        }
+
+        // =========================================================
+        // EFFECTIVE MOVEMENT SPACE ROTATION
+        // =========================================================
+
+        public Quaternion GetEffectiveMovementSpaceRotation()
+        {
+            if (_currentMovementSpace == null)
+                return Quaternion.identity;
+
+            if (_isMovementSpaceBlending && _blendSourceMovementSpace != null)
+            {
+                if (_blendSourceMovementSpace.TryGetBlend(_blendSourceBoundary, transform.position, out MovementSpace.BlendResult result))
+                    return result.Rotation;
+            }
+
+            return _currentMovementSpace.transform.rotation;
+        }
+
+        public float GetEffectiveMovementSpaceY()
+        {
+            return GetEffectiveMovementSpaceRotation().eulerAngles.y;
+        }
+
+        // =========================================================
+        // JUMP DURATION
+        // =========================================================
+
         private void CalculateJumpDuration()
         {
             if (_gravity >= 0f)
             {
-                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] " + "Gravity must be negative.", this);
-
+                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] Gravity must be negative.", this);
                 _jumpDuration = 0.1f;
                 return;
             }
@@ -255,17 +510,23 @@ namespace SynthOfRage.Scripts.Player
             float physicalJumpDuration = -2f * jumpVelocity / _gravity;
 
             _jumpDuration = physicalJumpDuration * _jumpDurationMultiplier;
-            _jumpDuration = Mathf.Max(_jumpDuration, 0.01f );
+            _jumpDuration = Mathf.Max(_jumpDuration, 0.01f);
         }
+
+        // =========================================================
+        // JUMP
+        // =========================================================
 
         private void HandleJump()
         {
-            if (_isDashing || !_isJumping) return;
+            if (_isDashing || !_isJumping)
+                return;
 
             float progress = Mathf.Clamp01(_jumpTimer / _jumpDuration);
             float curveValue = _jumpCurve.Evaluate(progress);
             float currentHeight = curveValue * _jumpHeight;
             float deltaHeight = currentHeight - _previousJumpHeight;
+
             Vector3 jumpMovement = Vector3.up * deltaHeight;
 
             MoveWithMovementSpaceLimits(jumpMovement);
@@ -288,9 +549,14 @@ namespace SynthOfRage.Scripts.Player
                 UnityEngine.Debug.Log("[PlayerMovement] Jump End");
         }
 
+        // =========================================================
+        // GRAVITY
+        // =========================================================
+
         private void HandleGravity()
         {
-            if (_isDashing || _isJumping) return;
+            if (_isDashing || _isJumping)
+                return;
 
             if (_controller.isGrounded)
             {
@@ -305,16 +571,21 @@ namespace SynthOfRage.Scripts.Player
             MoveWithMovementSpaceLimits(gravityMovement);
         }
 
+        // =========================================================
+        // DASH
+        // =========================================================
+
         private void HandleDash()
         {
-            if (!_isDashing) return;
+            if (!_isDashing)
+                return;
 
             float previousTime = _dashTimer;
-
             _dashTimer += Time.deltaTime;
 
             float previousProgress = Mathf.Clamp01(previousTime / _dashDuration);
             float currentProgress = Mathf.Clamp01(_dashTimer / _dashDuration);
+
             float previousCurveValue = _dashCurve.Evaluate(previousProgress);
             float currentCurveValue = _dashCurve.Evaluate(currentProgress);
             float deltaCurveValue = currentCurveValue - previousCurveValue;
@@ -336,7 +607,8 @@ namespace SynthOfRage.Scripts.Player
 
         private void HandleDashCooldown()
         {
-            if (_dashCooldownTimer <= 0f) return;
+            if (_dashCooldownTimer <= 0f)
+                return;
 
             _dashCooldownTimer -= Time.deltaTime;
 
@@ -344,7 +616,11 @@ namespace SynthOfRage.Scripts.Player
                 _dashCooldownTimer = 0f;
         }
 
-        public void MoveWithMovementSpaceLimits(Vector3 movement)
+        // =========================================================
+        // MOVE WITH MOVEMENT SPACE LIMITS
+        // =========================================================
+
+        private void MoveWithMovementSpaceLimits(Vector3 movement)
         {
             if (!_movementSpace)
             {
@@ -355,71 +631,37 @@ namespace SynthOfRage.Scripts.Player
             Vector3 targetPosition = transform.position + movement;
             Vector3 localTargetPosition = _movementSpace.InverseTransformPoint(targetPosition);
 
-            /*
-             * ---------------------------------------------------------
-             * MOVEMENT SPACE TRANSITION
-             * ---------------------------------------------------------
-             *
-             * On vérifie d'abord si le joueur dépasse une limite
-             * qui est configurée comme PASSABLE.
-             *
-             * Si une connexion existe :
-             *      -> on change de Movement Space
-             *      -> on recalcule la position locale
-             *
-             * Si aucune connexion n'existe :
-             *      -> le joueur continue normalement
-             *
-             * Une seule transition est effectuée par déplacement.
-             * Cela évite les boucles entre deux Movement Spaces.
-             * ---------------------------------------------------------
-             */
-
             if (_currentMovementSpace)
             {
-                MovementSpace connectedMovementSpace = GetConnectedMovementSpace(localTargetPosition);
+                MovementSpace connectedMovementSpace = GetConnectedMovementSpace(localTargetPosition, out MovementSpace.Boundary crossedBoundary);
 
                 if (connectedMovementSpace)
                 {
-                    SetMovementSpace(connectedMovementSpace.transform);
+                    if (!_isMovementSpaceBlending && _currentMovementSpace.TryGetBlend(crossedBoundary, targetPosition, out MovementSpace.BlendResult blendResult))
+                    {
+                        _blendSourceMovementSpace = blendResult.Source;
+                        _blendSourceBoundary = blendResult.SourceBoundary;
+                        _isMovementSpaceBlending = true;
 
-                    /*
-                     * Le Movement Space vient de changer.
-                     *
-                     * On doit donc recalculer la position cible
-                     * dans le nouveau repère local.
-                     */
+                        if (_debugEnabled)
+                            UnityEngine.Debug.Log("[PlayerMovement] " + $"Blend déclenché par transition | {blendResult.Source.name} -> {blendResult.Target.name} | T = {blendResult.T:F3}", this);
+                    }
+
+                    SetMovementSpaceInternal(connectedMovementSpace.transform, false);
+
                     localTargetPosition = _movementSpace.InverseTransformPoint(targetPosition);
                 }
 
-                /*
-                 * -----------------------------------------------------
-                 * LIMITES BLOQUANTES
-                 * -----------------------------------------------------
-                 *
-                 * Ces limites ne sont appliquées QUE si elles sont
-                 * activées.
-                 *
-                 * UseXXX == true
-                 *      => limite bloquante
-                 *
-                 * UseXXX == false
-                 *      => limite passable
-                 * -----------------------------------------------------
-                 */
-
-                if (_currentMovementSpace.UseDepthMin && localTargetPosition.z < _currentMovementSpace.MinDepth) // DEPTH MIN
-
+                if (_currentMovementSpace.UseDepthMin && localTargetPosition.z < _currentMovementSpace.MinDepth)
                     localTargetPosition.z = _currentMovementSpace.MinDepth;
 
-                
-                if (_currentMovementSpace.UseDepthMax && localTargetPosition.z > _currentMovementSpace.MaxDepth) // DEPTH MAX
+                if (_currentMovementSpace.UseDepthMax && localTargetPosition.z > _currentMovementSpace.MaxDepth)
                     localTargetPosition.z = _currentMovementSpace.MaxDepth;
 
-                if (_currentMovementSpace.UseSideLeft && localTargetPosition.x < _currentMovementSpace.MinSide) // SIDE LEFT
+                if (_currentMovementSpace.UseSideLeft && localTargetPosition.x < _currentMovementSpace.MinSide)
                     localTargetPosition.x = _currentMovementSpace.MinSide;
 
-                if (_currentMovementSpace.UseSideRight && localTargetPosition.x > _currentMovementSpace.MaxSide) // SIDE RIGHT
+                if (_currentMovementSpace.UseSideRight && localTargetPosition.x > _currentMovementSpace.MaxSide)
                     localTargetPosition.x = _currentMovementSpace.MaxSide;
             }
 
@@ -430,52 +672,47 @@ namespace SynthOfRage.Scripts.Player
             _controller.Move(allowedMovement);
         }
 
-        private MovementSpace GetConnectedMovementSpace(Vector3 localTargetPosition)
+        // =========================================================
+        // GET CONNECTED MOVEMENT SPACE
+        // =========================================================
+
+        private MovementSpace GetConnectedMovementSpace(Vector3 localTargetPosition, out MovementSpace.Boundary crossedBoundary)
         {
+            crossedBoundary = default;
+
             if (!_currentMovementSpace)
                 return null;
 
-            /*
-             * ---------------------------------------------------------
-             * DEPTH MIN
-             * ---------------------------------------------------------
-             *
-             * Si la limite est passable et que le joueur la dépasse,
-             * on cherche le Movement Space connecté.
-             */
-
             if (!_currentMovementSpace.UseDepthMin && localTargetPosition.z < _currentMovementSpace.MinDepth)
+            {
+                crossedBoundary = MovementSpace.Boundary.DepthMin;
                 return _currentMovementSpace.DepthMinConnection;
+            }
 
-            /*
-             * ---------------------------------------------------------
-             * DEPTH MAX
-             * ---------------------------------------------------------
-             */
-
-            if (!_currentMovementSpace.UseDepthMax && localTargetPosition.z > _currentMovementSpace.MaxDepth )
+            if (!_currentMovementSpace.UseDepthMax && localTargetPosition.z > _currentMovementSpace.MaxDepth)
+            {
+                crossedBoundary = MovementSpace.Boundary.DepthMax;
                 return _currentMovementSpace.DepthMaxConnection;
-
-            /*
-             * ---------------------------------------------------------
-             * SIDE LEFT
-             * ---------------------------------------------------------
-             */
+            }
 
             if (!_currentMovementSpace.UseSideLeft && localTargetPosition.x < _currentMovementSpace.MinSide)
+            {
+                crossedBoundary = MovementSpace.Boundary.SideLeft;
                 return _currentMovementSpace.SideLeftConnection;
-
-            /*
-             * ---------------------------------------------------------
-             * SIDE RIGHT
-             * ---------------------------------------------------------
-             */
+            }
 
             if (!_currentMovementSpace.UseSideRight && localTargetPosition.x > _currentMovementSpace.MaxSide)
+            {
+                crossedBoundary = MovementSpace.Boundary.SideRight;
                 return _currentMovementSpace.SideRightConnection;
+            }
 
             return null;
         }
+
+        // =========================================================
+        // CACHE MOVEMENT SPACE
+        // =========================================================
 
         private void CacheMovementSpaceComponent()
         {
@@ -488,17 +725,32 @@ namespace SynthOfRage.Scripts.Player
             _currentMovementSpace = _movementSpace.GetComponent<MovementSpace>();
 
             if (!_currentMovementSpace)
-                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] Le Movement Space '{_movementSpace.name}' ne possède pas de composant MovementSpace.\n"
-                                             + "Aucune limite personnalisée ne sera appliquée.", _movementSpace);
+                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] Le Movement Space '{_movementSpace.name}' ne possède pas de composant MovementSpace.\nAucune limite personnalisée ne sera appliquée.", _movementSpace);
         }
+
+        // =========================================================
+        // SET MOVEMENT SPACE
+        // =========================================================
 
         public void SetMovementSpace(Transform newMovementSpace)
         {
             if (!newMovementSpace)
             {
-                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] " + "Impossible d'assigner un Movement Space null.", this );
+                UnityEngine.Debug.LogWarning($"[{nameof(PlayerMovement)}] Impossible d'assigner un Movement Space null.", this);
                 return;
             }
+
+            ClearMovementSpaceBlend();
+            SetMovementSpaceInternal(newMovementSpace, false);
+        }
+
+        private void SetMovementSpaceInternal(Transform newMovementSpace, bool clearBlend)
+        {
+            if (!newMovementSpace)
+                return;
+
+            if (clearBlend)
+                ClearMovementSpaceBlend();
 
             _movementSpace = newMovementSpace;
             _movementSpaceRotationVelocity = 0f;
@@ -506,8 +758,12 @@ namespace SynthOfRage.Scripts.Player
             CacheMovementSpaceComponent();
 
             if (_debugEnabled)
-                UnityEngine.Debug.Log( "[PlayerMovement] " + "Movement Space changé : " + $"{_movementSpace.name}", this);
+                UnityEngine.Debug.Log("[PlayerMovement] " + "Movement Space changé : " + $"{_movementSpace.name}", this);
         }
+
+        // =========================================================
+        // GET MOVEMENT SPACE
+        // =========================================================
 
         public Transform GetMovementSpace()
         {
