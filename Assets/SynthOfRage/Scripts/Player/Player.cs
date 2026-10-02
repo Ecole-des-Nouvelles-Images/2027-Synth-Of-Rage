@@ -15,5 +15,7 @@ namespace SynthOfRage.Scripts.Player
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnAttackHeavy;
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnSpecial;
         [AutoStaticsCleanup] public static Action<InputAction.CallbackContext> OnInteract;
+        
+        public float MoveSpeed;
     }
 }

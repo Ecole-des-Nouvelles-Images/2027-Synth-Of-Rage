@@ -344,7 +344,7 @@ namespace SynthOfRage.Scripts.Player
                 _dashCooldownTimer = 0f;
         }
 
-        private void MoveWithMovementSpaceLimits(Vector3 movement)
+        public void MoveWithMovementSpaceLimits(Vector3 movement)
         {
             if (!_movementSpace)
             {
