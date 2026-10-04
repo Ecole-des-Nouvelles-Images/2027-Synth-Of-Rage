@@ -1,4 +1,4 @@
-using SynthOfRage.Scripts.Player;
+using SynthOfRage.Scripts.Unit.Player;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts
@@ -7,7 +7,7 @@ namespace _Dev.Christopher.Scripts
     [RequireComponent(typeof(PlayerObserver))]
     public class AcCharacterHandler : MonoBehaviour
     {
-        
+
         private static readonly int Move = Animator.StringToHash("Move");
         private static readonly int Attack = Animator.StringToHash("Attack");
         private static readonly int Hurt = Animator.StringToHash("Hurt");
@@ -15,11 +15,11 @@ namespace _Dev.Christopher.Scripts
 
         [Header("References")]
         [SerializeField] private PlayerObserver playerObserver;
-        
+
         public Animator MyAnimator;
-        
+
         private CharacterController _characterController;
-        
+
         private void OnEnable()
         {
             if (MyAnimator == null)
@@ -38,7 +38,7 @@ namespace _Dev.Christopher.Scripts
 
             playerObserver.OnPlayerAtkL += HandleAtkLAnimation;
         }
-        
+
         void Start()
         {
             _characterController = transform.GetComponent<CharacterController>();
@@ -63,6 +63,6 @@ namespace _Dev.Christopher.Scripts
         {
             MyAnimator.SetTrigger(Death);
         }
-        
+
     }
 }

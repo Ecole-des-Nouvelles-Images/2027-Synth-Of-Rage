@@ -1,8 +1,8 @@
-using SynthOfRage.Scripts.Player.Movement.Utils;
+using SynthOfRage.Scripts.Unit.Player.Movement.Utils;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Unit.Player
 {
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMovement : MonoBehaviour

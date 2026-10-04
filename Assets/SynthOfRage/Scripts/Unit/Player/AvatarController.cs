@@ -1,11 +1,10 @@
 using System;
+using SynthOfRage.Scripts.Debug;
 using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-using SynthOfRage.Scripts.Debug;
-
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Unit.Player
 {
     /// <summary>Responsible to handle all input related operations for the <see cref="Avatar"/>. </summary>
     [Serializable]

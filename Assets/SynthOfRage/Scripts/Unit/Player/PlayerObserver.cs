@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Unit.Player
 {
     public class PlayerObserver : MonoBehaviour
     {

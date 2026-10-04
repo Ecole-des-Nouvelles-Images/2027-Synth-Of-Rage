@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Unit.Player
 {
     public class PlayerCore : MonoBehaviour
     {

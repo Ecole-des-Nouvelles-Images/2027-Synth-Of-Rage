@@ -1,12 +1,15 @@
 ﻿using System;
+using SynthOfRage.Scripts.Common.Modules;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-using SynthOfRage.Scripts.Common.Modules;
-
-namespace SynthOfRage.Scripts.Player
+namespace SynthOfRage.Scripts.Unit.Player
 {
-    public class Avatar : MonoBehaviour
+    /// <summary>
+    /// The main class representing the Player.<br/>
+    /// It offers « gameplay events » to subscribe to and manages the components that handle the visuals.
+    /// </summary>
+    public class Avatar : UnitBase
     {
         #region Gameplay Events
 
@@ -34,7 +37,27 @@ namespace SynthOfRage.Scripts.Player
 
         public HealthModule HealthModule { get; private set; }
 
-        private AvatarController _controller = new();
+        private readonly AvatarController _controller = new();
+        private Animator _animator;
+
+        private void Awake()
+        {
+            if ((HealthModule = GetComponent<HealthModule>()) == null)
+            {
+                HealthModule = gameObject.AddComponent<HealthModule>();
+                UnityEngine.Debug.LogWarning("[Avatar] No HealthModule was found. Automatically attach a new one but you should add it manually !");
+            }
+
+            if ((_animator = GetComponentInChildren<Animator>()) == null)
+            {
+                // TODO: Automatically add the component and use <Addressable> package to link the runtime controller.
+                throw new NullReferenceException("[Avatar] No Animator component was found.");
+            }
+            else if (!(_animator.isInitialized && _animator.runtimeAnimatorController != null))
+            {
+                UnityEngine.Debug.LogError("[Avatar] Animator is missing a controller or is not correctly initialized.");
+            }
+        }
 
         private void OnEnable()
         {
@@ -80,7 +103,7 @@ namespace SynthOfRage.Scripts.Player
             }
         }
 
-        #region Gameplay Event Callbacks (Input-to-Gameplay Translation)
+        #region Gameplay Event Callbacks
 
         private void OnMoveGameplayCallback(InputAction.CallbackContext ctx) => OnMove?.Invoke(ctx);
         private void OnJumpGameplayCallback(InputAction.CallbackContext ctx) => OnJump?.Invoke(ctx);
