@@ -2,7 +2,7 @@ using SynthOfRage.Scripts.Core;
 using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 
-namespace _Dev.Christopher.Scripts
+namespace SynthOfRage.Scripts.Unit
 {
     public class SpawnerManager : SingletonMonoBehaviour<SpawnerManager>
     {

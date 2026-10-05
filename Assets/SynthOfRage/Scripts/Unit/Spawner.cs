@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using SynthOfRage.Scripts.Core;
 using UnityEngine;
 
-namespace _Dev.Christopher.Scripts
+namespace SynthOfRage.Scripts.Unit
 {
     public class Spawner : MonoBehaviour
     {
@@ -21,13 +21,13 @@ namespace _Dev.Christopher.Scripts
         {
             _dynamicContainer = GameObject.FindGameObjectWithTag("DynamicInstances")?.transform;
             if (!_dynamicContainer)
-                Debug.Log("[Spawner] An object with the DynamicInstances tag is missing in the scene !");
+                UnityEngine.Debug.Log("[Spawner] An object with the DynamicInstances tag is missing in the scene !");
             
             
             transform.gameObject.SetActive(false);
             if (Enemy == null || Enemy.Count == 0)
             {
-                Debug.LogError("No enemy to spawn !!!");
+                UnityEngine.Debug.LogError("No enemy to spawn !!!");
             }
         }
 
