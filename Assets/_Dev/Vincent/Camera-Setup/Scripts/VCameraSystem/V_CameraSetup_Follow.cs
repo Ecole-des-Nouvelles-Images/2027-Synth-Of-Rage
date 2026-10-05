@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using SynthOfRage.Scripts.Core;
-using SynthOfRage.Scripts.Player;
-using SynthOfRage.Scripts.Player.Movement.Utils;
+using SynthOfRage.Scripts.Unit.Player;
+using SynthOfRage.Scripts.Unit.Player.Movement.Utils;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Splines;

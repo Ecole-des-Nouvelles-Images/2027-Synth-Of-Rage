@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
-using Avatar = SynthOfRage.Scripts.Player.Avatar;
+using Avatar = SynthOfRage.Scripts.Unit.Player.Avatar;
 using Object = UnityEngine.Object;
 
 namespace SynthOfRage.Scripts.Debug
@@ -50,7 +50,7 @@ namespace SynthOfRage.Scripts.Debug
                         return;
                     }
 
-                    avatar.HealthModule.SetValue(newHP, false);
+                    avatar.HealthModule.Set(newHP, false);
                     UnityEngine.Debug.Log($"[DebugUtils] set-property {{Avatar HP}} → {newHP}");
                 }
             ),
@@ -69,7 +69,7 @@ namespace SynthOfRage.Scripts.Debug
                         return;
                     }
 
-                    avatar.HealthModule.SetValue(newMaxHP, true, true);
+                    avatar.HealthModule.Set(newMaxHP, true, true);
                     UnityEngine.Debug.Log($"[DebugUtils] set-property {{Avatar MaxHP}} → {newMaxHP}");
                 }
             ),
