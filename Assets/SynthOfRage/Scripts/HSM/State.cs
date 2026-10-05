@@ -1,4 +1,3 @@
-using SynthOfRage.Scripts.CommandPattern;
 
 namespace SynthOfRage.Scripts.HSM
 {
