@@ -3,7 +3,102 @@ guid: e855bf886ba6ec942af1edf4e05f6fe0
 ModelImporter:
   serializedVersion: 24600
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVBuildingBase
+    second: {fileID: 2100000, guid: 15e92f396c9c98140be9cad5db7a3ecf, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVBuildingBaseParts
+    second: {fileID: 2100000, guid: 0028c07a27a60c24e977fa94bb1ce496, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVBuildingWall
+    second: {fileID: 2100000, guid: e3dfb751661f63944a8a00817560cbc7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVBuildingWallBlack
+    second: {fileID: 2100000, guid: df0dee0ee7a46e84f99c379035131957, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVBuildingWallGroup
+    second: {fileID: 2100000, guid: 7acef88845b35174e8334de5654f6846, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVFenceIron
+    second: {fileID: 2100000, guid: 33c537de048dab849850672fc81b375b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGlassTile
+    second: {fileID: 2100000, guid: 42f92b9e971b9904aad79dbd53c96fb9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGlassTile_Light
+    second: {fileID: 2100000, guid: 65647fe59b9217945a59fbf4a46b31db, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGrafittiSignBoard
+    second: {fileID: 2100000, guid: bd8fa04f22f537546a4428b1cd247a1f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGrafittiSignBoardAlpha
+    second: {fileID: 2100000, guid: 5172b88e6ccef2c4bae162ce343a061a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGroundAsphalt
+    second: {fileID: 2100000, guid: abf5fec7fd998e14b8c70bfab58fb67e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVGroundBase_va
+    second: {fileID: 2100000, guid: 77050c728f89e904bbbad9c035fd61ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVHighWayFenceLong
+    second: {fileID: 2100000, guid: cefeb9cc86dcd734f829794e942f9852, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVHighWayWallShort
+    second: {fileID: 2100000, guid: 52271e27766cff44cacc0b92708bf90b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVTinRoof
+    second: {fileID: 2100000, guid: cd89aff06c9040345be2bc517b686824, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVWallConcreteGrey
+    second: {fileID: 2100000, guid: bfc6e7def1a03974a9c81bb0f152d194, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVWallTile
+    second: {fileID: 2100000, guid: e5663edff7600754691274102dea959c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: DVWindowlFrame
+    second: {fileID: 2100000, guid: 14064e6cb3976344699fafc37e163e8a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: GrafittiBuildingWindow
+    second: {fileID: 2100000, guid: 0b89a2316b339dc4b9fb8bc3860b04da, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -114,3 +209,4 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
+  script: {fileID: 21018, guid: 0000000000000000e000000000000000, type: 0}

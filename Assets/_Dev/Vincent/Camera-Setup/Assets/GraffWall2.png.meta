@@ -1,16 +1,16 @@
 fileFormatVersion: 2
-guid: a3f88147cde2b3945bd208fad9a7fea0
+guid: 501e3be29cb296c4eb727aaffacfb113
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1685760688592211724
-    second: T_ConcreteNormal_0
+      213: 1088614758816534541
+    second: GraffWall2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
-    enableMipMap: 1
-    sRGBTexture: 0
+    enableMipMap: 0
+    sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
     borderMipMap: 0
@@ -55,11 +55,11 @@ TextureImporter:
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
-  alphaIsTransparency: 0
+  alphaIsTransparency: 1
   spriteTessellationMethod: 0
   spriteTessellationDetail: -1
   spriteGeometrySubdivision: -1
-  textureType: 1
+  textureType: 8
   textureShape: 1
   singleChannelComponent: 0
   flipbookRows: 1
@@ -102,13 +102,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: T_ConcreteNormal_0
+      name: GraffWall2_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 350
-        height: 350
+        width: 512
+        height: 512
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -117,8 +117,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c0f4bdb2a66056710800000000000000
-      internalID: 1685760688592211724
+      spriteID: d00d18cfa598b1f00800000000000000
+      internalID: 1088614758816534541
       vertices: []
       indices: 
       edges: []
@@ -137,7 +137,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      T_ConcreteNormal_0: 1685760688592211724
+      GraffWall2_0: 1088614758816534541
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
