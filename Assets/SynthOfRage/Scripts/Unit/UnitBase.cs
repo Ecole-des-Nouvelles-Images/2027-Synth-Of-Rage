@@ -1,5 +1,3 @@
-using System;
-using SynthOfRage.Scripts.Common.Modules;
 using UnityEngine;
 
 using SynthOfRage.Scripts.Unit.Foes;

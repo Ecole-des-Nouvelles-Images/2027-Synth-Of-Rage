@@ -36,7 +36,6 @@ namespace SynthOfRage.Scripts.Unit.Player
         #endregion
 
         public HealthModule HealthModule { get; private set; }
-
         private readonly AvatarController _controller = new();
         private Animator _animator;
 
