@@ -38,7 +38,5 @@ namespace _Dev.Christopher.Scripts
                 Destroy(other.gameObject);
             }
         }
-
-       
     }
 }
