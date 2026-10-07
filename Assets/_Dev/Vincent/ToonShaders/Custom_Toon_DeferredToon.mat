@@ -48,16 +48,16 @@ Material:
     - _PosterizeSteps: 26.5
     - _PosterizeStrength: 1
     - _ReceiveShadowStrength: 1
-    - _RimPower: 4
-    - _RimStrength: 0.11
-    - _RimThreshold: 0.5
+    - _RimPower: 2.34
+    - _RimStrength: 0.242
+    - _RimThreshold: 1
     - _SpecularPower: 64
     - _SpecularStrength: 0.25
     - _SpecularThreshold: 0.6
     m_Colors:
-    - _BaseColor: {r: 0.2495494, g: 0.23137255, b: 0.39607844, a: 1}
+    - _BaseColor: {r: 0.30257055, g: 0.20024922, b: 0.5660378, a: 1}
     - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 0.536904, g: 0.5154415, b: 0.9339623, a: 1}
     - _ShadowColor: {r: 1, g: 1, b: 1, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

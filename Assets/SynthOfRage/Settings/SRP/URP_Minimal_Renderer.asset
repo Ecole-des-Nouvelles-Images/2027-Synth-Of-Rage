@@ -77,7 +77,8 @@ MonoBehaviour:
   - {fileID: -2451748209634047866}
   - {fileID: -2657124333677520068}
   - {fileID: 970484597755903286}
-  m_RendererFeatureMap: 86081046fea3f9dd3cdb1a1f7fff1fdb367d3a8d99da770dl
+  - {fileID: 3226770497442212238}
+  m_RendererFeatureMap: 86081046fea3f9dd3cdb1a1f7fff1fdb367d3a8d99da770d8ee9c0d7abcac72cl
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -124,8 +125,26 @@ MonoBehaviour:
   m_Active: 1
   injectionPoint: 550
   fetchColorBuffer: 1
-  requirements: 1
+  requirements: 3
   passMaterial: {fileID: 2100000, guid: 0eef5705c3b434e45b0549b4900d2fa2, type: 2}
   passIndex: 0
   bindDepthStencilAttachment: 1
   m_Version: 1
+--- !u!114 &3226770497442212238
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dc6a9b4184cff94ab83dd0f5cf8ea9c, type: 3}
+  m_Name: Sprite3DDepthFeature
+  m_EditorClassIdentifier: Assembly-CSharp::Sprite3DDepthFeature
+  m_Active: 1
+  settings:
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    injectionPoint: 450
