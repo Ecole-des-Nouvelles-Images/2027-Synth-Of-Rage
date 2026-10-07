@@ -1,8 +1,8 @@
-using SynthOfRage.Scripts.Core;
+using SynthOfRage.Scripts.Gameplay.Core;
 using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.Unit
+namespace SynthOfRage.Scripts.Gameplay
 {
     public class SpawnerManager : SingletonMonoBehaviour<SpawnerManager>
     {

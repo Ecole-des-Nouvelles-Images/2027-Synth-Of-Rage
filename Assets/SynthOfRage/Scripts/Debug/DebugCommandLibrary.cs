@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
 using SynthOfRage.Scripts.Utilities;
-using SynthOfRage.Scripts.Unit.Player;
+using SynthOfRage.Scripts.Gameplay.Unit.Player;
 
 namespace SynthOfRage.Scripts.Debug
 {

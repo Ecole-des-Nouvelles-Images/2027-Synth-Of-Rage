@@ -128,7 +128,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 9dfc825aed78fcd4ba02077103263b40, type: 2}
+  - {fileID: 2100000, guid: 83ecaac037634694593c0226258fa517, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -226,11 +226,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8811932486326818698}
-  - component: {fileID: 3632700079071963896}
-  - component: {fileID: 3806484546213611729}
+  - component: {fileID: 5394380723154291453}
+  - component: {fileID: 8440835938982663008}
   - component: {fileID: 651980791750356768}
-  - component: {fileID: 5375351107115829720}
-  - component: {fileID: 5308613982395648816}
   m_Layer: 0
   m_Name: P_PlayerPrototype
   m_TagString: Player
@@ -252,9 +250,10 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8816138006073828990}
+  - {fileID: 4986364708932879090}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3632700079071963896
+--- !u!114 &5394380723154291453
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -263,24 +262,40 @@ MonoBehaviour:
   m_GameObject: {fileID: 9200217704156353752}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bf4ae5a05379b594abbb86ab819be7fc, type: 3}
+  m_Script: {fileID: 11500000, guid: c9aaf53970b14023b2625fb87241b182, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.PlayerCore
-  debugEnabled: 0
-  moveAction: {fileID: 4852421195020343848, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  jumpAction: {fileID: -4128646940876294509, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  dashAction: {fileID: -4781708078038806543, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkLAction: {fileID: -8966350995563516342, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkHAction: {fileID: -7214872041846288177, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  guardAction: {fileID: 2202019535111302063, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkSpAction: {fileID: -6602437060585558575, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  pauseAction: {fileID: 0}
-  uiMoveAction: {fileID: 0}
-  uiPauseAction: {fileID: 0}
-  validateAction: {fileID: 0}
-  cancelAction: {fileID: 0}
-  panelAction: {fileID: 0}
---- !u!114 &3806484546213611729
+  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Unit.Player.Avatar
+  _characterController: {fileID: 0}
+  _currentMovementSpace: {fileID: 0}
+  _animator: {fileID: 0}
+  _stateMachine:
+    _isInitialized: 0
+    _states:
+      Move:
+        _moveAcceleration: 10
+        _maxSpeed: 5
+        _rotationSpeed: 15
+      Jump:
+        _jumpHeight: 2
+        _jumpDuration: 0.5
+        _airControl: 0.5
+      AttackLight:
+        _attackDuration: 0.5
+      AttackHeavy:
+        _attackDuration: 0.8
+      Dash:
+        _dashDistance: 4
+        _dashDuration: 0.2
+        _dashCooldown: 0.5
+    _debugEnabled: 0
+    _updateCycleDuration: 0
+  _moveSpeed: 5
+  _jumpHeight: 2
+  _gravity: -20
+  _dashDistance: 4
+  _dashDuration: 0.2
+  _dashCooldown: 0.5
+--- !u!114 &8440835938982663008
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -289,11 +304,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 9200217704156353752}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 50c9730a25789a34eae837a2f287e8bc, type: 3}
+  m_Script: {fileID: 11500000, guid: 9bb2d683f6866d648aef8d60cdc2820e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.PlayerObserver
-  playerCore: {fileID: 3632700079071963896}
-  debugEnabled: 0
+  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.UI.PlayerHealth
+  _maxHP: 100
 --- !u!143 &651980791750356768
 CharacterController:
   m_ObjectHideFlags: 0
@@ -312,106 +326,116 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 3.64
+  m_Height: 3.27
   m_Radius: 1
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5375351107115829720
-MonoBehaviour:
+  m_Center: {x: 0, y: 0.07, z: 0}
+--- !u!1001 &8933263474366918975
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9200217704156353752}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f06ecf519063214478243f37be3ec6c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.PlayerMovement
-  _playerObserver: {fileID: 3806484546213611729}
-  _spriteRenderer: {fileID: 8592611151959225744}
-  _movementSpace: {fileID: 0}
-  _debugEnabled: 0
-  _moveSpeed: 5
-  _followMovementSpaceRotation: 1
-  _movementSpaceRotationSmoothTime: 0.15
-  _jumpHeight: 4.5
-  _gravity: -200
-  _jumpCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 8811932486326818698}
+    m_Modifications:
+    - target: {fileID: 3883111490640556244, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchorMax.y
       value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalRotation.w
       value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalRotation.x
       value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _jumpDurationMultiplier: 1
-  _dashDistance: 4
-  _dashDuration: 0.2
-  _dashCooldown: 0.5
-  _dashCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalRotation.y
       value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
---- !u!114 &5308613982395648816
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4559970950907932405, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+      propertyPath: m_Name
+      value: PI_PlayerHUD
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+--- !u!224 &4986364708932879090 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 4524555786535416781, guid: d03718ff65e6de040883b9e656b31ab3, type: 3}
+  m_PrefabInstance: {fileID: 8933263474366918975}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9200217704156353752}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 428766b23e8b60c4b974bbfdac04259b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Scripts.AcCharacterHandler
-  playerObserver: {fileID: 3806484546213611729}
-  MyAnimator: {fileID: 2182655559030908427}

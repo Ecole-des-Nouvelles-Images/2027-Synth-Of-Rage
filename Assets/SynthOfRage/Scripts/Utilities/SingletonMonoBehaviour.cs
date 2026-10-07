@@ -9,8 +9,13 @@ namespace SynthOfRage.Scripts.Utilities
         [AutoStaticsCleanup]
         private static T _instance;
 
-        [AutoStaticsCleanup]
-        private static bool _autoDiscard = true; // Each closed type will get its own static field
+        /// <summary>Tell if the <c>SingletonMonoBehaviour</c> should discard any new instances on the spot if an instance already exists.</summary>
+        /// <remarks>While the parameter is static, it's applied for each different closed type, not for all singletons.</remarks>
+        [AutoStaticsCleanup] private static bool _autoDiscard = true;
+
+        /// <summary>Should the <c>SingletonMonoBehaviour</c> throw a critical exception if a <c>get</c> fails and would return a <see langword="null"/> reference.</summary>
+        /// <remarks>When disabled (<see langword="false"/>), additional <see langword="null"/>-checks should be done on each <c>get</c>.</remarks>
+        [AutoStaticsCleanup] private static bool _forceNullInstanceException = false;
 
         public static T Instance
         {
@@ -27,15 +32,16 @@ namespace SynthOfRage.Scripts.Utilities
                         throw new Exception($"[{typeof(T).Name}] There is more than one instance in the scene !");
                 }
 
-                if (!_instance) // TODO: This line doesn't allow checking for a missing singleton instance and will raise an exception
-                {
-                    throw new Exception($"[{typeof(T).Name}] No singleton instance found in the scene !");
-                }
+                if (_instance) return _instance;
 
-                return _instance;
+#if UNITY_EDITOR || UNITY_USE_INSTRUMENTATION
+                UnityEngine.Debug.LogWarning($"[{typeof(T).Name}] Attempting to get a singleton instance that doesn't exist anymore.");
+#endif
+                return _forceNullInstanceException ? throw new Exception($"[{typeof(T).Name}] No singleton instance found in the scene !") : null;
+
             }
         }
-        
+
         protected virtual void Awake()
         {
             if (_instance == null)
@@ -66,11 +72,11 @@ namespace SynthOfRage.Scripts.Utilities
 
         /// <summary>
         /// Force the object to not be destroyed automatically if another singleton instance exist.<br/>
-        /// ⚠️ Be advised → setting the _autoDiscard to false will just skip to raise an exception and mark a hard error.
+        /// ⚠️ Be advised → setting <c>_autoDiscard</c> to false will just skip any warnings to raise an exception instead and mark a hard error.
         /// </summary>
         public static void DisableAutoDiscard()
         {
-            UnityEngine.Debug.LogWarning($"⚠️ [{typeof(T).Name}] auto-discard disabled\nThis WILL lead to errors instead of warnings upon further instantiations !");
+            UnityEngine.Debug.LogWarning($"⚠️ [{typeof(T).Name}] auto-discard disabled.\nThis WILL lead to exceptions instead of warnings upon further instantiations !");
             _autoDiscard = false;
         }
     }
