@@ -58,15 +58,30 @@ Shader "Custom/Sprite3D/Lit"
             ZWrite Off
             ZTest LEqual
 
+
+            // ========================================================
+            // SCREEN SPACE OUTLINE OCCLUSION
+            // ========================================================
+            // Marks visible sprite pixels in stencil bit 3 (value 8).
+            // The fullscreen outline pass must use Comp NotEqual / Ref 8.
+            // Enable Bind Depth-Stencil on the Full Screen Pass feature.
+            Stencil
+            {
+                Ref 8
+                ReadMask 8
+                WriteMask 8
+                Comp Always
+                Pass Replace
+                Fail Keep
+                ZFail Keep
+            }
+
             HLSLPROGRAM
 
             #pragma target 4.5
 
             #pragma vertex Vert
             #pragma fragment Frag
-
-            #pragma multi_compile_instancing
-
             // ========================================================
             // MAIN LIGHT SHADOWS
             //
@@ -122,8 +137,6 @@ Shader "Custom/Sprite3D/Lit"
                 float4 positionOS : POSITION;
                 float2 uv         : TEXCOORD0;
                 half4 color       : COLOR;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -138,8 +151,6 @@ Shader "Custom/Sprite3D/Lit"
                 half4 color : COLOR;
 
                 float4 shadowCoord : TEXCOORD2;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -185,15 +196,6 @@ Shader "Custom/Sprite3D/Lit"
             Varyings Vert(Attributes input)
             {
                 Varyings output;
-
-                UNITY_SETUP_INSTANCE_ID(input);
-
-                UNITY_TRANSFER_INSTANCE_ID(
-                    input,
-                    output
-                );
-
-
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(
                         input.positionOS.xyz
@@ -312,9 +314,6 @@ Shader "Custom/Sprite3D/Lit"
 
             half4 Frag(Varyings input) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
                 // ====================================================
                 // SPRITE
                 // ====================================================
@@ -646,10 +645,6 @@ Shader "Custom/Sprite3D/Lit"
 
             #pragma vertex DepthNormalsVert
             #pragma fragment DepthNormalsFrag
-
-            #pragma multi_compile_instancing
-
-
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 
@@ -657,8 +652,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -666,8 +659,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -703,17 +694,6 @@ Shader "Custom/Sprite3D/Lit"
             )
             {
                 Varyings output;
-
-
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
-                UNITY_TRANSFER_INSTANCE_ID(
-                    input,
-                    output
-                );
-
-
                 output.positionCS =
                     TransformObjectToHClip(
                         input.positionOS.xyz
@@ -735,9 +715,6 @@ Shader "Custom/Sprite3D/Lit"
                 Varyings input
             ) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
                 half alpha =
                     SAMPLE_TEXTURE2D(
                         _MainTex,
@@ -800,10 +777,6 @@ Shader "Custom/Sprite3D/Lit"
 
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
-
-            #pragma multi_compile_instancing
-
-
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 
@@ -811,8 +784,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -820,8 +791,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -857,17 +826,6 @@ Shader "Custom/Sprite3D/Lit"
             )
             {
                 Varyings output;
-
-
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
-                UNITY_TRANSFER_INSTANCE_ID(
-                    input,
-                    output
-                );
-
-
                 output.positionCS =
                     TransformObjectToHClip(
                         input.positionOS.xyz
@@ -889,9 +847,6 @@ Shader "Custom/Sprite3D/Lit"
                 Varyings input
             ) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
                 if (_CastShadows < 0.5h)
                     discard;
 
@@ -942,10 +897,6 @@ Shader "Custom/Sprite3D/Lit"
 
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
-
-            #pragma multi_compile_instancing
-
-
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 
@@ -953,8 +904,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -962,8 +911,6 @@ Shader "Custom/Sprite3D/Lit"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-
-                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
 
@@ -999,17 +946,6 @@ Shader "Custom/Sprite3D/Lit"
             )
             {
                 Varyings output;
-
-
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
-                UNITY_TRANSFER_INSTANCE_ID(
-                    input,
-                    output
-                );
-
-
                 output.positionCS =
                     TransformObjectToHClip(
                         input.positionOS.xyz
@@ -1031,9 +967,6 @@ Shader "Custom/Sprite3D/Lit"
                 Varyings input
             ) : SV_Target
             {
-                UNITY_SETUP_INSTANCE_ID(input);
-
-
                 half alpha =
                     SAMPLE_TEXTURE2D(
                         _MainTex,
@@ -1056,4 +989,5 @@ Shader "Custom/Sprite3D/Lit"
 
     FallBack Off
 }
+
 

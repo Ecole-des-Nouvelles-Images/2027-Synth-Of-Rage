@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Custom_Toon_Outline
+  m_Shader: {fileID: 4800000, guid: 09253a91d08c2f245964c4d69c61a273, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _OUTLINE_SPRITES3D
+  m_InvalidKeywords:
+  - _NORMALSOURCE_MESH
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineMask:
+        m_Texture: {fileID: 2800000, guid: e2af12f3f73c44d4b854d67ec225038e, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AdditionalLightStrength: 1
+    - _AmbientStrength: 0.25
+    - _DepthSoftness: 0.2
+    - _DepthStrength: 3
+    - _DepthThreshold: 0.4
+    - _DirectLightStrength: 1
+    - _DistanceFalloff: 1
+    - _DistanceFar: 300
+    - _DistanceNear: 3
+    - _HalftoneAngle: 45
+    - _HalftoneLevels: 4
+    - _HalftoneMaxRadius: 0.46
+    - _HalftoneMinRadius: 0.04
+    - _HalftoneSize: 10
+    - _HalftoneStrength: 0.8
+    - _LightBands: 4
+    - _LightBias: 0
+    - _MaskInvert: 0
+    - _MaskProjectionBlend: 4
+    - _MaskSoftness: 0.05
+    - _MaskStrength: 1
+    - _MaskThreshold: 0.5
+    - _MaskWorldScale: 0.21
+    - _NearThicknessMultiplier: 6
+    - _NormalSoftness: 1
+    - _NormalSource: 0
+    - _NormalStrength: 3
+    - _NormalThreshold: 1
+    - _OutlineOpacity: 1
+    - _OutlineRadialBlend: 1
+    - _OutlineSprites3D: 1
+    - _OutlineThickness: 3
+    - _OutlineWidth: 3.54
+    - _OutlineWidthPixels: 20
+    - _PosterizeSteps: 8
+    - _PosterizeStrength: 1
+    - _RadialBlend: 1
+    - _ReceiveShadowStrength: 1
+    - _RimPower: 4
+    - _RimStrength: 0.1
+    - _RimThreshold: 0.5
+    - _SmoothNormalBlend: 1
+    - _SpecularPower: 64
+    - _SpecularStrength: 0.2
+    - _SpecularThreshold: 0.6
+    - _TestStrength: 1
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
+    - _MaskOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _MaskTiling: {r: 12, g: 12, b: 12, a: 0}
+    - _MaskWorldOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _OutlineColor: {r: 0.5568628, g: 0.5568628, b: 0.5568628, a: 1}
+    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowColor: {r: 0.17999998, g: 0.17999998, b: 0.23999995, a: 1}
+    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TestColor: {r: 1, g: 0, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
