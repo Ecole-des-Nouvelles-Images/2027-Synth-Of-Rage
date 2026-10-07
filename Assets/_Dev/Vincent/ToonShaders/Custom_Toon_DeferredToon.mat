@@ -11,8 +11,10 @@ Material:
   m_Shader: {fileID: 4800000, guid: ea5b715a42e3d044bbf264fde10e6634, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
+  m_ValidKeywords:
+  - _TOON_STEP_PATTERN
+  m_InvalidKeywords:
+  - _STEPPATTERNINVERT_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -24,41 +26,53 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 9c466577df9339a4cbf757f761e268bc, type: 3}
-        m_Scale: {x: 0.5, y: 0.5}
+        m_Texture: {fileID: 2800000, guid: fd9442e61b53005488d1e2c71e79090a, type: 3}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap:
         m_Texture: {fileID: 2800000, guid: 0a276e379f950844e8e50ce166601aff, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _StepPattern:
+        m_Texture: {fileID: 2800000, guid: 5aed56393881c914394e84222bf77be7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AdditionalLightStrength: 3
-    - _AmbientStrength: 0.25
-    - _DirectLightStrength: 1
-    - _HalftoneAngle: 45
-    - _HalftoneLevels: 3.62
-    - _HalftoneMaxRadius: 0.333
+    - _AmbientStrength: 2
+    - _DirectLightStrength: 3
+    - _HalftoneAngle: 127
+    - _HalftoneLevels: 3
+    - _HalftoneMaxRadius: 0.5
     - _HalftoneMinRadius: 0
-    - _HalftoneSize: 7.5
-    - _HalftoneStrength: 0.8
-    - _LightBands: 4.63
+    - _HalftoneSize: 15
+    - _HalftoneStrength: 1
+    - _LightBands: 4
     - _LightBias: 0
-    - _NormalStrength: 1
-    - _PosterizeSteps: 26.5
-    - _PosterizeStrength: 1
+    - _NormalStrength: 2
+    - _PosterizeSteps: 32
+    - _PosterizeStrength: 0.5
     - _ReceiveShadowStrength: 1
-    - _RimPower: 2.34
-    - _RimStrength: 0.242
-    - _RimThreshold: 1
-    - _SpecularPower: 64
-    - _SpecularStrength: 0.25
-    - _SpecularThreshold: 0.6
+    - _RimPatternStrength: 0.1
+    - _RimPower: 0.1
+    - _RimStrength: 0.01
+    - _RimThreshold: 0.5
+    - _SpecularPower: 12
+    - _SpecularStrength: 1
+    - _SpecularThreshold: 0
+    - _StepPatternContrast: 8
+    - _StepPatternInvert: 1
+    - _StepPatternProjectionBlend: 16
+    - _StepPatternStrength: 0.1
+    - _StepPatternWorldScale: 0.03
+    - _UseStepPattern: 1
     m_Colors:
-    - _BaseColor: {r: 0.30257055, g: 0.20024922, b: 0.5660378, a: 1}
+    - _BaseColor: {r: 0.6408067, g: 0.3726415, b: 1, a: 1}
     - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RimColor: {r: 0.536904, g: 0.5154415, b: 0.9339623, a: 1}
-    - _ShadowColor: {r: 1, g: 1, b: 1, a: 1}
-    - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 0, g: 0.050694704, b: 1, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SpecularColor: {r: 0, g: 0.6792453, b: 0.20792234, a: 1}
+    - _StepPatternWorldOffset: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

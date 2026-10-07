@@ -33,6 +33,7 @@ Material:
     m_Floats:
     - _AmbientStrength: 1
     - _CastShadows: 1
+    - _DepthOcclusionAlphaCutoff: 0.9
     - _EdgeLightBoost: 0.25
     - _EdgeSensitivity: 10
     - _EdgeWidth: 0.001
