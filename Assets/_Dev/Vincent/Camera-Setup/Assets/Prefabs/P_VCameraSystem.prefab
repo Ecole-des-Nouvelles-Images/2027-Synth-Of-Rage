@@ -166,7 +166,7 @@ MonoBehaviour:
   playerMovement: {fileID: 0}
   initialMovementSpace: {fileID: 0}
   followSmoothTime: 0.5
-  blendFollowSmoothTime: 0.06
+  blendFollowSmoothTime: 0.5
   maxBlendKnotLag: 0.12
   framingCorrectionEnabled: 1
   framingTargetOffset: {x: 0, y: 1, z: 0}

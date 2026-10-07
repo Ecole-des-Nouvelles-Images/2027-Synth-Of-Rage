@@ -6,6 +6,7 @@ Shader "Custom/Sprite3D/Lit-OC"
         // SPRITE
         // ============================================================
 
+        [PerRendererData]
         [MainTexture]
         _MainTex("Sprite Texture", 2D) = "white" {}
 
@@ -67,6 +68,32 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
         // ============================================================
+        // DEPTH OCCLUSION ALPHA
+        // ============================================================
+        //
+        // IMPORTANT :
+        //
+        // Ce seuil ne change PAS la transparence visible.
+        //
+        // Il indique seulement à partir de quel alpha
+        // le pixel est suffisamment opaque pour cacher
+        // les autres Sprite3D derrière lui.
+        //
+        // Exemple :
+        //
+        // alpha 1.0  -> bloque derrière
+        // alpha 0.8  -> selon threshold
+        // alpha 0.3  -> ne bloque pas derrière
+        //
+        // ============================================================
+
+        _DepthOcclusionAlphaCutoff(
+            "Depth Occlusion Alpha Cutoff",
+            Range(0,1)
+        ) = 0.9
+
+
+        // ============================================================
         // PER INSTANCE OUTLINE
         // ============================================================
 
@@ -92,11 +119,12 @@ Shader "Custom/Sprite3D/Lit-OC"
 
         // ============================================================
         // FORWARD LIT
+        // ============================================================
         //
-        // Renderer = Deferred / Deferred+
+        // Deferred / Deferred+ renderer.
         //
-        // Le sprite est Transparent :
-        // il est donc volontairement rendu en ForwardOnly.
+        // Le Sprite3D reste transparent :
+        // il est donc rendu en UniversalForwardOnly.
         // ============================================================
 
         Pass
@@ -224,12 +252,9 @@ Shader "Custom/Sprite3D/Lit-OC"
             // SPRITE 3D SCENE DEPTH
             // ========================================================
             //
-            // R32_SFloat.
+            // R32_SFloat
             //
-            // Contient directement la profondeur linéaire
-            // en unités Unity / mètres.
-            //
-            // PAS une depth normalisée 0-1.
+            // Profondeur linéaire directement en unités Unity.
             // ========================================================
 
             Texture2D<float> _Sprite3DSceneDepthTexture;
@@ -260,6 +285,8 @@ Shader "Custom/Sprite3D/Lit-OC"
                 half _EdgeLightBoost;
 
                 float _SpriteDepthSortEpsilon;
+
+                float _DepthOcclusionAlphaCutoff;
 
             CBUFFER_END
 
@@ -331,6 +358,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                 output.eyeDepth =
                     max(
                         -positionVS.z,
+
                         0.0
                     );
 
@@ -340,17 +368,13 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
             // ========================================================
-            // SPRITE 3D DEPTH SORTING
+            // 3D SPRITE DEPTH SORT
             // ========================================================
 
             void ApplySprite3DDepthSorting(
                 Varyings input
             )
             {
-                // ====================================================
-                // GET TEXTURE SIZE
-                // ====================================================
-
                 uint textureWidth;
 
                 uint textureHeight;
@@ -363,18 +387,18 @@ Shader "Custom/Sprite3D/Lit-OC"
                 );
 
 
+                if(
+                    textureWidth == 0
+                    ||
+                    textureHeight == 0
+                )
+                {
+                    return;
+                }
+
+
                 // ====================================================
-                // EXACT PIXEL
-                // ====================================================
-                //
-                // SV_POSITION dans le fragment shader est exprimé
-                // en coordonnées pixel.
-                //
-                // On utilise Load() :
-                //
-                // - aucun bilinear filtering
-                // - aucune interpolation
-                // - lecture exacte du pixel du prepass
+                // EXACT SCREEN PIXEL
                 // ====================================================
 
                 int2 pixelCoord =
@@ -386,7 +410,9 @@ Shader "Custom/Sprite3D/Lit-OC"
                 pixelCoord.x =
                     clamp(
                         pixelCoord.x,
+
                         0,
+
                         (int)textureWidth - 1
                     );
 
@@ -394,25 +420,29 @@ Shader "Custom/Sprite3D/Lit-OC"
                 pixelCoord.y =
                     clamp(
                         pixelCoord.y,
+
                         0,
+
                         (int)textureHeight - 1
                     );
 
+
+                // ====================================================
+                // CLOSEST OPAQUE-ENOUGH SPRITE
+                // ====================================================
 
                 float nearestEyeDepth =
                     _Sprite3DSceneDepthTexture.Load(
                         int3(
                             pixelCoord,
+
                             0
                         )
                     );
 
 
                 // ====================================================
-                // EMPTY PIXEL
-                // ====================================================
-                //
-                // La texture est clear à farClip + 1.
+                // EMPTY
                 // ====================================================
 
                 if(
@@ -425,26 +455,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
                 // ====================================================
-                // DEPTH TEST
-                // ====================================================
-                //
-                // Exemple :
-                //
-                // nearest = 5.000 m
-                // current = 8.000 m
-                //
-                // -> discard
-                //
-                //
-                // nearest = 5.000 m
-                // current = 5.002 m
-                //
-                // epsilon = 0.005
-                //
-                // -> accepte
-                //
-                // Ce petit epsilon absorbe les différences numériques
-                // entre le prepass et le pass visible.
+                // CURRENT SPRITE BEHIND AN OPAQUE PIXEL
                 // ====================================================
 
                 float depthDifference =
@@ -470,6 +481,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                 float2 offset =
                     float2(
                         _EdgeWidth,
+
                         _EdgeWidth
                     );
 
@@ -481,6 +493,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                         uv +
                         float2(
                             -offset.x,
+
                             0
                         )
                     ).a;
@@ -493,6 +506,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                         uv +
                         float2(
                             offset.x,
+
                             0
                         )
                     ).a;
@@ -505,6 +519,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                         uv +
                         float2(
                             0,
+
                             offset.y
                         )
                     ).a;
@@ -517,6 +532,7 @@ Shader "Custom/Sprite3D/Lit-OC"
                         uv +
                         float2(
                             0,
+
                             -offset.y
                         )
                     ).a;
@@ -546,7 +562,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
             // ========================================================
-            // LIGHT CONTRIBUTION
+            // LIGHT
             // ========================================================
 
             half3 EvaluateLight(
@@ -597,7 +613,7 @@ Shader "Custom/Sprite3D/Lit-OC"
             ) : SV_Target
             {
                 // ====================================================
-                // SPRITE
+                // TEXTURE
                 // ====================================================
 
                 float4 tex =
@@ -614,7 +630,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
                 // ====================================================
-                // ALPHA
+                // FULLY TRANSPARENT PIXELS
                 // ====================================================
 
                 clip(
@@ -624,7 +640,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
                 // ====================================================
-                // TRUE 3D SPRITE SORT
+                // 3D DEPTH SORT
                 // ====================================================
 
                 ApplySprite3DDepthSorting(
@@ -640,7 +656,9 @@ Shader "Custom/Sprite3D/Lit-OC"
                     TransformObjectToWorldNormal(
                         float3(
                             0,
+
                             0,
+
                             -1
                         )
                     );
@@ -714,7 +732,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
                     // =================================================
-                    // CLUSTER
+                    // CLUSTER / DEFERRED+
                     // =================================================
 
                     #if USE_CLUSTER_LIGHT_LOOP
@@ -747,8 +765,11 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                                     half4(
                                         1,
+
                                         1,
+
                                         1,
+
                                         1
                                     )
                                 );
@@ -764,7 +785,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
 
                         // =============================================
-                        // CLUSTER POINT / SPOT LIGHTS
+                        // CLUSTERED POINT / SPOT
                         // =============================================
 
                         ClusterIterator clusterIterator =
@@ -802,8 +823,11 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                                     half4(
                                         1,
+
                                         1,
+
                                         1,
+
                                         1
                                     )
                                 );
@@ -848,8 +872,11 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                                     half4(
                                         1,
+
                                         1,
+
                                         1,
+
                                         1
                                     )
                                 );
@@ -926,11 +953,22 @@ Shader "Custom/Sprite3D/Lit-OC"
         // SPRITE SCENE DEPTH
         // ============================================================
         //
-        // TOUS les Sprite3D écrivent ici.
+        // C'est ici que la correction principale se trouve.
         //
-        // R = LINEAR EYE DEPTH directement en mètres.
+        // AVANT :
         //
-        // Pas de normalisation par le far plane.
+        // clip(alpha - 0.001)
+        //
+        // Un alpha 0.01 bloquait donc les autres sprites.
+        //
+        //
+        // MAINTENANT :
+        //
+        // clip(alpha - _DepthOcclusionAlphaCutoff)
+        //
+        // Seuls les pixels suffisamment opaques participent
+        // à l'occlusion 3D.
+        //
         // ============================================================
 
         Pass
@@ -951,10 +989,6 @@ Shader "Custom/Sprite3D/Lit-OC"
             ZTest Always
 
 
-            // ========================================================
-            // NEAREST DEPTH WINS
-            // ========================================================
-
             Blend One One
 
             BlendOp Min
@@ -974,6 +1008,10 @@ Shader "Custom/Sprite3D/Lit-OC"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+
+            // ========================================================
+            // STRUCTURES
+            // ========================================================
 
             struct Attributes
             {
@@ -997,10 +1035,18 @@ Shader "Custom/Sprite3D/Lit-OC"
             };
 
 
+            // ========================================================
+            // TEXTURE
+            // ========================================================
+
             Texture2D<float4> _MainTex;
 
             SamplerState sampler_MainTex;
 
+
+            // ========================================================
+            // MATERIAL
+            // ========================================================
 
             CBUFFER_START(UnityPerMaterial)
 
@@ -1024,8 +1070,14 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 float _SpriteDepthSortEpsilon;
 
+                float _DepthOcclusionAlphaCutoff;
+
             CBUFFER_END
 
+
+            // ========================================================
+            // UV
+            // ========================================================
 
             float2 TransformMainUV(
                 float2 uv
@@ -1038,6 +1090,10 @@ Shader "Custom/Sprite3D/Lit-OC"
                     _MainTex_ST.zw;
             }
 
+
+            // ========================================================
+            // VERTEX
+            // ========================================================
 
             Varyings SpriteSceneDepthVert(
                 Attributes input
@@ -1085,14 +1141,14 @@ Shader "Custom/Sprite3D/Lit-OC"
             }
 
 
+            // ========================================================
+            // FRAGMENT
+            // ========================================================
+
             float4 SpriteSceneDepthFrag(
                 Varyings input
             ) : SV_Target
             {
-                // ====================================================
-                // ALPHA
-                // ====================================================
-
                 float4 tex =
                     _MainTex.Sample(
                         sampler_MainTex,
@@ -1106,14 +1162,22 @@ Shader "Custom/Sprite3D/Lit-OC"
                     input.color.a;
 
 
+                // ====================================================
+                // IMPORTANT
+                // ====================================================
+                //
+                // Le pixel n'occulte les autres Sprite3D
+                // QUE s'il est suffisamment opaque.
+                // ====================================================
+
                 clip(
                     alpha -
-                    0.001
+                    _DepthOcclusionAlphaCutoff
                 );
 
 
                 // ====================================================
-                // RAW LINEAR EYE DEPTH
+                // LINEAR EYE DEPTH
                 // ====================================================
 
                 return float4(
@@ -1136,12 +1200,10 @@ Shader "Custom/Sprite3D/Lit-OC"
         // SPRITE OUTLINE DEPTH
         // ============================================================
         //
-        // Cette texture reste dans l'ancien format normalisé
-        // car le fullscreen outline utilise actuellement :
+        // Ici on conserve toute la silhouette visible.
         //
-        // spriteDepth01 * _ProjectionParams.z
-        //
-        // Donc NE PAS modifier ce pass pour l'instant.
+        // Un pixel semi-transparent peut donc toujours participer
+        // à la silhouette de l'outline.
         // ============================================================
 
         Pass
@@ -1209,8 +1271,16 @@ Shader "Custom/Sprite3D/Lit-OC"
             SamplerState sampler_MainTex;
 
 
+            // ========================================================
+            // INSTANCE OUTLINE
+            // ========================================================
+
             float _SpriteOutlineEnabled;
 
+
+            // ========================================================
+            // MATERIAL
+            // ========================================================
 
             CBUFFER_START(UnityPerMaterial)
 
@@ -1233,6 +1303,8 @@ Shader "Custom/Sprite3D/Lit-OC"
                 half _EdgeLightBoost;
 
                 float _SpriteDepthSortEpsilon;
+
+                float _DepthOcclusionAlphaCutoff;
 
             CBUFFER_END
 
@@ -1300,7 +1372,7 @@ Shader "Custom/Sprite3D/Lit-OC"
             ) : SV_Target
             {
                 // ====================================================
-                // INSTANCE OUTLINE SWITCH
+                // INSTANCE SWITCH
                 // ====================================================
 
                 clip(
@@ -1308,10 +1380,6 @@ Shader "Custom/Sprite3D/Lit-OC"
                     0.5
                 );
 
-
-                // ====================================================
-                // ALPHA
-                // ====================================================
 
                 float4 tex =
                     _MainTex.Sample(
@@ -1326,15 +1394,15 @@ Shader "Custom/Sprite3D/Lit-OC"
                     input.color.a;
 
 
+                // ====================================================
+                // OUTLINE SILHOUETTE
+                // ====================================================
+
                 clip(
                     alpha -
                     0.001
                 );
 
-
-                // ====================================================
-                // NORMALIZED OUTLINE DEPTH
-                // ====================================================
 
                 float farPlane =
                     max(
@@ -1369,6 +1437,12 @@ Shader "Custom/Sprite3D/Lit-OC"
 
         // ============================================================
         // DEPTH NORMALS
+        // ============================================================
+        //
+        // On utilise aussi le nouveau alpha cutoff ici.
+        //
+        // Les zones réellement translucides ne doivent pas devenir
+        // artificiellement opaques dans la depth/normals caméra.
         // ============================================================
 
         Pass
@@ -1443,6 +1517,8 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 float _SpriteDepthSortEpsilon;
 
+                float _DepthOcclusionAlphaCutoff;
+
             CBUFFER_END
 
 
@@ -1495,7 +1571,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 clip(
                     alpha -
-                    _ShadowAlphaClip
+                    _DepthOcclusionAlphaCutoff
                 );
 
 
@@ -1503,7 +1579,9 @@ Shader "Custom/Sprite3D/Lit-OC"
                     TransformObjectToWorldNormal(
                         float3(
                             0,
+
                             0,
+
                             -1
                         )
                     );
@@ -1609,6 +1687,8 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 float _SpriteDepthSortEpsilon;
 
+                float _DepthOcclusionAlphaCutoff;
+
             CBUFFER_END
 
 
@@ -1667,6 +1747,8 @@ Shader "Custom/Sprite3D/Lit-OC"
                         input.uv
                     ).a;
 
+
+                // Ombres toujours indépendantes de l'occlusion 3D.
 
                 clip(
                     alpha -
@@ -1760,6 +1842,8 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 float _SpriteDepthSortEpsilon;
 
+                float _DepthOcclusionAlphaCutoff;
+
             CBUFFER_END
 
 
@@ -1812,7 +1896,7 @@ Shader "Custom/Sprite3D/Lit-OC"
 
                 clip(
                     alpha -
-                    _ShadowAlphaClip
+                    _DepthOcclusionAlphaCutoff
                 );
 
 
