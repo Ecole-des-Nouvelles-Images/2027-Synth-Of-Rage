@@ -267,14 +267,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.PlayerCore
   debugEnabled: 0
-  moveAction: {fileID: 4852421195020343848, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  jumpAction: {fileID: -4128646940876294509, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  dashAction: {fileID: -4781708078038806543, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkLAction: {fileID: -8966350995563516342, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkHAction: {fileID: -7214872041846288177, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  guardAction: {fileID: 2202019535111302063, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  atkSpAction: {fileID: -6602437060585558575, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  pauseAction: {fileID: 0}
+  moveAction: {fileID: 4852421195020343848, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  jumpAction: {fileID: -4128646940876294509, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  dashAction: {fileID: -4781708078038806543, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  atkLAction: {fileID: -8966350995563516342, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  atkHAction: {fileID: -7214872041846288177, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  guardAction: {fileID: 2202019535111302063, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  atkSpAction: {fileID: -6602437060585558575, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
+  pauseAction: {fileID: 4706049752303940113, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
   uiMoveAction: {fileID: 0}
   uiPauseAction: {fileID: 0}
   validateAction: {fileID: 0}
