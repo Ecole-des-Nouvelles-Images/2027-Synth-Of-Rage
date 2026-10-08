@@ -2,12 +2,8 @@ Shader "Custom/Toon/DeferredToon"
 {
     Properties
     {
-        // ============================================================
         // BASE
-        // ============================================================
-
         [Header(Base)]
-
         _BaseMap
         (
             "Base Color Texture",
@@ -21,10 +17,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = (1,1,1,1)
 
 
-        // ============================================================
         // NORMAL MAP
-        // ============================================================
-
         [Header(Normal Map)]
 
         [Normal]
@@ -41,10 +34,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 1
 
 
-        // ============================================================
         // TOON LIGHTING
-        // ============================================================
-
         [Header(Toon Lighting)]
 
         _LightBands
@@ -84,20 +74,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 1
 
 
-        // ============================================================
         // TOON STEP PATTERN
-        // ============================================================
-        //
-        // Déforme les transitions entre :
-        //
-        // Shadow
-        // Neutral
-        // Light
-        //
-        // ainsi que le Rim.
-        //
-        // ============================================================
-
         [Header(Toon Step Pattern)]
 
         [Toggle(_TOON_STEP_PATTERN)]
@@ -157,10 +134,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 0
 
 
-        // ============================================================
         // HALFTONE
-        // ============================================================
-
         [Header(Halftone)]
 
         _HalftoneStrength
@@ -206,10 +180,36 @@ Shader "Custom/Toon/DeferredToon"
         ) = 45
 
 
-        // ============================================================
-        // POSTERIZATION
-        // ============================================================
+        // HALFTONE ANCHORING
+        [Header(Halftone Anchoring)]
 
+        [Toggle(_HALFTONE_WORLD_SPACE)]
+        _HalftoneWorldSpace
+        (
+            "Lock Dots To World",
+            Float
+        ) = 0
+
+        _HalftoneWorldScale
+        (
+            "World Dot Density",
+            Range(0.05,20)
+        ) = 2
+
+        _HalftoneWorldOffset
+        (
+            "World Dot Offset",
+            Vector
+        ) = (0,0,0,0)
+
+        _HalftoneWorldProjectionBlend
+        (
+            "World Projection Sharpness",
+            Range(1,16)
+        ) = 6
+
+
+        // POSTERIZATION
         [Header(Posterization)]
 
         _PosterizeSteps
@@ -225,10 +225,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 1
 
 
-        // ============================================================
         // SPECULAR
-        // ============================================================
-
         [Header(Toon Specular)]
 
         _SpecularColor
@@ -256,10 +253,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 0.6
 
 
-        // ============================================================
         // RIM
-        // ============================================================
-
         [Header(Rim)]
 
         _RimColor
@@ -287,10 +281,7 @@ Shader "Custom/Toon/DeferredToon"
         ) = 0.5
 
 
-        // ============================================================
         // ADDITIONAL LIGHTS
-        // ============================================================
-
         [Header(Additional Lights)]
 
         _AdditionalLightStrength
@@ -311,187 +302,98 @@ Shader "Custom/Toon/DeferredToon"
         }
 
 
-        // ============================================================
-        // SHARED HLSL
-        // ============================================================
-
         HLSLINCLUDE
 
-
-        // ============================================================
-        // INCLUDES
-        // ============================================================
-
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
-
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
-
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Clustering.hlsl"
-
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-
         #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 
 
-        // ============================================================
-        // TEXTURES
-        // ============================================================
-        //
-        // HLSL NATIF.
-        //
-        // Pas de :
-        //
-        // SAMPLE_TEXTURE2D
-        // TEXTURE2D()
-        // SAMPLER()
-        //
-        // ============================================================
-
         Texture2D<float4> _BaseMap;
-
         SamplerState sampler_BaseMap;
 
-
         Texture2D<float4> _NormalMap;
-
         SamplerState sampler_NormalMap;
 
-
         Texture2D<float4> _StepPattern;
-
         SamplerState sampler_StepPattern;
 
 
-        // ============================================================
-        // MATERIAL
-        // ============================================================
-
         CBUFFER_START(UnityPerMaterial)
 
-
             float4 _BaseMap_ST;
-
             float4 _NormalMap_ST;
 
-
             float4 _BaseColor;
-
-
             float _NormalStrength;
 
 
-            // ========================================================
             // TOON
-            // ========================================================
-
             float _LightBands;
-
             float _LightBias;
-
             float4 _ShadowColor;
-
             float _DirectLightStrength;
-
             float _AmbientStrength;
-
             float _ReceiveShadowStrength;
 
 
-            // ========================================================
             // STEP PATTERN
-            // ========================================================
-
             float _UseStepPattern;
-
             float _StepPatternWorldScale;
-
             float4 _StepPatternWorldOffset;
-
             float _StepPatternStrength;
-
             float _RimPatternStrength;
-
             float _StepPatternContrast;
-
             float _StepPatternProjectionBlend;
-
             float _StepPatternInvert;
 
 
-            // ========================================================
             // HALFTONE
-            // ========================================================
-
             float _HalftoneStrength;
-
             float4 _HalftoneColor;
-
             float _HalftoneSize;
-
             float _HalftoneLevels;
-
             float _HalftoneMinRadius;
-
             float _HalftoneMaxRadius;
-
             float _HalftoneAngle;
 
+            float _HalftoneWorldSpace;
+            float _HalftoneWorldScale;
+            float4 _HalftoneWorldOffset;
+            float _HalftoneWorldProjectionBlend;
 
-            // ========================================================
+
             // POSTERIZATION
-            // ========================================================
-
             float _PosterizeSteps;
-
             float _PosterizeStrength;
 
 
-            // ========================================================
             // SPECULAR
-            // ========================================================
-
             float4 _SpecularColor;
-
             float _SpecularStrength;
-
             float _SpecularPower;
-
             float _SpecularThreshold;
 
 
-            // ========================================================
             // RIM
-            // ========================================================
-
             float4 _RimColor;
-
             float _RimStrength;
-
             float _RimPower;
-
             float _RimThreshold;
 
 
-            // ========================================================
             // ADDITIONAL LIGHTS
-            // ========================================================
-
             float _AdditionalLightStrength;
-
 
         CBUFFER_END
 
 
-        // ============================================================
-        // QUANTIZE
-        // ============================================================
-
         float Quantize01
         (
             float value,
-
             float levels
         )
         {
@@ -499,13 +401,11 @@ Shader "Custom/Toon/DeferredToon"
                 max
                 (
                     2.0,
-
                     round
                     (
                         levels
                     )
                 );
-
 
             value =
                 saturate
@@ -513,11 +413,9 @@ Shader "Custom/Toon/DeferredToon"
                     value
                 );
 
-
             float denominator =
                 levels -
                 1.0;
-
 
             return
                 floor
@@ -532,14 +430,9 @@ Shader "Custom/Toon/DeferredToon"
         }
 
 
-        // ============================================================
-        // POSTERIZE
-        // ============================================================
-
         float3 PosterizeColor
         (
             float3 color,
-
             float steps
         )
         {
@@ -547,18 +440,15 @@ Shader "Custom/Toon/DeferredToon"
                 max
                 (
                     2.0,
-
                     round
                     (
                         steps
                     )
                 );
 
-
             float denominator =
                 steps -
                 1.0;
-
 
             return
                 round
@@ -575,14 +465,9 @@ Shader "Custom/Toon/DeferredToon"
         }
 
 
-        // ============================================================
-        // ROTATE
-        // ============================================================
-
         float2 Rotate2D
         (
             float2 p,
-
             float angleRad
         )
         {
@@ -592,13 +477,11 @@ Shader "Custom/Toon/DeferredToon"
                     angleRad
                 );
 
-
             float c =
                 cos
                 (
                     angleRad
                 );
-
 
             return float2
             (
@@ -612,74 +495,39 @@ Shader "Custom/Toon/DeferredToon"
 
 
         // ============================================================
-        // HALFTONE
+        // HALFTONE CORE
         // ============================================================
 
-        float HalftoneMask
+        float HalftoneDotMask
         (
-            float2 pixelPosition,
-
+            float2 patternPosition,
             float darkness
         )
         {
-            if
-            (
-                _HalftoneStrength <=
-                0.0001
-            )
-            {
-                return 0.0;
-            }
-
-
             darkness =
                 Quantize01
                 (
                     darkness,
-
                     _HalftoneLevels
                 );
 
-
             if
             (
-                darkness <=
-                0.0001
+                _HalftoneStrength <= 0.0001
+                ||
+                darkness <= 0.0001
             )
             {
                 return 0.0;
             }
 
-
-            float2 p =
-                Rotate2D
-                (
-                    pixelPosition,
-
-                    radians
-                    (
-                        _HalftoneAngle
-                    )
-                );
-
-
-            p /=
-                max
-                (
-                    _HalftoneSize,
-
-                    1.0
-                );
-
-
             float2 cell =
                 frac
                 (
-                    p
+                    patternPosition
                 )
                 -
                 0.5;
-
 
             float distToCenter =
                 length
@@ -687,17 +535,13 @@ Shader "Custom/Toon/DeferredToon"
                     cell
                 );
 
-
             float radius =
                 lerp
                 (
                     _HalftoneMinRadius,
-
                     _HalftoneMaxRadius,
-
                     darkness
                 );
-
 
             float aa =
                 max
@@ -706,12 +550,10 @@ Shader "Custom/Toon/DeferredToon"
                     (
                         distToCenter
                     ),
-
                     0.0001
                 );
 
-
-            float dotMask =
+            return
                 1.0 -
                 smoothstep
                 (
@@ -723,41 +565,245 @@ Shader "Custom/Toon/DeferredToon"
 
                     distToCenter
                 );
+        }
+
+
+        // ============================================================
+        // SCREEN-SPACE HALFTONE
+        // ============================================================
+        //
+        // Comportement original.
+        //
+        // Les dots sont verrouillés à l'écran.
+        // La caméra se déplace "sous" le motif.
+        // ============================================================
+
+        float HalftoneMaskScreen
+        (
+            float2 pixelPosition,
+            float darkness
+        )
+        {
+            float2 p =
+                Rotate2D
+                (
+                    pixelPosition,
+                    radians
+                    (
+                        _HalftoneAngle
+                    )
+                );
+
+            p /=
+                max
+                (
+                    _HalftoneSize,
+                    1.0
+                );
+
+            return
+                HalftoneDotMask
+                (
+                    p,
+                    darkness
+                )
+                *
+                _HalftoneStrength;
+        }
+
+
+        // ============================================================
+        // WORLD-SPACE HALFTONE
+        // ============================================================
+        //
+        // Utilise positionWS + normale GEOMETRIQUE.
+        //
+        // La normal map artistique n'intervient donc pas dans
+        // l'orientation du motif.
+        //
+        // Le motif devient attaché au décor.
+        // ============================================================
+
+        float HalftoneMaskWorld
+        (
+            float3 positionWS,
+            float3 geometricNormalWS,
+            float darkness
+        )
+        {
+            if
+            (
+                _HalftoneStrength <= 0.0001
+            )
+            {
+                return 0.0;
+            }
+
+            float3 p =
+                (
+                    positionWS
+                    +
+                    _HalftoneWorldOffset.xyz
+                )
+                *
+                max
+                (
+                    _HalftoneWorldScale,
+                    0.0001
+                );
+
+            float angle =
+                radians
+                (
+                    _HalftoneAngle
+                );
+
+
+            // --------------------------------------------------------
+            // GEOMETRIC TRIPLANAR WEIGHTS
+            // --------------------------------------------------------
+
+            float3 weights =
+                abs
+                (
+                    normalize
+                    (
+                        geometricNormalWS
+                    )
+                );
+
+            weights =
+                pow
+                (
+                    max
+                    (
+                        weights,
+                        float3
+                        (
+                            0.0001,
+                            0.0001,
+                            0.0001
+                        )
+                    ),
+
+                    max
+                    (
+                        _HalftoneWorldProjectionBlend,
+                        1.0
+                    )
+                );
+
+            weights /=
+                max
+                (
+                    weights.x +
+                    weights.y +
+                    weights.z,
+
+                    0.0001
+                );
+
+
+            // --------------------------------------------------------
+            // THREE WORLD PROJECTIONS
+            // --------------------------------------------------------
+
+            float maskX =
+                HalftoneDotMask
+                (
+                    Rotate2D
+                    (
+                        p.zy,
+                        angle
+                    ),
+                    darkness
+                );
+
+            float maskY =
+                HalftoneDotMask
+                (
+                    Rotate2D
+                    (
+                        p.xz,
+                        angle
+                    ),
+                    darkness
+                );
+
+            float maskZ =
+                HalftoneDotMask
+                (
+                    Rotate2D
+                    (
+                        p.xy,
+                        angle
+                    ),
+                    darkness
+                );
 
 
             return
-                dotMask *
+                (
+                    maskX *
+                    weights.x
+                    +
+                    maskY *
+                    weights.y
+                    +
+                    maskZ *
+                    weights.z
+                )
+                *
                 _HalftoneStrength;
+        }
+
+
+        // ============================================================
+        // HALFTONE MODE
+        // ============================================================
+
+        float HalftoneMask
+        (
+            float2 pixelPosition,
+            float3 positionWS,
+            float3 geometricNormalWS,
+            float darkness
+        )
+        {
+            #if defined(_HALFTONE_WORLD_SPACE)
+
+                return
+                    HalftoneMaskWorld
+                    (
+                        positionWS,
+                        geometricNormalWS,
+                        darkness
+                    );
+
+            #else
+
+                return
+                    HalftoneMaskScreen
+                    (
+                        pixelPosition,
+                        darkness
+                    );
+
+            #endif
         }
 
 
         // ============================================================
         // STEP PATTERN
         // ============================================================
-        //
-        // WORLD SPACE TRIPLANAR
-        //
-        // Retourne :
-        //
-        // -1 = plus sombre
-        //  0 = neutre
-        // +1 = plus clair
-        //
-        // ============================================================
 
         float GetStepPatternSigned
         (
             float3 positionWS,
-
             float3 geometricNormalWS
         )
         {
             #if defined(_TOON_STEP_PATTERN)
-
-
-                // ====================================================
-                // POSITION
-                // ====================================================
 
                 float3 patternPosition =
                     (
@@ -768,10 +814,6 @@ Shader "Custom/Toon/DeferredToon"
                     *
                     _StepPatternWorldScale;
 
-
-                // ====================================================
-                // TRIPLANAR WEIGHTS
-                // ====================================================
 
                 float3 weights =
                     abs
@@ -789,7 +831,6 @@ Shader "Custom/Toon/DeferredToon"
                         max
                         (
                             weights,
-
                             float3
                             (
                                 0.0001,
@@ -801,7 +842,6 @@ Shader "Custom/Toon/DeferredToon"
                         max
                         (
                             _StepPatternProjectionBlend,
-
                             1.0
                         )
                     );
@@ -819,14 +859,9 @@ Shader "Custom/Toon/DeferredToon"
                     max
                     (
                         weightSum,
-
                         0.0001
                     );
 
-
-                // ====================================================
-                // WORLD UV
-                // ====================================================
 
                 float2 uvX =
                     frac
@@ -834,13 +869,11 @@ Shader "Custom/Toon/DeferredToon"
                         patternPosition.zy
                     );
 
-
                 float2 uvY =
                     frac
                     (
                         patternPosition.xz
                     );
-
 
                 float2 uvZ =
                     frac
@@ -849,40 +882,27 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // NATIVE HLSL SAMPLE
-                // ====================================================
-
                 float maskX =
                     _StepPattern.Sample
                     (
                         sampler_StepPattern,
-
                         uvX
                     ).r;
-
 
                 float maskY =
                     _StepPattern.Sample
                     (
                         sampler_StepPattern,
-
                         uvY
                     ).r;
-
 
                 float maskZ =
                     _StepPattern.Sample
                     (
                         sampler_StepPattern,
-
                         uvZ
                     ).r;
 
-
-                // ====================================================
-                // TRIPLANAR BLEND
-                // ====================================================
 
                 float pattern =
                     maskX *
@@ -894,10 +914,6 @@ Shader "Custom/Toon/DeferredToon"
                     maskZ *
                     weights.z;
 
-
-                // ====================================================
-                // CONTRAST
-                // ====================================================
 
                 pattern =
                     saturate
@@ -912,10 +928,6 @@ Shader "Custom/Toon/DeferredToon"
                         0.5
                     );
 
-
-                // ====================================================
-                // INVERT
-                // ====================================================
 
                 pattern =
                     lerp
@@ -932,39 +944,25 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // SIGNED OUTPUT
-                // ====================================================
-
                 return
                     pattern *
                     2.0
                     -
                     1.0;
 
-
             #else
 
-
                 return 0.0;
-
 
             #endif
         }
 
 
-        // ============================================================
-        // NORMAL MAP
-        // ============================================================
-
         float3 BuildNormalWS
         (
             float3 baseNormalWS,
-
             float3 tangentWS,
-
             float tangentSign,
-
             float2 uvNormal
         )
         {
@@ -974,33 +972,25 @@ Shader "Custom/Toon/DeferredToon"
                     baseNormalWS
                 );
 
-
             float3 t =
                 normalize
                 (
                     tangentWS
                 );
 
-
             float3 b =
                 tangentSign *
                 cross
                 (
                     n,
-
                     t
                 );
 
-
-            // ========================================================
-            // NATIVE HLSL SAMPLE
-            // ========================================================
 
             float4 normalSample =
                 _NormalMap.Sample
                 (
                     sampler_NormalMap,
-
                     uvNormal
                 );
 
@@ -1009,7 +999,6 @@ Shader "Custom/Toon/DeferredToon"
                 UnpackNormalScale
                 (
                     normalSample,
-
                     _NormalStrength
                 );
 
@@ -1018,35 +1007,27 @@ Shader "Custom/Toon/DeferredToon"
                 float3x3
                 (
                     t,
-
                     b,
-
                     n
                 );
 
 
-            return NormalizeNormalPerPixel
-            (
-                TransformTangentToWorld
+            return
+                NormalizeNormalPerPixel
                 (
-                    normalTS,
-
-                    tangentToWorld
-                )
-            );
+                    TransformTangentToWorld
+                    (
+                        normalTS,
+                        tangentToWorld
+                    )
+                );
         }
 
-
-        // ============================================================
-        // ADDITIONAL TOON LIGHT
-        // ============================================================
 
         float3 EvaluateAdditionalToonLight
         (
             float3 normalWS,
-
             Light light,
-
             float signedPattern
         )
         {
@@ -1056,7 +1037,6 @@ Shader "Custom/Toon/DeferredToon"
                     dot
                     (
                         normalWS,
-
                         light.direction
                     )
                 );
@@ -1078,12 +1058,7 @@ Shader "Custom/Toon/DeferredToon"
                 );
 
 
-            // ========================================================
-            // PATTERNED STEP
-            // ========================================================
-
             #if defined(_TOON_STEP_PATTERN)
-
 
                 raw =
                     saturate
@@ -1094,7 +1069,6 @@ Shader "Custom/Toon/DeferredToon"
                         _StepPatternStrength
                     );
 
-
             #endif
 
 
@@ -1102,7 +1076,6 @@ Shader "Custom/Toon/DeferredToon"
                 Quantize01
                 (
                     raw,
-
                     _LightBands
                 );
 
@@ -1115,137 +1088,69 @@ Shader "Custom/Toon/DeferredToon"
                 _AdditionalLightStrength;
         }
 
-
         ENDHLSL
 
 
         // ============================================================
         // TOON FORWARD ONLY
         // ============================================================
-        //
-        // Le renderer est Deferred+.
-        //
-        // Ce shader utilise volontairement UniversalForwardOnly
-        // pour garder le lighting Toon custom.
-        // ============================================================
 
         Pass
         {
             Name "ToonForwardOnly"
-
 
             Tags
             {
                 "LightMode" = "UniversalForwardOnly"
             }
 
-
             Cull Back
-
             ZWrite On
-
             ZTest LEqual
 
 
             HLSLPROGRAM
 
-
             #pragma target 4.5
-
             #pragma vertex ToonVert
-
             #pragma fragment ToonFrag
-
-
-            // ========================================================
-            // FOG
-            // ========================================================
 
             #pragma multi_compile_fog
 
-
-            // ========================================================
-            // PATTERN
-            // ========================================================
-
             #pragma shader_feature_local_fragment _TOON_STEP_PATTERN
-
-
-            // ========================================================
-            // MAIN LIGHT
-            // ========================================================
+            #pragma shader_feature_local_fragment _HALFTONE_WORLD_SPACE
 
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_SCREEN
 
-
-            // ========================================================
-            // ADDITIONAL LIGHTS
-            // ========================================================
-
             #pragma multi_compile _ _ADDITIONAL_LIGHTS
-
             #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
 
-
-            // ========================================================
-            // UNITY 6 CLUSTER / DEFERRED+
-            // ========================================================
-
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
-
-
-            // ========================================================
-            // COOKIES
-            // ========================================================
-
             #pragma multi_compile _ _LIGHT_COOKIES
 
-
-            // ========================================================
-            // ATTRIBUTES
-            // ========================================================
 
             struct ToonAttributes
             {
                 float4 positionOS : POSITION;
-
                 float3 normalOS : NORMAL;
-
                 float4 tangentOS : TANGENT;
-
                 float2 uv : TEXCOORD0;
             };
 
 
-            // ========================================================
-            // VARYINGS
-            // ========================================================
-
             struct ToonVaryings
             {
                 float4 positionCS : SV_POSITION;
-
                 float3 positionWS : TEXCOORD0;
-
                 float3 normalWS : TEXCOORD1;
-
                 float4 tangentWS : TEXCOORD2;
-
                 float2 uvBase : TEXCOORD3;
-
                 float2 uvNormal : TEXCOORD4;
-
                 float fogFactor : TEXCOORD5;
             };
 
-
-            // ========================================================
-            // VERTEX
-            // ========================================================
 
             ToonVaryings ToonVert
             (
@@ -1256,10 +1161,6 @@ Shader "Custom/Toon/DeferredToon"
                     (ToonVaryings)0;
 
 
-                // ====================================================
-                // POSITION
-                // ====================================================
-
                 VertexPositionInputs posInputs =
                     GetVertexPositionInputs
                     (
@@ -1267,15 +1168,10 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // NORMAL
-                // ====================================================
-
                 VertexNormalInputs normalInputs =
                     GetVertexNormalInputs
                     (
                         IN.normalOS,
-
                         IN.tangentOS
                     );
 
@@ -1283,10 +1179,8 @@ Shader "Custom/Toon/DeferredToon"
                 OUT.positionCS =
                     posInputs.positionCS;
 
-
                 OUT.positionWS =
                     posInputs.positionWS;
-
 
                 OUT.normalWS =
                     normalInputs.normalWS;
@@ -1301,14 +1195,9 @@ Shader "Custom/Toon/DeferredToon"
                     float4
                     (
                         normalInputs.tangentWS,
-
                         tangentSign
                     );
 
-
-                // ====================================================
-                // UV
-                // ====================================================
 
                 OUT.uvBase =
                     IN.uv *
@@ -1324,10 +1213,6 @@ Shader "Custom/Toon/DeferredToon"
                     _NormalMap_ST.zw;
 
 
-                // ====================================================
-                // FOG
-                // ====================================================
-
                 OUT.fogFactor =
                     ComputeFogFactor
                     (
@@ -1339,24 +1224,16 @@ Shader "Custom/Toon/DeferredToon"
             }
 
 
-            // ========================================================
-            // FRAGMENT
-            // ========================================================
-
             half4 ToonFrag
             (
                 ToonVaryings IN
             ) : SV_Target
             {
-                // ====================================================
                 // BASE
-                // ====================================================
-
                 float4 baseSample =
                     _BaseMap.Sample
                     (
                         sampler_BaseMap,
-
                         IN.uvBase
                     );
 
@@ -1366,10 +1243,7 @@ Shader "Custom/Toon/DeferredToon"
                     _BaseColor.rgb;
 
 
-                // ====================================================
                 // GEOMETRIC NORMAL
-                // ====================================================
-
                 float3 geometricNormalWS =
                     normalize
                     (
@@ -1377,27 +1251,18 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // NORMAL MAP
-                // ====================================================
-
+                // ARTISTIC NORMAL MAP
                 float3 normalWS =
                     BuildNormalWS
                     (
                         IN.normalWS,
-
                         IN.tangentWS.xyz,
-
                         IN.tangentWS.w,
-
                         IN.uvNormal
                     );
 
 
-                // ====================================================
-                // VIEW DIRECTION
-                // ====================================================
-
+                // VIEW
                 float3 viewDirWS =
                     GetWorldSpaceNormalizeViewDir
                     (
@@ -1405,23 +1270,16 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // WORLD PATTERN
-                // ====================================================
-
+                // WORLD STEP PATTERN
                 float signedPattern =
                     GetStepPatternSigned
                     (
                         IN.positionWS,
-
                         geometricNormalWS
                     );
 
 
-                // ====================================================
                 // MAIN LIGHT
-                // ====================================================
-
                 float4 shadowCoord =
                     TransformWorldToShadowCoord
                     (
@@ -1443,31 +1301,19 @@ Shader "Custom/Toon/DeferredToon"
                     GetMainLight
                     (
                         shadowCoord,
-
                         IN.positionWS,
-
                         shadowMask
                     );
 
-
-                // ====================================================
-                // SHADOW ATTENUATION
-                // ====================================================
 
                 float shadowAtten =
                     lerp
                     (
                         1.0,
-
                         mainLight.shadowAttenuation,
-
                         _ReceiveShadowStrength
                     );
 
-
-                // ====================================================
-                // N DOT L
-                // ====================================================
 
                 float ndotl =
                     saturate
@@ -1475,15 +1321,10 @@ Shader "Custom/Toon/DeferredToon"
                         dot
                         (
                             normalWS,
-
                             mainLight.direction
                         )
                     );
 
-
-                // ====================================================
-                // RAW LIGHT
-                // ====================================================
 
                 float rawLight =
                     saturate
@@ -1496,12 +1337,7 @@ Shader "Custom/Toon/DeferredToon"
                     );
 
 
-                // ====================================================
-                // BRUSH / TORN LIGHT BANDS
-                // ====================================================
-
                 #if defined(_TOON_STEP_PATTERN)
-
 
                     rawLight =
                         saturate
@@ -1512,43 +1348,27 @@ Shader "Custom/Toon/DeferredToon"
                             _StepPatternStrength
                         );
 
-
                 #endif
 
-
-                // ====================================================
-                // QUANTIZATION
-                // ====================================================
 
                 float toonLight =
                     Quantize01
                     (
                         rawLight,
-
                         _LightBands
                     );
 
-
-                // ====================================================
-                // TOON COLOR
-                // ====================================================
 
                 float3 toonLightColor =
                     lerp
                     (
                         _ShadowColor.rgb,
-
                         mainLight.color,
-
                         toonLight
                     )
                     *
                     _DirectLightStrength;
 
-
-                // ====================================================
-                // AMBIENT
-                // ====================================================
 
                 float3 ambient =
                     max
@@ -1557,7 +1377,6 @@ Shader "Custom/Toon/DeferredToon"
                         (
                             normalWS
                         ),
-
                         0.0
                     )
                     *
@@ -1586,7 +1405,8 @@ Shader "Custom/Toon/DeferredToon"
                     HalftoneMask
                     (
                         IN.positionCS.xy,
-
+                        IN.positionWS,
+                        geometricNormalWS,
                         darkness
                     );
 
@@ -1614,14 +1434,11 @@ Shader "Custom/Toon/DeferredToon"
                 inputData.positionWS =
                     IN.positionWS;
 
-
                 inputData.normalWS =
                     normalWS;
 
-
                 inputData.viewDirectionWS =
                     viewDirWS;
-
 
                 inputData.normalizedScreenSpaceUV =
                     GetNormalizedScreenSpaceUV
@@ -1636,20 +1453,9 @@ Shader "Custom/Toon/DeferredToon"
 
                 #if defined(_ADDITIONAL_LIGHTS)
 
-
-                    // =================================================
-                    // CLUSTER LIGHT LOOP
-                    // =================================================
-
                     #if USE_CLUSTER_LIGHT_LOOP
 
-
-                        // =============================================
-                        // DIRECTIONAL
-                        // =============================================
-
                         [loop]
-
                         for
                         (
                             uint lightIndex = 0;
@@ -1675,9 +1481,7 @@ Shader "Custom/Toon/DeferredToon"
                                 GetAdditionalLight
                                 (
                                     lightIndex,
-
                                     inputData.positionWS,
-
                                     shadowMask
                                 );
 
@@ -1686,25 +1490,17 @@ Shader "Custom/Toon/DeferredToon"
                                 EvaluateAdditionalToonLight
                                 (
                                     normalWS,
-
                                     light,
-
                                     signedPattern
                                 );
                         }
 
 
-                        // =============================================
-                        // POINT / SPOT
-                        // =============================================
-
                         ClusterIterator clusterIterator =
                             ClusterInit
                             (
                                 inputData.normalizedScreenSpaceUV,
-
                                 inputData.positionWS,
-
                                 0
                             );
 
@@ -1713,13 +1509,11 @@ Shader "Custom/Toon/DeferredToon"
 
 
                         [loop]
-
                         while
                         (
                             ClusterNext
                             (
                                 clusterIterator,
-
                                 clusterLightIndex
                             )
                         )
@@ -1732,9 +1526,7 @@ Shader "Custom/Toon/DeferredToon"
                                 GetAdditionalLight
                                 (
                                     clusterLightIndex,
-
                                     inputData.positionWS,
-
                                     shadowMask
                                 );
 
@@ -1743,27 +1535,18 @@ Shader "Custom/Toon/DeferredToon"
                                 EvaluateAdditionalToonLight
                                 (
                                     normalWS,
-
                                     light,
-
                                     signedPattern
                                 );
                         }
 
-
-                    // =================================================
-                    // CLASSIC FORWARD
-                    // =================================================
-
                     #else
-
 
                         uint pixelLightCount =
                             GetAdditionalLightsCount();
 
 
                         [loop]
-
                         for
                         (
                             uint lightIndex = 0;
@@ -1778,9 +1561,7 @@ Shader "Custom/Toon/DeferredToon"
                                 GetAdditionalLight
                                 (
                                     lightIndex,
-
                                     inputData.positionWS,
-
                                     shadowMask
                                 );
 
@@ -1789,16 +1570,12 @@ Shader "Custom/Toon/DeferredToon"
                                 EvaluateAdditionalToonLight
                                 (
                                     normalWS,
-
                                     light,
-
                                     signedPattern
                                 );
                         }
 
-
                     #endif
-
 
                 #endif
 
@@ -1808,10 +1585,7 @@ Shader "Custom/Toon/DeferredToon"
                     additionalLighting;
 
 
-                // ====================================================
                 // SPECULAR
-                // ====================================================
-
                 float3 halfDir =
                     SafeNormalize
                     (
@@ -1826,7 +1600,6 @@ Shader "Custom/Toon/DeferredToon"
                         dot
                         (
                             normalWS,
-
                             halfDir
                         )
                     );
@@ -1840,7 +1613,6 @@ Shader "Custom/Toon/DeferredToon"
                         max
                         (
                             _SpecularPower,
-
                             1.0
                         )
                     );
@@ -1850,7 +1622,6 @@ Shader "Custom/Toon/DeferredToon"
                     step
                     (
                         _SpecularThreshold,
-
                         spec
                     );
 
@@ -1866,10 +1637,7 @@ Shader "Custom/Toon/DeferredToon"
                     spec;
 
 
-                // ====================================================
                 // RIM
-                // ====================================================
-
                 float rimRaw =
                     1.0 -
                     saturate
@@ -1877,7 +1645,6 @@ Shader "Custom/Toon/DeferredToon"
                         dot
                         (
                             normalWS,
-
                             viewDirWS
                         )
                     );
@@ -1891,22 +1658,16 @@ Shader "Custom/Toon/DeferredToon"
                         max
                         (
                             _RimPower,
-
                             0.0001
                         )
                     );
 
-
-                // ====================================================
-                // BRUSH / TORN RIM
-                // ====================================================
 
                 float rimThreshold =
                     _RimThreshold;
 
 
                 #if defined(_TOON_STEP_PATTERN)
-
 
                     rimThreshold =
                         saturate
@@ -1917,7 +1678,6 @@ Shader "Custom/Toon/DeferredToon"
                             _RimPatternStrength
                         );
 
-
                 #endif
 
 
@@ -1925,7 +1685,6 @@ Shader "Custom/Toon/DeferredToon"
                     step
                     (
                         rimThreshold,
-
                         rimRaw
                     )
                     *
@@ -1937,15 +1696,11 @@ Shader "Custom/Toon/DeferredToon"
                     rim;
 
 
-                // ====================================================
                 // POSTERIZATION
-                // ====================================================
-
                 float3 posterized =
                     PosterizeColor
                     (
                         color,
-
                         _PosterizeSteps
                     );
 
@@ -1954,39 +1709,27 @@ Shader "Custom/Toon/DeferredToon"
                     lerp
                     (
                         color,
-
                         posterized,
-
                         _PosterizeStrength
                     );
 
 
-                // ====================================================
                 // FOG
-                // ====================================================
-
                 color =
                     MixFog
                     (
                         color,
-
                         IN.fogFactor
                     );
 
 
-                // ====================================================
-                // OUTPUT
-                // ====================================================
-
                 return half4
                 (
                     color,
-
                     baseSample.a *
                     _BaseColor.a
                 );
             }
-
 
             ENDHLSL
         }
@@ -2000,44 +1743,32 @@ Shader "Custom/Toon/DeferredToon"
         {
             Name "ShadowCaster"
 
-
             Tags
             {
                 "LightMode" = "ShadowCaster"
             }
 
-
             ZWrite On
-
             ZTest LEqual
-
             ColorMask 0
-
             Cull Back
 
 
             HLSLPROGRAM
 
-
             #pragma target 4.5
-
             #pragma vertex ShadowVert
-
             #pragma fragment ShadowFrag
-
 
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-
             float3 _LightDirection;
-
             float3 _LightPosition;
 
 
             struct ShadowAttributes
             {
                 float4 positionOS : POSITION;
-
                 float3 normalOS : NORMAL;
             };
 
@@ -2047,10 +1778,6 @@ Shader "Custom/Toon/DeferredToon"
                 float4 positionCS : SV_POSITION;
             };
 
-
-            // ========================================================
-            // SHADOW POSITION
-            // ========================================================
 
             float4 GetCustomShadowPositionHClip
             (
@@ -2073,7 +1800,6 @@ Shader "Custom/Toon/DeferredToon"
 
                 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-
                     float3 lightDirectionWS =
                         normalize
                         (
@@ -2081,13 +1807,10 @@ Shader "Custom/Toon/DeferredToon"
                             positionWS
                         );
 
-
                 #else
-
 
                     float3 lightDirectionWS =
                         _LightDirection;
-
 
                 #endif
 
@@ -2098,24 +1821,19 @@ Shader "Custom/Toon/DeferredToon"
                         ApplyShadowBias
                         (
                             positionWS,
-
                             normalWS,
-
                             lightDirectionWS
                         )
                     );
 
 
-                return ApplyShadowClamping
-                (
-                    positionCS
-                );
+                return
+                    ApplyShadowClamping
+                    (
+                        positionCS
+                    );
             }
 
-
-            // ========================================================
-            // VERTEX
-            // ========================================================
 
             ShadowVaryings ShadowVert
             (
@@ -2137,10 +1855,6 @@ Shader "Custom/Toon/DeferredToon"
             }
 
 
-            // ========================================================
-            // FRAGMENT
-            // ========================================================
-
             half4 ShadowFrag
             (
                 ShadowVaryings IN
@@ -2148,7 +1862,6 @@ Shader "Custom/Toon/DeferredToon"
             {
                 return 0;
             }
-
 
             ENDHLSL
         }
@@ -2162,29 +1875,21 @@ Shader "Custom/Toon/DeferredToon"
         {
             Name "DepthOnly"
 
-
             Tags
             {
                 "LightMode" = "DepthOnly"
             }
 
-
             ZWrite On
-
             ZTest LEqual
-
             ColorMask 0
-
             Cull Back
 
 
             HLSLPROGRAM
 
-
             #pragma target 4.5
-
             #pragma vertex DepthVert
-
             #pragma fragment DepthFrag
 
 
@@ -2199,10 +1904,6 @@ Shader "Custom/Toon/DeferredToon"
                 float4 positionCS : SV_POSITION;
             };
 
-
-            // ========================================================
-            // VERTEX
-            // ========================================================
 
             DepthVaryings DepthVert
             (
@@ -2224,10 +1925,6 @@ Shader "Custom/Toon/DeferredToon"
             }
 
 
-            // ========================================================
-            // FRAGMENT
-            // ========================================================
-
             half DepthFrag
             (
                 DepthVaryings IN
@@ -2236,7 +1933,6 @@ Shader "Custom/Toon/DeferredToon"
                 return IN.positionCS.z;
             }
 
-
             ENDHLSL
         }
 
@@ -2244,81 +1940,47 @@ Shader "Custom/Toon/DeferredToon"
         // ============================================================
         // DEPTH NORMALS ONLY
         // ============================================================
-        //
-        // Important pour :
-        //
-        // Deferred+
-        // SSAO
-        // Fullscreen outline
-        //
-        // ============================================================
 
         Pass
         {
             Name "DepthNormalsOnly"
-
 
             Tags
             {
                 "LightMode" = "DepthNormalsOnly"
             }
 
-
             ZWrite On
-
             ZTest LEqual
-
             Cull Back
 
 
             HLSLPROGRAM
 
-
             #pragma target 4.5
-
             #pragma vertex DepthNormalsVert
-
             #pragma fragment DepthNormalsFrag
-
 
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
 
 
-            // ========================================================
-            // ATTRIBUTES
-            // ========================================================
-
             struct DepthNormalsAttributes
             {
                 float4 positionOS : POSITION;
-
                 float3 normalOS : NORMAL;
-
                 float4 tangentOS : TANGENT;
-
                 float2 uv : TEXCOORD0;
             };
 
 
-            // ========================================================
-            // VARYINGS
-            // ========================================================
-
             struct DepthNormalsVaryings
             {
                 float4 positionCS : SV_POSITION;
-
                 float3 normalWS : TEXCOORD0;
-
                 float4 tangentWS : TEXCOORD1;
-
                 float2 uvNormal : TEXCOORD2;
             };
 
-
-            // ========================================================
-            // VERTEX
-            // ========================================================
 
             DepthNormalsVaryings DepthNormalsVert
             (
@@ -2340,7 +2002,6 @@ Shader "Custom/Toon/DeferredToon"
                     GetVertexNormalInputs
                     (
                         IN.normalOS,
-
                         IN.tangentOS
                     );
 
@@ -2358,7 +2019,6 @@ Shader "Custom/Toon/DeferredToon"
                     float4
                     (
                         normalInputs.tangentWS,
-
                         tangentSign
                     );
 
@@ -2374,10 +2034,6 @@ Shader "Custom/Toon/DeferredToon"
             }
 
 
-            // ========================================================
-            // FRAGMENT
-            // ========================================================
-
             half4 DepthNormalsFrag
             (
                 DepthNormalsVaryings IN
@@ -2387,21 +2043,13 @@ Shader "Custom/Toon/DeferredToon"
                     BuildNormalWS
                     (
                         IN.normalWS,
-
                         IN.tangentWS.xyz,
-
                         IN.tangentWS.w,
-
                         IN.uvNormal
                     );
 
 
-                // ====================================================
-                // OCT NORMALS
-                // ====================================================
-
                 #if defined(_GBUFFER_NORMALS_OCT)
-
 
                     float2 octNormal =
                         PackNormalOctQuadEncode
@@ -2430,30 +2078,23 @@ Shader "Custom/Toon/DeferredToon"
                     return half4
                     (
                         packed,
-
                         0
                     );
 
-
                 #else
-
 
                     return half4
                     (
                         normalWS,
-
                         0
                     );
-
 
                 #endif
             }
 
-
             ENDHLSL
         }
     }
-
 
     FallBack Off
 }
