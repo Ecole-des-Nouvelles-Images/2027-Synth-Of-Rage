@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _HALFTONE_WORLD_SPACE
   - _TOON_STEP_PATTERN
   m_InvalidKeywords:
   - _STEPPATTERNINVERT_ON
@@ -48,6 +49,9 @@ Material:
     - _HalftoneMinRadius: 0
     - _HalftoneSize: 15
     - _HalftoneStrength: 1
+    - _HalftoneWorldProjectionBlend: 16
+    - _HalftoneWorldScale: 0.7
+    - _HalftoneWorldSpace: 1
     - _LightBands: 4
     - _LightBias: 0
     - _NormalStrength: 2
@@ -70,6 +74,7 @@ Material:
     m_Colors:
     - _BaseColor: {r: 0.6408067, g: 0.3726415, b: 1, a: 1}
     - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 0, g: 0.050694704, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecularColor: {r: 0, g: 0.6792453, b: 0.20792234, a: 1}
