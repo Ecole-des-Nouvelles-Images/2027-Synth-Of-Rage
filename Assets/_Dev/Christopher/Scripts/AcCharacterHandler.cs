@@ -1,4 +1,4 @@
-using SynthOfRage.Scripts.Unit.Player;
+using SynthOfRage.Scripts.Gameplay.Unit.Player;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts

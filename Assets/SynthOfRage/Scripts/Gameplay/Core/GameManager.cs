@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.Scripting.LifecycleManagement;
 
-namespace SynthOfRage.Scripts.Core
+namespace SynthOfRage.Scripts.Gameplay.Core
 {
     public partial class GameManager : Utilities.SingletonMonoBehaviour<GameManager>
     {

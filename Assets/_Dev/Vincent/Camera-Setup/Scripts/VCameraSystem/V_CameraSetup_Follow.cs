@@ -1,10 +1,11 @@
 using System.Collections.Generic;
-using SynthOfRage.Scripts.Core;
-using SynthOfRage.Scripts.Unit.Player;
-using SynthOfRage.Scripts.Unit.Player.Movement.Utils;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Splines;
+
+using SynthOfRage.Scripts.Gameplay.Core;
+using SynthOfRage.Scripts.Gameplay.Unit.Player;
+using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {

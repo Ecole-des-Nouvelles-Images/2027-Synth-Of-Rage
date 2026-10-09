@@ -3,7 +3,7 @@
     "name": "IA_DefaultPlayerAction",
     "maps": [
         {
-            "name": "Player",
+            "name": "Gameplay",
             "id": "00a5caff-b6e1-4ab0-af48-09a70d742079",
             "actions": [
                 {

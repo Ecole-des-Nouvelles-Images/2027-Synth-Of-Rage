@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Scripting.LifecycleManagement;
 
-using Avatar = SynthOfRage.Scripts.Unit.Player.Avatar;
+using Avatar = SynthOfRage.Scripts.Gameplay.Unit.Player.Avatar;
 using Object = UnityEngine.Object;
 
 namespace SynthOfRage.Scripts.Debug

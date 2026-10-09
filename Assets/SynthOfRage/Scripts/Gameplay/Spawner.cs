@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using SynthOfRage.Scripts.Core;
+using SynthOfRage.Scripts.Gameplay.Core;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.Unit
+namespace SynthOfRage.Scripts.Gameplay
 {
     public class Spawner : MonoBehaviour
     {
