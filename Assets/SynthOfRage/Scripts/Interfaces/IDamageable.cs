@@ -1,5 +1,3 @@
-using SynthOfRage.Scripts.Common.Modules;
-
 namespace SynthOfRage.Scripts.Interfaces
 {
     /// <summary>

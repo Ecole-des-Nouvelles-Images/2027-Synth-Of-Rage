@@ -1,4 +1,4 @@
-using SynthOfRage.Scripts.Unit.Player.Movement.Utils;
+using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using UnityEngine;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
