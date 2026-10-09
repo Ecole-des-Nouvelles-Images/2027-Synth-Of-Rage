@@ -1,4 +1,4 @@
-Shader "Custom/Toon/DepthOutlineWorldMask-ShibuyaPunk-S3DC"
+Shader "Custom/SOR/Outline"
 {
     Properties
     {
@@ -1922,6 +1922,7 @@ Shader "Custom/Toon/DepthOutlineWorldMask-ShibuyaPunk-S3DC"
             ENDHLSL
         }
     }
+    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
 
     FallBack Off
 }

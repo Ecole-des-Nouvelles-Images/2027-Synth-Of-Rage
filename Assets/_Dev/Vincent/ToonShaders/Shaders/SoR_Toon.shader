@@ -1,4 +1,4 @@
-Shader "Custom/Toon/DeferredToon" {
+Shader "Custom/SOR/Toon" {
     Properties {
         [Header(Base)]
         _BaseMap("Base Color Texture", 2D) = "white" {}
@@ -964,6 +964,7 @@ Shader "Custom/Toon/DeferredToon" {
             ENDHLSL
         }
     }
+    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
 
     FallBack Off
 }

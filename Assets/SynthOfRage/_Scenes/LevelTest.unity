@@ -1649,6 +1649,10 @@ PrefabInstance:
       propertyPath: m_Center.y
       value: 0.07
       objectReference: {fileID: 0}
+    - target: {fileID: 2343364671908718284, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3632700079071963896, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
       propertyPath: atkHAction
       value: 

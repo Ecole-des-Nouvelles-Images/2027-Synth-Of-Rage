@@ -1,4 +1,4 @@
-Shader "Custom/Sprite3D/Lit-OC"
+Shader "Custom/SOR/Sprite3D"
 {
     Properties
     {
@@ -1907,6 +1907,7 @@ Shader "Custom/Sprite3D/Lit-OC"
             ENDHLSL
         }
     }
+    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
 
 
     FallBack Off

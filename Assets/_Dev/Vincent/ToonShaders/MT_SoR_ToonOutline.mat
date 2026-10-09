@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom_Toon_Outline
+  m_Name: MT_SoR_ToonOutline
   m_Shader: {fileID: 4800000, guid: ef0e073654389234a82a90ce85dfe804, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
