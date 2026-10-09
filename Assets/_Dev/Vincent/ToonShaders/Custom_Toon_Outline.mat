@@ -8,13 +8,16 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Custom_Toon_Outline
-  m_Shader: {fileID: 4800000, guid: 09253a91d08c2f245964c4d69c61a273, type: 3}
+  m_Shader: {fileID: 4800000, guid: ef0e073654389234a82a90ce85dfe804, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _IMPERFECTION_FULL_TRIPLANAR
+  - _OUTLINE_IMPERFECTIONS
   - _OUTLINE_SPRITES3D
   m_InvalidKeywords:
   - _NORMALSOURCE_MESH
+  - _USEDISTANCEDIRTYFADE_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -29,50 +32,114 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DripTexture:
+        m_Texture: {fileID: 2800000, guid: 5c4ab8a679ed96140a3ba9c60fe995bd, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ImperfectionPattern:
+        m_Texture: {fileID: 2800000, guid: a7a7bfeaa237f894ea358d6c388d7a4f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NormalMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OutlineMask:
-        m_Texture: {fileID: 2800000, guid: e2af12f3f73c44d4b854d67ec225038e, type: 3}
+        m_Texture: {fileID: 2800000, guid: 887722124eb9d0e4085bdec08faf9b30, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AccentOuterBias: 0.88
+    - _AccentSoftness: 0.08
+    - _AccentStrength: 0.48
+    - _AccentThreshold: 0.74
     - _AdditionalLightStrength: 1
     - _AmbientStrength: 0.25
-    - _DepthSoftness: 0.2
-    - _DepthStrength: 3
-    - _DepthThreshold: 0.4
+    - _BreakupSoftness: 0.08
+    - _BreakupStrength: 0.38
+    - _BreakupThreshold: 0.52
+    - _ChunkBoost: 8
+    - _ChunkThreshold: 0.56
+    - _CoreIntegrity: 0.78
+    - _DepthSoftness: 0.004
+    - _DepthStrength: 1
+    - _DepthThreshold: 0.02
     - _DirectLightStrength: 1
-    - _DistanceFalloff: 1
-    - _DistanceFar: 300
-    - _DistanceNear: 3
+    - _DirtyFadeEnd: 160
+    - _DirtyFadeStart: 16
+    - _DistanceFalloff: 1.15
+    - _DistanceFar: 110
+    - _DistanceNear: 2
+    - _DripBulbSize: 2.25
+    - _DripBulbStrength: 2
+    - _DripDirectionality: 11
+    - _DripFarWidthBoost: 4
+    - _DripLength: 18
+    - _DripLengthVariation: 0.45
+    - _DripLongChance: 0.28
+    - _DripLongMultiplier: 2
+    - _DripMinLength: 12
+    - _DripOpacity: 1
+    - _DripSearchHeight: 40
+    - _DripSpacing: 18
+    - _DripStemTaper: 0.68
+    - _DripTextureColumns: 4
+    - _DripTextureContrast: 1
+    - _DripTextureDilation: 2.5
+    - _DripTextureInvert: 0
+    - _DripTextureSoftness: 0.1
+    - _DripTextureThreshold: 0.25
+    - _DripThreshold: 0.5
+    - _DripWidth: 4
+    - _DripWorldSpacing: 0.8
+    - _DripWorldWidth: 0.5
+    - _FarDirtyMin: 0.82
+    - _FarGraffitiShellStrength: 0.9
+    - _FarGraffitiShellWidth: 2
+    - _FarMacroMinimum: 0.35
+    - _FarThicknessMultiplier: 0.52
+    - _GrandBoostDistance: 18
     - _HalftoneAngle: 45
     - _HalftoneLevels: 4
     - _HalftoneMaxRadius: 0.46
     - _HalftoneMinRadius: 0.04
     - _HalftoneSize: 10
     - _HalftoneStrength: 0.8
+    - _ImperfectionContrast: 2.8
+    - _ImperfectionFullTriplanar: 1
+    - _ImperfectionProjectionBlend: 2.5
+    - _ImperfectionSeed: 13
+    - _ImperfectionWorldScale: 0.95
     - _LightBands: 4
     - _LightBias: 0
+    - _MacroFadeEnd: 80
+    - _MacroFadeStart: 10
+    - _MacroScale: 0.18
+    - _MacroStrength: 0.82
     - _MaskInvert: 0
-    - _MaskProjectionBlend: 4
-    - _MaskSoftness: 0.05
-    - _MaskStrength: 1
-    - _MaskThreshold: 0.5
-    - _MaskWorldScale: 0.21
-    - _NearThicknessMultiplier: 6
+    - _MaskProjectionBlend: 2
+    - _MaskSoftness: 0.14
+    - _MaskStrength: 0.12
+    - _MaskThreshold: 0.48
+    - _MaskWorldScale: 0.22
+    - _NearGrandBoost: 1.6
+    - _NearThicknessMultiplier: 2.15
     - _NormalSoftness: 1
     - _NormalSource: 0
     - _NormalStrength: 3
     - _NormalThreshold: 1
+    - _OpacityJitter: 0.18
     - _OutlineOpacity: 1
     - _OutlineRadialBlend: 1
     - _OutlineSprites3D: 1
-    - _OutlineThickness: 3
+    - _OutlineThickness: 7
     - _OutlineWidth: 3.54
     - _OutlineWidthPixels: 20
+    - _OverspraySoftness: 0.07
+    - _OversprayStrength: 0.15
+    - _OversprayThreshold: 0.8
+    - _OversprayWidth: 2
     - _PosterizeSteps: 8
     - _PosterizeStrength: 1
     - _RadialBlend: 1
@@ -80,18 +147,28 @@ Material:
     - _RimPower: 4
     - _RimStrength: 0.1
     - _RimThreshold: 0.5
+    - _SlopeCompensation: 1.25
+    - _SlopeSampleReject: 0.05
     - _SmoothNormalBlend: 1
     - _SpecularPower: 64
     - _SpecularStrength: 0.2
     - _SpecularThreshold: 0.6
+    - _SpikeDirectionality: 14.95
+    - _SpikeLength: 11
+    - _SpikeThreshold: 0.55
     - _TestStrength: 1
+    - _ThicknessJitter: 0.62
+    - _UseDistanceDirtyFade: 1
+    - _UseOutlineImperfections: 1
     m_Colors:
+    - _AccentColor: {r: 0.26125845, g: 0.30008563, b: 0.5377358, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
+    - _ImperfectionWorldOffset: {r: 0, g: 0, b: 0, a: 0}
     - _MaskOffset: {r: 0, g: 0, b: 0, a: 0}
     - _MaskTiling: {r: 12, g: 12, b: 12, a: 0}
     - _MaskWorldOffset: {r: 0, g: 0, b: 0, a: 0}
-    - _OutlineColor: {r: 0.5568628, g: 0.5568628, b: 0.5568628, a: 1}
+    - _OutlineColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0.17999998, g: 0.17999998, b: 0.23999995, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
