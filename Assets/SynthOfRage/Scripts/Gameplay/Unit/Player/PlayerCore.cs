@@ -235,9 +235,6 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         {
             Vector2 direction = context.ReadValue<Vector2>();
 
-            if (debugEnabled)
-                UnityEngine.Debug.Log($"[PlayerCore] Move : {direction}");
-
             OnPlayerMove?.Invoke(direction);
         }
 
