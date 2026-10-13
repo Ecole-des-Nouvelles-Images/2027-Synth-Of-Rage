@@ -1,13 +1,14 @@
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.Splines;
-
 using SynthOfRage.Scripts.Gameplay.Core;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
 using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
+using UnityDebug = UnityEngine.Debug;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
+namespace SynthOfRage.Scripts.CameraSystem
 {
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour
@@ -31,11 +32,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         [Header("Position Follow")]
         [SerializeField, Min(0f)] private float followSmoothTime = 0.5f;
-
-        [Tooltip("Smooth de position utilisé pendant un blend.")]
         [SerializeField, Min(0f)] private float blendFollowSmoothTime = 0.12f;
-
-        [Tooltip("Vitesse maximale à laquelle la cible caméra peut progresser sur le rail pendant un blend, en Knot Units/seconde. 0 = illimité.")]
         [SerializeField, Min(0f)] private float blendTargetMaxSpeed = 3f;
 
         [Header("Camera Framing")]
@@ -82,16 +79,17 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         private int currentCombatStep;
         private int debugUpdateCounter;
 
+        private Coroutine pendingCombatShake;
+
         private void Start()
         {
-            if (!ValidateReferences())
-                return;
+            if (!ValidateReferences()) return;
 
             splineContainer = autoScrollDolly.Spline;
 
             if (splineContainer == null)
             {
-                Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.", this);
+                UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.", this);
                 return;
             }
 
@@ -112,7 +110,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             ApplyInitialMovementSpace();
             InitializeCameraReference();
             ApplyMovementSpaceCameraRotationImmediate();
-
             ValidateCombatKnots();
         }
 
@@ -131,7 +128,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (debugEnabled && ++debugUpdateCounter >= 30)
             {
                 debugUpdateCounter = 0;
-                Debug.Log($"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive}", this);
+                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive}", this);
             }
 
             if (combatMode)
@@ -154,29 +151,19 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 UpdateAutoScrollCameraRotation();
         }
 
-        // =========================================================
-        // FOLLOW
-        // =========================================================
-
         private void UpdateFollow()
         {
-            if (playerMovement == null)
-                return;
+            if (playerMovement == null) return;
 
             bool hasBlend = playerMovement.TryGetActiveMovementSpaceBlend(out MovementSpace.BlendResult blend);
 
-            // IMPORTANT :
-            // on ne remet plus splineVelocity à zéro au changement
-            // Normal <-> Blend. On conserve la continuité physique.
             if (hasBlend && !previousFrameWasBlend)
                 BeginBlendRail(blend);
 
             currentBlendActive = hasBlend;
 
-            if (hasBlend)
-                UpdateBlendFollow(blend);
-            else
-                UpdateNormalFollow();
+            if (hasBlend) UpdateBlendFollow(blend);
+            else UpdateNormalFollow();
 
             if (!hasBlend && previousFrameWasBlend)
                 ClearBlendRailCache();
@@ -185,14 +172,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             autoScrollDolly.CameraPosition = currentSplinePosition;
         }
 
-        // =========================================================
-        // NORMAL FOLLOW
-        // =========================================================
-
         private void UpdateNormalFollow()
         {
-            if (!TryGetTrackingPoint(out Vector3 trackingPoint))
-                return;
+            if (!TryGetTrackingPoint(out Vector3 trackingPoint)) return;
 
             targetSplinePosition = GetSplinePosition(trackingPoint);
 
@@ -206,26 +188,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             currentSplinePosition = Mathf.SmoothDamp(currentSplinePosition, targetSplinePosition, ref splineVelocity, followSmoothTime);
         }
 
-        // =========================================================
-        // BLEND START
-        // =========================================================
-        //
-        // Ancien comportement :
-        //
-        // WorldStart -> projection rail
-        //
-        // Ce point pouvait être très différent de la position réelle
-        // de la caméra au moment où le blend commençait.
-        //
-        // Nouveau comportement :
-        //
-        // la portion caméra commence EXACTEMENT là où se trouve déjà
-        // la caméra.
-        //
-        // => aucune discontinuité à l'entrée du blend.
-        //
-        // =========================================================
-
         private void BeginBlendRail(MovementSpace.BlendResult blend)
         {
             cachedBlendSource = blend.Source;
@@ -236,20 +198,13 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             cachedBlendStartSplinePosition = currentSplinePosition;
             cachedBlendEndSplinePosition = GetSplinePosition(blend.WorldEnd);
-
             blendRailCacheValid = true;
 
-            // On part également de la cible précédente au lieu de la
-            // téléporter directement vers la nouvelle interpolation.
             targetSplinePosition = currentSplinePosition;
 
             if (debugEnabled)
-                Debug.Log($"[{nameof(VCameraSetup_Follow)}] Blend Rail | Start={cachedBlendStartSplinePosition:F3} End={cachedBlendEndSplinePosition:F3} T={blend.T:F3}", this);
+                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Blend Rail | Start={cachedBlendStartSplinePosition:F3} End={cachedBlendEndSplinePosition:F3} T={blend.T:F3}", this);
         }
-
-        // =========================================================
-        // BLEND FOLLOW
-        // =========================================================
 
         private void UpdateBlendFollow(MovementSpace.BlendResult blend)
         {
@@ -263,16 +218,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             float desiredSplinePosition = Mathf.Lerp(cachedBlendStartSplinePosition, cachedBlendEndSplinePosition, Mathf.Clamp01(blend.T));
 
-            // Le T peut encore évoluer très rapidement dans certaines
-            // géométries. On limite donc la variation de la CIBLE rail,
-            // pas la position réelle de la caméra.
-            //
-            // La caméra reste ensuite libre de SmoothDamp vers cette
-            // cible continue.
-            if (blendTargetMaxSpeed <= 0f)
-                targetSplinePosition = desiredSplinePosition;
-            else
-                targetSplinePosition = Mathf.MoveTowards(targetSplinePosition, desiredSplinePosition, blendTargetMaxSpeed * Time.deltaTime);
+            targetSplinePosition = blendTargetMaxSpeed <= 0f
+                ? desiredSplinePosition
+                : Mathf.MoveTowards(targetSplinePosition, desiredSplinePosition, blendTargetMaxSpeed * Time.deltaTime);
 
             if (blendFollowSmoothTime <= 0f)
             {
@@ -284,17 +232,14 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             currentSplinePosition = Mathf.SmoothDamp(currentSplinePosition, targetSplinePosition, ref splineVelocity, blendFollowSmoothTime);
         }
 
-        // =========================================================
-        // BLEND CACHE
-        // =========================================================
-
         private void RefreshBlendRailCacheIfNeeded(MovementSpace.BlendResult blend)
         {
-            bool newBlend = !blendRailCacheValid ||
-                            cachedBlendSource != blend.Source ||
-                            cachedBlendTarget != blend.Target ||
-                            cachedBlendSourceBoundary != blend.SourceBoundary ||
-                            cachedBlendTargetBoundary != blend.TargetBoundary;
+            bool newBlend =
+                !blendRailCacheValid ||
+                cachedBlendSource != blend.Source ||
+                cachedBlendTarget != blend.Target ||
+                cachedBlendSourceBoundary != blend.SourceBoundary ||
+                cachedBlendTargetBoundary != blend.TargetBoundary;
 
             if (newBlend)
             {
@@ -302,9 +247,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 return;
             }
 
-            // Si la géométrie du MS change réellement en runtime,
-            // seule la fin est recalculée. Le début reste ancré à la
-            // position caméra capturée au démarrage du blend.
             if (Vector3.SqrMagnitude(cachedBlendWorldEnd - blend.WorldEnd) <= 0.0001f)
                 return;
 
@@ -319,10 +261,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             cachedBlendTarget = null;
         }
 
-        // =========================================================
-        // TRACKING POINT
-        // =========================================================
-
         private bool TryGetTrackingPoint(out Vector3 trackingPoint)
         {
             trackingPoint = Vector3.zero;
@@ -336,9 +274,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 for (int i = 0; i < groupTargets.Count; i++)
                 {
                     Transform groupTarget = groupTargets[i];
-
-                    if (groupTarget == null)
-                        continue;
+                    if (groupTarget == null) continue;
 
                     if (count == 0)
                     {
@@ -361,25 +297,21 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 return true;
             }
 
-            if (target == null)
-                return false;
+            if (target == null) return false;
 
             trackingPoint = target.position;
             return true;
         }
 
-        // =========================================================
-        // ROTATION
-        // =========================================================
-
         private void InitializeCameraReference()
         {
-            if (autoScrollCamera == null || playerMovement == null)
-                return;
+            if (autoScrollCamera == null || playerMovement == null) return;
 
             Quaternion movementSpaceRotation = playerMovement.GetEffectiveMovementSpaceRotation();
 
-            cameraRotationOffsetFromMovementSpace = Quaternion.Inverse(movementSpaceRotation) * autoScrollCamera.transform.rotation;
+            cameraRotationOffsetFromMovementSpace =
+                Quaternion.Inverse(movementSpaceRotation) *
+                autoScrollCamera.transform.rotation;
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
@@ -388,11 +320,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void UpdateAutoScrollCameraRotation()
         {
-            if (autoScrollCamera == null || playerMovement == null)
-                return;
-
-            if (!cameraReferenceInitialized)
-                InitializeCameraReference();
+            if (autoScrollCamera == null || playerMovement == null) return;
+            if (!cameraReferenceInitialized) InitializeCameraReference();
 
             Quaternion movementSpaceRotation = playerMovement.GetEffectiveMovementSpaceRotation();
             Quaternion baseRotation = movementSpaceRotation * cameraRotationOffsetFromMovementSpace;
@@ -417,32 +346,51 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             }
             else
             {
-                currentHorizontalCorrection = Mathf.SmoothDampAngle(currentHorizontalCorrection, targetCorrection, ref horizontalCorrectionVelocity, horizontalCorrectionSmoothTime);
+                currentHorizontalCorrection = Mathf.SmoothDampAngle(
+                    currentHorizontalCorrection,
+                    targetCorrection,
+                    ref horizontalCorrectionVelocity,
+                    horizontalCorrectionSmoothTime
+                );
             }
 
             Vector3 rotationAxis = movementSpaceRotation * Vector3.up;
-            Quaternion correctionRotation = Quaternion.AngleAxis(currentHorizontalCorrection, rotationAxis);
 
-            autoScrollCamera.transform.rotation = correctionRotation * baseRotation;
+            autoScrollCamera.transform.rotation =
+                Quaternion.AngleAxis(currentHorizontalCorrection, rotationAxis) *
+                baseRotation;
         }
 
         private bool TryGetHorizontalViewportPosition(Quaternion baseRotation, Vector3 worldPoint, out float viewportX)
         {
             viewportX = desiredViewportX;
 
-            Vector3 localDirection = Quaternion.Inverse(baseRotation) * (worldPoint - autoScrollCamera.transform.position);
+            Vector3 localDirection =
+                Quaternion.Inverse(baseRotation) *
+                (worldPoint - autoScrollCamera.transform.position);
 
-            if (localDirection.z <= 0.001f)
-                return false;
+            if (localDirection.z <= 0.001f) return false;
 
-            float aspect = outputCamera != null && outputCamera.aspect > 0f ? outputCamera.aspect : 16f / 9f;
-            float verticalFov = Mathf.Clamp(autoScrollCamera.Lens.FieldOfView, 1f, 179f) * Mathf.Deg2Rad;
-            float tanHalfHorizontalFov = Mathf.Tan(verticalFov * 0.5f) * aspect;
+            float aspect = outputCamera != null && outputCamera.aspect > 0f
+                ? outputCamera.aspect
+                : 16f / 9f;
 
-            if (tanHalfHorizontalFov <= 0.0001f)
-                return false;
+            float verticalFov =
+                Mathf.Clamp(autoScrollCamera.Lens.FieldOfView, 1f, 179f) *
+                Mathf.Deg2Rad;
 
-            viewportX = 0.5f + (localDirection.x / (localDirection.z * tanHalfHorizontalFov)) * 0.5f;
+            float tanHalfHorizontalFov =
+                Mathf.Tan(verticalFov * 0.5f) *
+                aspect;
+
+            if (tanHalfHorizontalFov <= 0.0001f) return false;
+
+            viewportX =
+                0.5f +
+                localDirection.x /
+                (localDirection.z * tanHalfHorizontalFov) *
+                0.5f;
+
             return true;
         }
 
@@ -462,59 +410,49 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void ApplyMovementSpaceCameraRotationImmediate()
         {
-            if (autoScrollCamera == null || playerMovement == null)
-                return;
-
-            if (!cameraReferenceInitialized)
-                InitializeCameraReference();
+            if (autoScrollCamera == null || playerMovement == null) return;
+            if (!cameraReferenceInitialized) InitializeCameraReference();
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
 
-            autoScrollCamera.transform.rotation = playerMovement.GetEffectiveMovementSpaceRotation() * cameraRotationOffsetFromMovementSpace;
+            autoScrollCamera.transform.rotation =
+                playerMovement.GetEffectiveMovementSpaceRotation() *
+                cameraRotationOffsetFromMovementSpace;
         }
-
-        // =========================================================
-        // SPLINE
-        // =========================================================
 
         private float GetSplinePosition(Vector3 worldPosition)
         {
-            if (splineContainer == null)
-                return 0f;
+            if (splineContainer == null) return 0f;
 
             int samples = Mathf.Max(50, splineProjectionSamples);
-
             float closestT = 0f;
             float closestDistance = float.MaxValue;
 
             for (int i = 0; i <= samples; i++)
             {
                 float t = i / (float)samples;
-
                 Vector3 splinePosition = splineContainer.transform.TransformPoint(splineContainer.Spline.EvaluatePosition(t));
-
                 Vector2 difference = new(worldPosition.x - splinePosition.x, worldPosition.z - splinePosition.z);
                 float distance = difference.sqrMagnitude;
 
-                if (distance >= closestDistance)
-                    continue;
+                if (distance >= closestDistance) continue;
 
                 closestDistance = distance;
                 closestT = t;
             }
 
-            return SplineUtility.ConvertIndexUnit(splineContainer.Spline, closestT, PathIndexUnit.Normalized, PathIndexUnit.Knot);
+            return SplineUtility.ConvertIndexUnit(
+                splineContainer.Spline,
+                closestT,
+                PathIndexUnit.Normalized,
+                PathIndexUnit.Knot
+            );
         }
-
-        // =========================================================
-        // COMBAT
-        // =========================================================
 
         private void CheckCombatKnot()
         {
-            if (currentCombatStep >= combatKnots.Count)
-                return;
+            if (currentCombatStep >= combatKnots.Count) return;
 
             CombatKnot combatKnot = combatKnots[currentCombatStep];
 
@@ -530,8 +468,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void StartCombat(CombatKnot combatKnot)
         {
-            if (combatKnot == null)
-                return;
+            if (combatKnot == null) return;
 
             combatMode = true;
             combatEnabled = true;
@@ -541,7 +478,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             currentSplinePosition = combatKnot.KnotIndex;
             targetSplinePosition = currentSplinePosition;
             splineVelocity = 0f;
-
             previousFrameWasBlend = false;
             currentBlendActive = false;
 
@@ -554,14 +490,19 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             autoScrollCamera.Priority.Value = 0;
             combatCamera.Priority.Value = 10;
             combatCamera.Prioritize();
+
+            QueueCombatShake(combatKnot.StartShakePreset, combatKnot.StartShakeDelay);
+
+            combatKnot.EnableCombatObjects();
+
+            if (debugEnabled)
+                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat commencé : {combatKnot.name}.", combatKnot);
         }
 
         private void ApplyCombatPreset(CombatKnot combatKnot)
         {
             VCameraPreset preset = combatKnot.CameraPreset;
-
-            if (preset == null)
-                return;
+            if (preset == null) return;
 
             if (combatKnot.CombatCenter != null)
             {
@@ -590,7 +531,12 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void EndCombat()
         {
-            CombatKnot completedCombatKnot = currentCombatStep >= 0 && currentCombatStep < combatKnots.Count ? combatKnots[currentCombatStep] : null;
+            CombatKnot completedCombatKnot =
+                currentCombatStep >= 0 && currentCombatStep < combatKnots.Count
+                    ? combatKnots[currentCombatStep]
+                    : null;
+
+            completedCombatKnot?.DisableCombatObjects();
 
             if (completedCombatKnot?.NextMovementSpace != null && playerMovement != null)
                 playerMovement.SetMovementSpace(completedCombatKnot.NextMovementSpace.transform);
@@ -601,7 +547,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             currentSplinePosition = autoScrollDolly.CameraPosition;
             targetSplinePosition = currentSplinePosition;
             splineVelocity = 0f;
-
             previousFrameWasBlend = false;
             currentBlendActive = false;
 
@@ -612,50 +557,82 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             autoScrollCamera.Prioritize();
 
             ApplyMovementSpaceCameraRotationImmediate();
+
+            if (completedCombatKnot != null)
+                QueueCombatShake(completedCombatKnot.EndShakePreset, completedCombatKnot.EndShakeDelay);
+
+            if (debugEnabled && completedCombatKnot != null)
+                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name}.", completedCombatKnot);
         }
 
-        // =========================================================
-        // VALIDATION
-        // =========================================================
+        private void QueueCombatShake(CameraShakePreset preset, float delay)
+        {
+            if (preset == null) return;
+
+            if (pendingCombatShake != null)
+                StopCoroutine(pendingCombatShake);
+
+            pendingCombatShake = StartCoroutine(PlayCombatShake(preset, Mathf.Max(0f, delay)));
+        }
+
+        private IEnumerator PlayCombatShake(CameraShakePreset preset, float delay)
+        {
+            yield return null;
+
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            pendingCombatShake = null;
+
+            if (preset == null)
+                yield break;
+
+            if (!CameraShakeManager.HasInstance)
+            {
+                UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Impossible de jouer '{preset.name}' : aucun CameraShakeManager actif.", this);
+                yield break;
+            }
+
+            CameraShakeManager.PlayShake(preset);
+
+            if (debugEnabled)
+                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat Shake joué : {preset.name} | Delay={delay:F2}s", this);
+        }
 
         private bool ValidateReferences()
         {
             bool valid = true;
 
-            if (autoScrollCamera == null) { Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Camera non assignée.", this); valid = false; }
-            if (combatCamera == null) { Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Camera non assignée.", this); valid = false; }
-            if (autoScrollDolly == null) { Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Dolly non assigné.", this); valid = false; }
-            if (target == null && !HasValidGroupTarget()) { Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Target valide.", this); valid = false; }
-            if (playerMovement == null) { Debug.LogError($"[{nameof(VCameraSetup_Follow)}] PlayerMovement non assigné.", this); valid = false; }
+            if (autoScrollCamera == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Camera non assignée.", this); valid = false; }
+            if (combatCamera == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Camera non assignée.", this); valid = false; }
+            if (autoScrollDolly == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Dolly non assigné.", this); valid = false; }
+            if (target == null && !HasValidGroupTarget()) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Target valide.", this); valid = false; }
+            if (playerMovement == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] PlayerMovement non assigné.", this); valid = false; }
 
             return valid;
         }
 
         private bool HasValidGroupTarget()
         {
-            if (groupTargets == null)
-                return false;
+            if (groupTargets == null) return false;
 
             for (int i = 0; i < groupTargets.Count; i++)
-            {
                 if (groupTargets[i] != null)
                     return true;
-            }
 
             return false;
         }
 
         private void ValidateCombatKnots()
         {
-            if (combatKnots == null)
-                return;
+            if (combatKnots == null) return;
 
             for (int i = 0; i < combatKnots.Count; i++)
             {
                 CombatKnot knot = combatKnots[i];
 
                 if (knot != null && (knot.KnotIndex < 0 || knot.KnotIndex >= splineContainer.Spline.Count))
-                    Debug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Knot '{knot.name}' : Knot Index {knot.KnotIndex} invalide.", knot);
+                    UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Knot '{knot.name}' : Knot Index {knot.KnotIndex} invalide.", knot);
             }
         }
 
@@ -664,10 +641,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             autoScrollCamera.Priority.Value = combatMode ? 0 : 10;
             combatCamera.Priority.Value = combatMode ? 10 : 0;
 
-            if (combatMode)
-                combatCamera.Prioritize();
-            else
-                autoScrollCamera.Prioritize();
+            if (combatMode) combatCamera.Prioritize();
+            else autoScrollCamera.Prioritize();
         }
 
         private void DisableCombat() => combatEnabled = false;
