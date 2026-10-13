@@ -257,7 +257,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private void HandleAtkL(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                UnityEngine.Debug.Log("[PlayerCore] AtkL");
+                //UnityEngine.Debug.Log("[PlayerCore] AtkL");
 
             OnPlayerAtkL?.Invoke();
         }
