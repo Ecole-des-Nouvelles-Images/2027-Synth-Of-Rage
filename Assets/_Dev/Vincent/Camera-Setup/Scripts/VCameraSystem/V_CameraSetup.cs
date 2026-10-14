@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
+namespace SynthOfRage.Scripts.CameraSystem
+
 {
     public class VCameraSetup : MonoBehaviour
     {
@@ -41,13 +42,13 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             if (autoScrollFixedSpeed == null)
             {
-                Debug.LogError("Auto Scroll Dolly n'utilise pas Fixed Speed.");
+                UnityEngine.Debug.LogError("Auto Scroll Dolly n'utilise pas Fixed Speed.");
                 return;
             }
 
             if (combatFixedSpeed == null)
             {
-                Debug.LogError("Combat Dolly n'utilise pas Fixed Speed.");
+                UnityEngine.Debug.LogError("Combat Dolly n'utilise pas Fixed Speed.");
                 return;
             }
 

@@ -200,13 +200,9 @@ Shader "Custom/SOR/Sprite3D"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
-
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/RealtimeLights.hlsl"
-
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Clustering.hlsl"
 
 
             // ========================================================

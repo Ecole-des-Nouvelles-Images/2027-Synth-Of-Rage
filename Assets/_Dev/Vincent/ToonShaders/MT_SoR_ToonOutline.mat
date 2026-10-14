@@ -64,7 +64,7 @@ Material:
     - _CoreIntegrity: 0.78
     - _DepthSoftness: 0.004
     - _DepthStrength: 1
-    - _DepthThreshold: 0.02
+    - _DepthThreshold: 0.348
     - _DirectLightStrength: 1
     - _DirtyFadeEnd: 160
     - _DirtyFadeStart: 16

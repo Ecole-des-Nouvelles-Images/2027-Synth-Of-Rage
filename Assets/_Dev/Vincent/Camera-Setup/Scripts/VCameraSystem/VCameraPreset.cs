@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
+namespace SynthOfRage.Scripts.CameraSystem
 {
     [CreateAssetMenu(
         fileName = "VCameraPreset",
