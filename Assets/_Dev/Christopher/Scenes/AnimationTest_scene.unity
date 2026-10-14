@@ -871,17 +871,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 5398589998023776522, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
-      propertyPath: m_IsKinematic
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5774269381530590169, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
       propertyPath: m_Name
       value: PI_BasicChasingBot
-      objectReference: {fileID: 0}
-    - target: {fileID: 5774269381530590169, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7240649655795702764, guid: 24d968a3721c24b42aeb91a8122a920b, type: 3}
       propertyPath: m_LocalPosition.x

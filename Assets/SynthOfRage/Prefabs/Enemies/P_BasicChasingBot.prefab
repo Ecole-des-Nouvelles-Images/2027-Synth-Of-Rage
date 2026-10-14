@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4246637947782533447}
   - component: {fileID: 6416986055427662711}
   - component: {fileID: 5266958390349205374}
+  - component: {fileID: 3934477139543725981}
   m_Layer: 0
   m_Name: Capsule
   m_TagString: Untagged
@@ -105,6 +106,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 942b38cfeefeccc48bce999144e3dd76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpriteFollower
+--- !u!95 &3934477139543725981
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1071045686907973281}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &5774269381530590169
 GameObject:
   m_ObjectHideFlags: 0
@@ -187,7 +210,7 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
