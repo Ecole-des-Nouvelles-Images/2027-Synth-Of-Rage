@@ -9,6 +9,9 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
     public class PlayerMovement : MonoBehaviour
     {
         private static readonly int Move = Animator.StringToHash("Move");
+        private static readonly int IsJumping = Animator.StringToHash("IsJumping");
+        private static readonly int IsDashing = Animator.StringToHash("IsDashing");
+        private static readonly int VerticalVelocity = Animator.StringToHash("VerticalVelocity");
 
         [Header("References")]
         [FormerlySerializedAs("playerObserver")]
@@ -181,6 +184,12 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _jumpTimer = 0f;
             _previousJumpHeight = 0f;
             _verticalVelocity = 0f;
+
+            if (_animator)
+            {
+                _animator.SetBool(IsJumping, true);
+                SetAnimatorVerticalVelocity(0f);
+            }
         }
 
         private void HandlePlayerDash()
@@ -193,6 +202,13 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 _isJumping = false;
                 _jumpTimer = 0f;
                 _previousJumpHeight = 0f;
+                _verticalVelocity = 0f;
+
+                if (_animator)
+                {
+                    _animator.SetBool(IsJumping, false);
+                    SetAnimatorVerticalVelocity(0f);
+                }
             }
 
             _dashDirection = _moveInput.sqrMagnitude > 0.01f ? GetMovementDirection(_moveInput) : _spriteRenderer != null && _spriteRenderer.flipX ? -transform.right : transform.right;
@@ -202,6 +218,12 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _dashTimer = 0f;
             _isDashing = true;
             _dashCooldownTimer = _dashCooldown;
+
+            if (_animator)
+            {
+                _animator.SetBool(IsDashing, true);
+                SetAnimatorVerticalVelocity(0f);
+            }
         }
 
         // =========================================================
@@ -415,6 +437,17 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             transform.rotation = Quaternion.Euler(0f, smoothedY, 0f);
         }
 
+        private void SetAnimatorVerticalVelocity(float velocity)
+        {
+            if (!_animator)
+                return;
+
+            float maxReference = Mathf.Max(_jumpHeight, 0.01f);
+            float clampedVelocity = Mathf.Clamp(velocity, -maxReference, maxReference);
+
+            _animator.SetFloat(VerticalVelocity, clampedVelocity);
+        }
+
         // =========================================================
         // JUMP / GRAVITY
         // =========================================================
@@ -443,10 +476,18 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             float currentHeight = _jumpCurve.Evaluate(progress) * _jumpHeight;
             float deltaHeight = currentHeight - _previousJumpHeight;
 
+            float previousY = transform.position.y;
+
             MoveWithMovementSpaceLimits(Vector3.up * deltaHeight);
 
+            float actualDeltaHeight = transform.position.y - previousY;
+            float actualVerticalVelocity = actualDeltaHeight / Mathf.Max(Time.deltaTime, 0.0001f);
+
+            _verticalVelocity = actualVerticalVelocity;
             _previousJumpHeight = currentHeight;
             _jumpTimer += Time.deltaTime;
+
+            SetAnimatorVerticalVelocity(actualVerticalVelocity);
 
             if (_jumpTimer >= _jumpDuration)
                 EndJump();
@@ -458,6 +499,9 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _jumpTimer = 0f;
             _previousJumpHeight = 0f;
             _verticalVelocity = -2f;
+
+            if (_animator)
+                _animator.SetBool(IsJumping, false);
         }
 
         private void HandleGravity()
@@ -468,12 +512,34 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (_controller.isGrounded)
             {
                 _verticalVelocity = -2f;
+                SetAnimatorVerticalVelocity(0f);
                 return;
             }
 
             _verticalVelocity += _gravity * Time.deltaTime;
 
-            MoveWithMovementSpaceLimits(Vector3.up * (_verticalVelocity * Time.deltaTime));
+            float previousY = transform.position.y;
+
+            MoveWithMovementSpaceLimits(
+                Vector3.up * (_verticalVelocity * Time.deltaTime)
+            );
+
+            float actualDeltaHeight = transform.position.y - previousY;
+
+            // Si la gravité veut nous faire descendre mais que le CharacterController
+            // n'a réellement pas bougé, on est posé sur quelque chose même si
+            // isGrounded a raté cette frame.
+            if (_verticalVelocity < 0f && Mathf.Abs(actualDeltaHeight) <= 0.0001f)
+            {
+                _verticalVelocity = -2f;
+                SetAnimatorVerticalVelocity(0f);
+                return;
+            }
+
+            float actualVerticalVelocity =
+                actualDeltaHeight / Mathf.Max(Time.deltaTime, 0.0001f);
+
+            SetAnimatorVerticalVelocity(actualVerticalVelocity);
         }
 
         // =========================================================
@@ -486,14 +552,14 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 return;
 
             float previousTime = _dashTimer;
-
+            
             _dashTimer += Time.deltaTime;
-
+            
             float previousProgress = Mathf.Clamp01(previousTime / _dashDuration);
             float currentProgress = Mathf.Clamp01(_dashTimer / _dashDuration);
-
+            
             float deltaCurve = _dashCurve.Evaluate(currentProgress) - _dashCurve.Evaluate(previousProgress);
-
+    
             MoveWithMovementSpaceLimits(_dashDirection * (_dashDistance * deltaCurve));
 
             if (_dashTimer < _dashDuration)
@@ -502,6 +568,12 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _dashTimer = 0f;
             _isDashing = false;
             _verticalVelocity = -2f;
+
+            if (_animator)
+            {
+                _animator.SetBool(IsDashing, false);
+                SetAnimatorVerticalVelocity(0f);
+            }
         }
 
         private void HandleDashCooldown()
