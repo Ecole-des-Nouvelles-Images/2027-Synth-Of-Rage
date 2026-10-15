@@ -34,9 +34,9 @@ Material:
     - _AmbientStrength: 1
     - _CastShadows: 1
     - _DepthOcclusionAlphaCutoff: 0.9
-    - _EdgeLightBoost: 1.86
+    - _EdgeLightBoost: 1.5
     - _EdgeSensitivity: 10
-    - _EdgeWidth: 0.0005
+    - _EdgeWidth: 0.0077
     - _ReceiveShadows: 1
     - _ShadowAlphaClip: 1
     - _SpriteDepthSortEpsilon: 0.1

@@ -393,7 +393,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _jumpDurationMultiplier: 1
-  _dashDistance: 4
+  _dashDistance: 5.5
   _dashDuration: 0.2
   _dashCooldown: 0.5
   _dashCurve:

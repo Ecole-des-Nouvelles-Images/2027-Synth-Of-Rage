@@ -34,6 +34,11 @@ Shader "Custom/SOR/Sprite3D"
             Range(0,1)
         ) = 0.1
 
+        _SpriteLightBoost(
+            "Sprite Light Boost",
+            Range(0,3)
+        ) = 0
+
 
         // ============================================================
         // SPRITE EDGE LIGHT
@@ -274,6 +279,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
@@ -934,7 +941,8 @@ Shader "Custom/SOR/Sprite3D"
                 // ====================================================
 
                 color.rgb *=
-                    lighting;
+                    lighting +
+                    _SpriteLightBoost;
 
 
                 return color;
@@ -1058,6 +1066,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
@@ -1292,6 +1302,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
@@ -1505,6 +1517,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
@@ -1675,6 +1689,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
@@ -1830,6 +1846,8 @@ Shader "Custom/SOR/Sprite3D"
 
                 half _AmbientStrength;
 
+
+                half _SpriteLightBoost;
                 half _EdgeWidth;
 
                 half _EdgeSensitivity;
