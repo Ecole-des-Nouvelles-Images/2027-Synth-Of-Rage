@@ -46,20 +46,20 @@ Material:
     - _HalftoneLevels: 3
     - _HalftoneMaxRadius: 0.5
     - _HalftoneMinRadius: 0
-    - _HalftoneSize: 15
-    - _HalftoneStrength: 1
+    - _HalftoneSize: 2
+    - _HalftoneStrength: 0.267
     - _HalftoneWorldProjectionBlend: 16
     - _HalftoneWorldScale: 3.4
     - _HalftoneWorldSpace: 1
-    - _LightBands: 4
+    - _LightBands: 32
     - _LightBias: 0
-    - _NormalStrength: 2
+    - _NormalStrength: 0
     - _PosterizeSteps: 32
-    - _PosterizeStrength: 0.5
+    - _PosterizeStrength: 0
     - _ReceiveShadowStrength: 1
     - _RimPatternStrength: 0.1
     - _RimPower: 0.1
-    - _RimStrength: 0.01
+    - _RimStrength: 0
     - _RimThreshold: 0
     - _SpecularPower: 12
     - _SpecularStrength: 0
@@ -72,9 +72,9 @@ Material:
     - _UseStepPattern: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _HalftoneColor: {r: 0.7264151, g: 0.7264151, b: 0.7264151, a: 1}
+    - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
     - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
-    - _RimColor: {r: 1, g: 1, b: 1, a: 1}
+    - _RimColor: {r: 0, g: 0, b: 0, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _StepPatternWorldOffset: {r: 0, g: 0, b: 0, a: 0}

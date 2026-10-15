@@ -62,9 +62,9 @@ Material:
     - _ChunkBoost: 8
     - _ChunkThreshold: 0.56
     - _CoreIntegrity: 0.78
-    - _DepthSoftness: 0.004
+    - _DepthSoftness: 0.2
     - _DepthStrength: 1
-    - _DepthThreshold: 0.348
+    - _DepthThreshold: 0.014
     - _DirectLightStrength: 1
     - _DirtyFadeEnd: 160
     - _DirtyFadeStart: 16

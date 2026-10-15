@@ -9,7 +9,7 @@ Shader "Custom/SOR/Toon" {
         _NormalStrength("Normal Strength", Range(0,2)) = 1
 
         [Header(Toon Lighting)]
-        _LightBands("Light Bands", Range(2,8)) = 4
+        _LightBands("Light Bands", Range(2,32)) = 4
         _LightBias("Light Bias", Range(-1,1)) = 0
         _ShadowColor("Shadow Tint", Color) = (0.18,0.18,0.24,1)
         _DirectLightStrength("Direct Light Strength", Range(0,3)) = 1
