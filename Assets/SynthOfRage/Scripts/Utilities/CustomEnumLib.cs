@@ -7,7 +7,23 @@ namespace SynthOfRage.Scripts.Utilities
             None,
             Minor,
             Intermediate,
-            Major,
+            Major
+        }
+
+        public enum CombatState
+        {
+            None,
+            LightAttack,
+            HeavyAttack
+        }
+
+        public enum AnimationState
+        {
+            None,
+            Start,
+            Active,
+            Recover,
+            End
         }
     }
 }
