@@ -1,76 +1,84 @@
+
 using System.Collections.Generic;
-using SynthOfRage.Scripts.Gameplay.Core;
 using UnityEngine;
 
 namespace SynthOfRage.Scripts.Gameplay
 {
     public class Spawner : MonoBehaviour
     {
-
         public List<GameObject> Enemy;
         public float SpawnRate;
         public bool _SquadEnable;
-        
-        private float _currentTime = 0;
-        private List<GameObject> _livingEnemies = new List<GameObject>();
-        private int _enemySpawnIndex = 0;
 
+        private float _currentTime;
+        private readonly List<GameObject> _livingEnemies = new();
+        private int _enemySpawnIndex;
         private Transform _dynamicContainer;
+
+        public bool IsCompleted =>
+            _SquadEnable &&
+            _enemySpawnIndex >= (Enemy?.Count ?? 0) &&
+            _livingEnemies.Count == 0;
 
         private void Awake()
         {
             _dynamicContainer = GameObject.FindGameObjectWithTag("DynamicInstances")?.transform;
+
             if (!_dynamicContainer)
-                UnityEngine.Debug.Log("[Spawner] An object with the DynamicInstances tag is missing in the scene !");
-            
-            
-            transform.gameObject.SetActive(false);
+                UnityEngine.Debug.LogWarning("[Spawner] DynamicInstances container missing.");
+
             if (Enemy == null || Enemy.Count == 0)
-            {
-                UnityEngine.Debug.LogError("No enemy to spawn !!!");
-            }
+                UnityEngine.Debug.LogWarning($"[Spawner] No enemies configured on {name}.");
+
+            gameObject.SetActive(false);
         }
 
         private void Update()
         {
-            if (_SquadEnable && _enemySpawnIndex < Enemy.Count)
+            if (!_SquadEnable) return;
+
+            if (_enemySpawnIndex < (Enemy?.Count ?? 0))
             {
-                if (_currentTime > 0)
-                {
-                    _currentTime -= Time.deltaTime;
-                
-                }
-                else
-                {
+                _currentTime -= Time.deltaTime;
+
+                if (_currentTime <= 0f)
                     SpawnEnemy();
-                }
             }
+
             UpdateLivingEnemies();
         }
 
         private void SpawnEnemy()
         {
-            GameObject enemy = Instantiate(Enemy[_enemySpawnIndex], transform.position, transform.rotation);
-            enemy.transform.parent = _dynamicContainer;
-            _livingEnemies.Add(enemy);
+            GameObject prefab = Enemy[_enemySpawnIndex++];
+
+            if (prefab)
+            {
+                GameObject enemy = Instantiate(
+                    prefab,
+                    transform.position,
+                    transform.rotation,
+                    _dynamicContainer
+                );
+
+                _livingEnemies.Add(enemy);
+            }
+
             _currentTime = SpawnRate;
-            _enemySpawnIndex++;
         }
 
         private void UpdateLivingEnemies()
         {
-            for (int i = 0; i < _livingEnemies.Count; i++)
-            {
-                if (!_livingEnemies[i] || !_livingEnemies[i].activeInHierarchy)
-                {
-                    _livingEnemies.Remove(_livingEnemies[i]);
-                }
-            }
+            _livingEnemies.RemoveAll(enemy =>
+                !enemy || !enemy.activeInHierarchy);
+        }
 
-            if (_livingEnemies.Count == 0)
-            {
-                GameManager.Instance.OnArenaExit.Invoke();
-            }
+        public void ResetSpawner()
+        {
+            _enemySpawnIndex = 0;
+            _currentTime = 0f;
+            _livingEnemies.Clear();
+            _SquadEnable = false;
         }
     }
 }
