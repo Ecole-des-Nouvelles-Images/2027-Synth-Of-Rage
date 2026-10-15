@@ -2117,7 +2117,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2182655559030908427, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2343364671908718284, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
       propertyPath: m_AnchorMax.y
@@ -2272,6 +2272,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7848842198103019176, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
       insertIndex: 1
       addedObject: {fileID: 898676219}
+    - targetCorrespondingSourceObject: {fileID: 7589879528162080959, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1517331877}
   m_SourcePrefab: {fileID: 100100000, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
 --- !u!1 &177701157
 GameObject:
@@ -13546,6 +13549,34 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bba3da5b19551af4b834a250ad1253fa, type: 3}
+--- !u!1 &1517331873 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7589879528162080959, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+  m_PrefabInstance: {fileID: 172711501}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1517331874 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8773182339248956847, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+  m_PrefabInstance: {fileID: 172711501}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1517331877
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1517331873}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6d41a2db07f71e49be270e9caeb8e87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.CameraSystem.CameraShakeTrigger
+  preset: {fileID: 11400000, guid: 731d38a1e9d0b364d8851a652288734b, type: 2}
+  targetTag: Enemy
+  playOnce: 0
+  directionMode: 2
+  customDirection: {x: 1, y: 0}
+  directionOrigin: {fileID: 1517331874}
 --- !u!1 &1517510767 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8732291199980593963, guid: e855bf886ba6ec942af1edf4e05f6fe0, type: 3}
