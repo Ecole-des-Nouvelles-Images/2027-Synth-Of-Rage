@@ -40,6 +40,7 @@ Material:
     - _ReceiveShadows: 1
     - _ShadowAlphaClip: 1
     - _SpriteDepthSortEpsilon: 0.1
+    - _SpriteLightBoost: 0.2
     - _SpriteOutlineEnabled: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
