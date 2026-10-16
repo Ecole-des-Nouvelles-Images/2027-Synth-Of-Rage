@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
+using SynthOfRage.Scripts.Gameplay.Core;
 using UnityEngine;
 
 namespace SynthOfRage.Scripts.Gameplay.Common.Modules
@@ -12,7 +13,7 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
     public class HealthModule : MonoBehaviour
     {
         [Min(0)] [SerializeField] private int _maxHP = 100;
-        [SerializeField] private int _hp;
+        private int _hp;
 
         [Header("Hit Reaction")]
         [SerializeField] private CharacterController _controller;
@@ -27,6 +28,18 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
         public event Action OnEmptyHealth;
         public event Action<int> OnDamageTaken;
         public event Action<bool> OnStunChanged;
+
+        /// <summary>True only during the active frames of a player attack.</summary>
+        public bool IsAttackInvincible { get; private set; }
+
+        /// <summary>
+        /// Called by AttackInvincibilityState on the animator attack states.
+        /// This does not change the HP Set/Apply APIs (healing and scripted damage still work).
+        /// </summary>
+        public void SetAttackInvincibility(bool enabled)
+        {
+            IsAttackInvincible = enabled && isActiveAndEnabled && HP > 0;
+        }
 
         public bool IsStunned => _isStunned;
 
@@ -58,6 +71,7 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
 
                 if (previousHP > 0 && _hp == 0)
                 {
+                    SetAttackInvincibility(false);
                     StopReaction();
                     OnEmptyHealth?.Invoke();
                 }
@@ -122,12 +136,34 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
 
         /// <summary>
         /// Applies attack damage and configures stun, blink and knockback using attack properties.
+        /// The durations passed here are in seconds (legacy compatibility).
         /// </summary>
         public void ReceiveHit(int damage, Vector3 hitOrigin, float knockbackDistance,
             float knockbackDuration, AnimationCurve knockbackCurve, float stunDuration,
             float blinkDuration, float blinkInterval, Color blinkColor)
         {
-            if (HP <= 0) return;
+            StartHitReaction(damage, hitOrigin, knockbackDistance, knockbackDuration,
+                knockbackCurve, stunDuration, blinkDuration, blinkInterval, blinkColor, false);
+        }
+
+        /// <summary>
+        /// Equivalent of ReceiveHit with all reaction durations expressed in musical beats.
+        /// Damage is applied immediately; the reaction follows the shared music clock.
+        /// </summary>
+        public void ReceiveHitBeats(int damage, Vector3 hitOrigin, float knockbackDistance,
+            float knockbackBeats, AnimationCurve knockbackCurve, float stunBeats,
+            float blinkBeats, float blinkIntervalBeats, Color blinkColor)
+        {
+            StartHitReaction(damage, hitOrigin, knockbackDistance, knockbackBeats,
+                knockbackCurve, stunBeats, blinkBeats, blinkIntervalBeats, blinkColor, true);
+        }
+
+        private void StartHitReaction(int damage, Vector3 hitOrigin, float knockbackDistance,
+            float knockbackDuration, AnimationCurve knockbackCurve, float stunDuration,
+            float blinkDuration, float blinkInterval, Color blinkColor, bool useBeats)
+        {
+            // Attack i-frames cancel the ENTIRE hit, including stun and knockback.
+            if (HP <= 0 || IsAttackInvincible) return;
             Apply(-Mathf.Max(0, damage));
             if (HP <= 0) return;
 
@@ -143,24 +179,31 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
             StopReaction();
             _reactionCoroutine = StartCoroutine(ReactToHit(direction, Mathf.Max(0f, knockbackDistance),
                 Mathf.Max(0f, knockbackDuration), knockbackCurve, Mathf.Max(0f, stunDuration),
-                Mathf.Max(0f, blinkDuration), Mathf.Max(0.01f, blinkInterval), blinkColor));
+                Mathf.Max(0f, blinkDuration), Mathf.Max(0.001f, blinkInterval), blinkColor, useBeats));
         }
 
         private IEnumerator ReactToHit(Vector3 direction, float distance, float knockbackDuration,
-            AnimationCurve curve, float stunDuration, float blinkDuration, float blinkInterval, Color blinkColor)
+            AnimationCurve curve, float stunDuration, float blinkDuration, float blinkInterval,
+            Color blinkColor, bool useBeats)
         {
             float elapsed = 0f;
             float previousProgress = 0f;
             float totalDuration = Mathf.Max(knockbackDuration, stunDuration, blinkDuration);
+            RhythmManager clock = useBeats ? RhythmManager.Instance : null;
+            double beginBeat = clock && clock.IsReady ? clock.CurrentBeat : 0.0;
             SetStunned(stunDuration > 0f);
 
             while (elapsed < totalDuration)
             {
-                elapsed = Mathf.Min(elapsed + Time.deltaTime, totalDuration);
+                if (useBeats && clock && clock.IsReady)
+                    elapsed = Mathf.Max(elapsed, (float)(clock.CurrentBeat - beginBeat));
+                else
+                    elapsed += Time.deltaTime * (useBeats ? 87f / 60f : 1f);
 
+                float frameElapsed = Mathf.Min(elapsed, totalDuration);
                 if (knockbackDuration > 0f && previousProgress < 1f)
                 {
-                    float t = Mathf.Clamp01(elapsed / knockbackDuration);
+                    float t = Mathf.Clamp01(frameElapsed / knockbackDuration);
                     float progress = Mathf.Clamp01(curve != null ? curve.Evaluate(t) : t);
                     float movement = Mathf.Max(0f, progress - previousProgress) * distance;
 
@@ -176,12 +219,12 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
 
                 if (_spriteRenderer)
                 {
-                    bool blink = elapsed < blinkDuration &&
-                        Mathf.FloorToInt(elapsed / blinkInterval) % 2 == 0;
+                    bool blink = frameElapsed < blinkDuration &&
+                        Mathf.FloorToInt(frameElapsed / blinkInterval) % 2 == 0;
                     _spriteRenderer.color = blink ? blinkColor : _originalColor;
                 }
 
-                if (_isStunned && elapsed >= stunDuration)
+                if (_isStunned && frameElapsed >= stunDuration)
                     SetStunned(false);
 
                 yield return null;
@@ -214,7 +257,11 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
             ResetReaction();
         }
 
-        private void OnDisable() => StopReaction();
+        private void OnDisable()
+        {
+            IsAttackInvincible = false;
+            StopReaction();
+        }
 
         [ContextMenu("DIE MOTHERFUCKER")]
         public void ForceDIE()

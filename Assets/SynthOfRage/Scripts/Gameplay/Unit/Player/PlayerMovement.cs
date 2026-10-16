@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 using SynthOfRage.Scripts.Gameplay.Common.Modules;
+using SynthOfRage.Scripts.Gameplay.Core;
 using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using Debug = UnityEngine.Debug;
 
@@ -72,6 +73,11 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         [FormerlySerializedAs("dashCurve")]
         [SerializeField] private AnimationCurve _dashCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+        [Header("Rhythm - Dash (Optional)")]
+        [SerializeField] private bool _syncDashToBeats = true;
+        [SerializeField, Min(0.01f)] private float _dashDurationBeats = 0.5f;
+        [SerializeField, Min(0f)] private float _dashCooldownBeats = 1f;
+
         private CharacterController _controller;
         private Animator _animator;
         private HealthModule _healthModule;
@@ -93,6 +99,11 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private Vector3 _dashDirection;
         private float _dashTimer;
         private bool _isDashing;
+        private bool _dashUsingRhythm;
+        private double _dashStartBeat;
+        private double _nextDashAvailableBeat;
+        private float _dashPreviousProgress;
+        private float _dashActiveDurationSeconds;
 
         private bool _isJumping;
         private float _jumpDuration;
@@ -209,7 +220,10 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void HandlePlayerDash()
         {
-            if ((_healthModule && _healthModule.IsStunned) || _isDashing || _dashCooldownTimer > 0f)
+            RhythmManager rhythm = RhythmManager.Instance;
+            bool rhythmAvailable = _syncDashToBeats && rhythm && rhythm.IsReady;
+            if ((_healthModule && _healthModule.IsStunned) || _isDashing ||
+                (rhythmAvailable ? rhythm.CurrentBeat < _nextDashAvailableBeat : _dashCooldownTimer > 0f))
                 return;
 
             if (_isJumping)
@@ -231,8 +245,21 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _dashDirection.Normalize();
 
             _dashTimer = 0f;
+            _dashPreviousProgress = 0f;
             _isDashing = true;
-            _dashCooldownTimer = _dashCooldown;
+            _dashUsingRhythm = rhythmAvailable;
+            if (_dashUsingRhythm)
+            {
+                _dashStartBeat = rhythm.CurrentBeat;
+                _nextDashAvailableBeat = _dashStartBeat + _dashCooldownBeats;
+                _dashActiveDurationSeconds = Mathf.Max(0.001f, (float)rhythm.BeatsToSeconds(_dashDurationBeats));
+                _dashCooldownTimer = (float)rhythm.BeatsToSeconds(_dashCooldownBeats);
+            }
+            else
+            {
+                _dashActiveDurationSeconds = Mathf.Max(0.001f, _dashDuration);
+                _dashCooldownTimer = _dashCooldown;
+            }
 
             if (_animator)
             {
@@ -252,6 +279,8 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             _moveInput = Vector2.zero;
             _isDashing = false;
             _dashTimer = 0f;
+            _dashPreviousProgress = 0f;
+            _dashUsingRhythm = false;
 
             if (_animator)
             {
@@ -581,22 +610,25 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (!_isDashing)
                 return;
 
-            float previousTime = _dashTimer;
-            
             _dashTimer += Time.deltaTime;
-            
-            float previousProgress = Mathf.Clamp01(previousTime / _dashDuration);
-            float currentProgress = Mathf.Clamp01(_dashTimer / _dashDuration);
-            
-            float deltaCurve = _dashCurve.Evaluate(currentProgress) - _dashCurve.Evaluate(previousProgress);
-    
-            MoveWithMovementSpaceLimits(_dashDirection * (_dashDistance * deltaCurve));
+            RhythmManager rhythm = RhythmManager.Instance;
 
-            if (_dashTimer < _dashDuration)
+            float currentProgress = _dashUsingRhythm && rhythm && rhythm.IsReady
+                ? Mathf.Clamp01((float)((rhythm.CurrentBeat - _dashStartBeat) / Mathf.Max(0.01f, _dashDurationBeats)))
+                : Mathf.Clamp01(_dashTimer / Mathf.Max(0.001f, _dashActiveDurationSeconds));
+
+            currentProgress = Mathf.Max(currentProgress, _dashPreviousProgress);
+            float deltaCurve = _dashCurve.Evaluate(currentProgress) - _dashCurve.Evaluate(_dashPreviousProgress);
+            MoveWithMovementSpaceLimits(_dashDirection * (_dashDistance * deltaCurve));
+            _dashPreviousProgress = currentProgress;
+
+            if (currentProgress < 1f)
                 return;
 
             _dashTimer = 0f;
+            _dashPreviousProgress = 0f;
             _isDashing = false;
+            _dashUsingRhythm = false;
             _verticalVelocity = -2f;
 
             if (_animator)

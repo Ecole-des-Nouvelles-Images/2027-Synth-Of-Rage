@@ -11,10 +11,10 @@ GameObject:
   - component: {fileID: 8811932486326818698}
   - component: {fileID: 536744322015859511}
   - component: {fileID: 627234992349493791}
-  - component: {fileID: 1626641998086236451}
+  - component: {fileID: 2283528668772285376}
   - component: {fileID: 9113730569298106106}
   - component: {fileID: 4729618000745941482}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: P_ChasingBot_v2
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -86,8 +86,8 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!136 &1626641998086236451
-CapsuleCollider:
+--- !u!65 &2283528668772285376
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -104,10 +104,8 @@ CapsuleCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 3
-  m_Direction: 1
+  serializedVersion: 3
+  m_Size: {x: 1.5, y: 3.5, z: 1.5}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &9113730569298106106
 MonoBehaviour:
@@ -122,7 +120,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHPPlaceholder
   Type: 1
-  Health: 3
+  Health: 6
 --- !u!114 &4729618000745941482
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,12 +133,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82b09449875b5864f8d7d7e221086681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Script.BrainProto
-  _attackRange: 2
+  _attackRange: 1.5
   _chaseResumeRange: 2.5
-  _attackPreparation: 0
-  _attackDuration: 0.45
-  _attackCooldown: 0.8
+  _useRhythm: 1
+  _enableBeatSnapping: 1
+  _snapEveryBeats: 0.5
+  _snapToFirstHit: 1
+  _attackDurationBeats: 1
+  _attackCooldownBeats: 2
+  _fallbackBPM: 87
+  _enableHitConfirmCombo: 1
+  _comboEveryBeats: 1.5
+  _requireComboRange: 1
+  _syncAttackAnimationSpeed: 1
+  _attackSpeedParameter: AttackSpeed
+  _attackClipFrames: 60
+  _attackClipFPS: 60
   _attackColor: {r: 1, g: 0.5518868, b: 0.5518868, a: 1}
+  _hitStartFrame: 10
+  _hitEndFrame01: 25
+  _hitEndFrame02: 30
   _spriteRenderer: {fileID: 8592611151959225744}
   _animator: {fileID: 2182655559030908427}
   _debugEnabled: 0
@@ -177,12 +189,32 @@ PrefabInstance:
       value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7539653685160876339, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 7539653685160876339, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7855111095939502895, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7855111095939502895, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: HeavyKnockback
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7855111095939502895, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: LightKnockback
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7855111095939502895, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: NormalKnockback
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 7855111095939502895, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: PlayerKnockback
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 7861631590208663332, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
       propertyPath: m_Name
