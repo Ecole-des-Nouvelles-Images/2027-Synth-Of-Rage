@@ -113,6 +113,8 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 _inputController.OnAttackHeavyInput -= OnAttackHeavyActionCallback;
                 _inputController.OnSpecialInput -= OnSpecialActionCallback;
                 _inputController.OnInteractInput -= OnInteractActionCallback;
+                
+                HealthModule.OnEmptyHealth -= OnDeath;
             }
             else
             {
@@ -127,7 +129,14 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 _inputController.OnAttackHeavyInput += OnAttackHeavyActionCallback;
                 _inputController.OnSpecialInput += OnSpecialActionCallback;
                 _inputController.OnInteractInput += OnInteractActionCallback;
+                
+                HealthModule.OnEmptyHealth += OnDeath;
             }
+        }
+        
+        private void OnDeath()
+        {
+            Destroy(Controller.gameObject);
         }
 
         private void OnMoveActionCallback(InputAction.CallbackContext ctx) => OnMove?.Invoke(ctx);

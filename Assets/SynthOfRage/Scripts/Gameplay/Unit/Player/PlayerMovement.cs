@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Serialization;
+using SynthOfRage.Scripts.Gameplay.Common.Modules;
 using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using Debug = UnityEngine.Debug;
 
@@ -73,6 +74,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private CharacterController _controller;
         private Animator _animator;
+        private HealthModule _healthModule;
 
         private MovementSpace _currentMovementSpace;
 
@@ -107,6 +109,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         {
             _controller = GetComponent<CharacterController>();
             _animator = GetComponentInChildren<Animator>();
+            _healthModule = GetComponent<HealthModule>();
 
             if (!_controller)
                 UnityEngine.Debug.LogError("[PlayerMovement] CharacterController component is not found on Player !", this);
@@ -135,6 +138,9 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void OnEnable()
         {
+            if (_healthModule)
+                _healthModule.OnStunChanged += HandleStunChanged;
+
             if (_playerObserver == null)
             {
                 UnityEngine.Debug.LogError($"[{nameof(PlayerMovement)}] PlayerObserver reference is missing.", this);
@@ -148,6 +154,9 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void OnDisable()
         {
+            if (_healthModule)
+                _healthModule.OnStunChanged -= HandleStunChanged;
+
             if (_playerObserver == null)
                 return;
 
@@ -162,6 +171,12 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void HandlePlayerMove(Vector2 input)
         {
+            if (_healthModule && _healthModule.IsStunned)
+            {
+                _moveInput = Vector2.zero;
+                return;
+            }
+
             _moveInput = input;
 
             if (_animator)
@@ -175,7 +190,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void HandlePlayerJump()
         {
-            if (!_controller.isGrounded || _isJumping || _isDashing || _jumpHeight <= 0f)
+            if ((_healthModule && _healthModule.IsStunned) || !_controller.isGrounded || _isJumping || _isDashing || _jumpHeight <= 0f)
                 return;
 
             CalculateJumpDuration();
@@ -194,7 +209,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void HandlePlayerDash()
         {
-            if (_isDashing || _dashCooldownTimer > 0f)
+            if ((_healthModule && _healthModule.IsStunned) || _isDashing || _dashCooldownTimer > 0f)
                 return;
 
             if (_isJumping)
@@ -230,9 +245,24 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         // MOVEMENT
         // =========================================================
 
+        private void HandleStunChanged(bool stunned)
+        {
+            if (!stunned) return;
+
+            _moveInput = Vector2.zero;
+            _isDashing = false;
+            _dashTimer = 0f;
+
+            if (_animator)
+            {
+                _animator.SetBool(Move, false);
+                _animator.SetBool(IsDashing, false);
+            }
+        }
+
         private void HandleMovement()
         {
-            if (_isDashing)
+            if (_isDashing || (_healthModule && _healthModule.IsStunned))
                 return;
 
             MoveWithMovementSpaceLimits(GetMovementDirection(_moveInput) * (_moveSpeed * Time.deltaTime));
@@ -587,6 +617,15 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         // =========================================================
         // MOVEMENT SPACE LIMITS
         // =========================================================
+
+        /// <summary>
+        /// Applies external displacement (such as knockback) while respecting MovementSpace boundaries.
+        /// </summary>
+        public void ApplyExternalMovement(Vector3 movement)
+        {
+            if (!_controller || !_controller.enabled || movement.sqrMagnitude <= 0f) return;
+            MoveWithMovementSpaceLimits(movement);
+        }
 
         private void MoveWithMovementSpaceLimits(Vector3 movement)
         {
