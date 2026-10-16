@@ -34,7 +34,7 @@ MonoBehaviour:
   m_LODCrossFadeDitheringType: 1
   m_ShEvalMode: 0
   m_LightFalloffMode: 0
-  m_LightProbeSystem: 1
+  m_LightProbeSystem: 0
   m_ProbeVolumeMemoryBudget: 512
   m_ProbeVolumeBlendingMemoryBudget: 128
   m_SupportProbeVolumeGPUStreaming: 0

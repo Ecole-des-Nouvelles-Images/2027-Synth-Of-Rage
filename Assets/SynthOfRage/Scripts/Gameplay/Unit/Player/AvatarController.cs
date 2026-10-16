@@ -86,11 +86,13 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private InputAction _special;
         private InputAction _interaction;
 
-        [SerializeField] private InputActionAsset _inputActionAsset = InputSystem.actions;
+        [SerializeField] private InputActionAsset _inputActionAsset;
+        private bool _subscribed;
+        private bool _warnedMissingAsset;
 
-        public AvatarController()
+        public AvatarController(InputActionAsset inputActionAsset = null)
         {
-            RegisterInputActionFields();
+            _inputActionAsset = inputActionAsset;
         }
 
         /// <summary>
@@ -99,28 +101,35 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         /// <exception cref="NullReferenceException">Raise a critical exception in the event any map or action if not defined in the <c>InputActionAsset</c>.</exception>
         private void RegisterInputActionFields()
         {
-            _mapGameplay = _inputActionAsset.FindActionMap("Gameplay");
-            if (_mapGameplay == null) throw new NullReferenceException($"[AvatarController] The project-wide Input Action Asset « {_inputActionAsset.name} » doesn't have a « Gameplay » map.");
+            if (!_inputActionAsset)
+                _inputActionAsset = InputSystem.actions;
 
-            _mapUI = _inputActionAsset.FindActionMap("UI");
-            if (_mapUI == null) throw new NullReferenceException($"[AvatarController] The project-wide Input Action Asset « {_inputActionAsset.name} » doesn't have a « UI » map.");
+            if (!_inputActionAsset)
+            {
+                if (!_warnedMissingAsset)
+                {
+                    UnityEngine.Debug.LogError("[AvatarController] No InputActionAsset available. Assign Input Action Asset on Avatar (same asset as PlayerCore) in the Inspector.");
+                    _warnedMissingAsset = true;
+                }
+                return;
+            }
 
-            _move = _mapGameplay.FindAction("Move");
-            if (_move == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Move » action.");
-            _jump = _mapGameplay.FindAction("Jump");
-            if (_jump == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Jump » action.");
-            _dash = _mapGameplay.FindAction("Dash");
-            if (_dash == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Dash » action.");
-            _guard = _mapGameplay.FindAction("Guard");
-            if (_guard == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Guard » action.");
-            _attackLight = _mapGameplay.FindAction("AttackLight");
-            if (_attackLight == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « AttackLight » action.");
-            _attackHeavy = _mapGameplay.FindAction("AttackHeavy");
-            if (_attackHeavy == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « AttackHeavy » action.");
-            _special = _mapGameplay.FindAction("Special");
-            if (_special == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Special » action.");
-            _interaction = _mapGameplay.FindAction("Interact");
-            if (_interaction == null) throw new NullReferenceException($"[AvatarController] The Gameplay Input Action Map doesn't have a « Interact » action.");
+            _mapGameplay = _inputActionAsset.FindActionMap("Gameplay", false);
+            _mapUI = _inputActionAsset.FindActionMap("UI", false);
+            if (_mapGameplay == null)
+            {
+                UnityEngine.Debug.LogError($"[AvatarController] Gameplay Action Map missing from {_inputActionAsset.name}.");
+                return;
+            }
+
+            _move = _mapGameplay.FindAction("Move", false);
+            _jump = _mapGameplay.FindAction("Jump", false);
+            _dash = _mapGameplay.FindAction("Dash", false);
+            _guard = _mapGameplay.FindAction("Guard", false);
+            _attackLight = _mapGameplay.FindAction("AttackLight", false);
+            _attackHeavy = _mapGameplay.FindAction("AttackHeavy", false);
+            _special = _mapGameplay.FindAction("Special", false);
+            _interaction = _mapGameplay.FindAction("Interact", false);
         }
 
         /// <summary>
@@ -128,15 +137,19 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         /// </summary>
         public void SubscribeToInputActions()
         {
-            _move.performed += OnMoveInputCallback;
-            _move.canceled += OnMoveEndInputCallback;
-            _jump.performed += OnJumpInputCallback;
-            _dash.performed += OnDashInputCallback;
-            _guard.performed += OnGuardInputCallback;
-            _attackLight.performed += OnAttackLightInputCallback;
-            _attackHeavy.performed += OnAttackHeavyInputCallback;
-            _special.performed += OnSpecialInputCallback;
-            _interaction.performed += OnInteractionInputCallback;
+            if (_subscribed) return;
+            RegisterInputActionFields();
+            if (_inputActionAsset == null || _mapGameplay == null) return;
+
+            if (_move != null) { _move.performed += OnMoveInputCallback; _move.canceled += OnMoveEndInputCallback; }
+            if (_jump != null) _jump.performed += OnJumpInputCallback;
+            if (_dash != null) _dash.performed += OnDashInputCallback;
+            if (_guard != null) _guard.performed += OnGuardInputCallback;
+            if (_attackLight != null) _attackLight.performed += OnAttackLightInputCallback;
+            if (_attackHeavy != null) _attackHeavy.performed += OnAttackHeavyInputCallback;
+            if (_special != null) _special.performed += OnSpecialInputCallback;
+            if (_interaction != null) _interaction.performed += OnInteractionInputCallback;
+            _subscribed = true;
         }
 
         /// <summary>
@@ -144,14 +157,16 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         /// </summary>
         public void UnsubscribeFromInputActions()
         {
-            _move.performed -= OnMoveInputCallback;
-            _jump.performed -= OnJumpInputCallback;
-            _dash.performed -= OnDashInputCallback;
-            _guard.performed -= OnGuardInputCallback;
-            _attackLight.performed -= OnAttackLightInputCallback;
-            _attackHeavy.performed -= OnAttackHeavyInputCallback;
-            _special.performed -= OnSpecialInputCallback;
-            _interaction.performed -= OnInteractionInputCallback;
+            if (!_subscribed) return;
+            if (_move != null) { _move.performed -= OnMoveInputCallback; _move.canceled -= OnMoveEndInputCallback; }
+            if (_jump != null) _jump.performed -= OnJumpInputCallback;
+            if (_dash != null) _dash.performed -= OnDashInputCallback;
+            if (_guard != null) _guard.performed -= OnGuardInputCallback;
+            if (_attackLight != null) _attackLight.performed -= OnAttackLightInputCallback;
+            if (_attackHeavy != null) _attackHeavy.performed -= OnAttackHeavyInputCallback;
+            if (_special != null) _special.performed -= OnSpecialInputCallback;
+            if (_interaction != null) _interaction.performed -= OnInteractionInputCallback;
+            _subscribed = false;
         }
 
         #region Input Event Callbacks
