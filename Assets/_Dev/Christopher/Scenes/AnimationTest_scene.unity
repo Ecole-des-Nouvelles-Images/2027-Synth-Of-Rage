@@ -206,6 +206,29 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1193906188}
   m_SourcePrefab: {fileID: 100100000, guid: e855bf886ba6ec942af1edf4e05f6fe0, type: 3}
+--- !u!1 &962165522 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7848842198103019176, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+  m_PrefabInstance: {fileID: 6412646670405870042}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &962165523 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 2182655559030908427, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+  m_PrefabInstance: {fileID: 6412646670405870042}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &962165524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 962165522}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f15ed58810f412a8604387619da797b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Scripts.AnimationEventLoopAntenna
+  _animator: {fileID: 962165523}
 --- !u!1 &1193906180 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: -8732291199980593963, guid: e855bf886ba6ec942af1edf4e05f6fe0, type: 3}
@@ -991,7 +1014,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7848842198103019176, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 962165524}
   m_SourcePrefab: {fileID: 100100000, guid: 33490ceee8954c9418f5377d911f9c14, type: 3}
 --- !u!114 &7648397111102269752
 MonoBehaviour:
