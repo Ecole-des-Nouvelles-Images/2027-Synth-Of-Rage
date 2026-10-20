@@ -5,9 +5,11 @@ namespace SynthOfRage.Scripts.Utilities
         public enum Priority
         {
             None,
-            Minor,
+            MinorLow,
+            MinorHigh,
             Intermediate,
-            Major
+            MajorLow,
+            MajorHigh,
         }
 
         public enum CombatState

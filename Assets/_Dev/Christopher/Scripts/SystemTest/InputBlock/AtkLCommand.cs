@@ -1,21 +1,22 @@
+using _Dev.Christopher.Scripts.InputBlock;
 using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 
-namespace _Dev.Christopher.Scripts.InputBlock
+namespace _Dev.Christopher.Scripts.SystemTest.InputBlock
 {
     public class AtkLCommand : ICommand
     {
         private static readonly int LightAttack01 = Animator.StringToHash("LightAttack01");
         private static readonly int LightAttack02 = Animator.StringToHash("LightAttack02");
+        private static readonly int LightAttack03 = Animator.StringToHash("LightAttack03");
+        private static readonly int LightAttack04 = Animator.StringToHash("LightAttack04");
         
-        public CustomEnumLib.Priority Priority { get; } = CustomEnumLib.Priority.Minor;
+        public CustomEnumLib.Priority Priority { get; } = CustomEnumLib.Priority.MinorHigh;
         private int _comboCounter;
-        private Animator _animator;
 
-        public AtkLCommand(int comboCounter, Animator animator)
+        public AtkLCommand(int comboCounter)
         {
             _comboCounter = comboCounter;
-            _animator = animator;
         }
         
         public void Execute()
@@ -23,15 +24,16 @@ namespace _Dev.Christopher.Scripts.InputBlock
             switch (_comboCounter)
             {
                 case 0:
-                    _animator.SetTrigger(LightAttack01);
+                    _comboCounter++;
                     break;
                 case 1:
-                    _animator.SetTrigger(LightAttack02);
+                    _comboCounter++;
                     break;
                 case 2:
-                    
+                    _comboCounter++;
                     break;
                 case 3:
+                    _comboCounter = 0;
                     break;
                 default:
                     _comboCounter = 0;

@@ -1,14 +1,15 @@
-using System;
 using System.Collections.Generic;
+using _Dev.Christopher.Scripts.InputBlock;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Avatar = SynthOfRage.Scripts.Gameplay.Unit.Player.Avatar;
 
-namespace _Dev.Christopher.Scripts.InputBlock
+namespace _Dev.Christopher.Scripts.SystemTest.InputBlock
 {
     public class CommandBlock : MonoBehaviour
     {
-        [SerializeField] private Animator _animator;
+        [SerializeField] private Avatar _avatar;
         
         private Stack<ICommand> _commands = new Stack<ICommand>();
         private Vector2 _moveVector;
@@ -17,23 +18,25 @@ namespace _Dev.Christopher.Scripts.InputBlock
 
         private void OnEnable()
         {
-            GetComponent<PlayerObserver>().OnPlayerAtkL += AtkLCommandGenerator;
+            _avatar.InputController.OnAttackLightInput += AtkLCommandGenerator;
         }
-        private void AtkLCommandGenerator()
+        private void AtkLCommandGenerator(InputAction.CallbackContext callbackContext)
         {
-            if(_animator)
-                _commands.Push(new AtkLCommand(_comboCounter, _animator));
+            Debug.Log("AtkLCommandGenerator");
+            _commands.Push(new AtkLCommand(_comboCounter));
         }
         
         
-        public void ConsumeCommand()
+        public void ConsumeCommand(ICommand command)
         {
-            _commands.Pop().Execute();
+            command.Execute();
             _commands.Clear();
         }
         public ICommand ReadCommand() 
         {
-            return _commands.Peek();
+            if(_commands.Count > 0)
+                return _commands.Peek();
+            return null;
         }
         public void IncreaseComboCounter() 
         {

@@ -2,7 +2,7 @@ using System;
 using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 
-namespace _Dev.Christopher.Scripts
+namespace _Dev.Christopher.Scripts.SystemTest
 {
     public class FrameCounter : SingletonMonoBehaviour<FrameCounter>
     {

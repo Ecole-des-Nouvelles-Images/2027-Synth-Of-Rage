@@ -37,12 +37,18 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         #endregion
 
+        public Action DoMove;
+        public Action DoLightAttack;
+        public Action DoHeavyAttack;
+
         public CharacterController Controller { get; private set; }
         public SpriteRenderer Renderer { get; private set; }
         public Animator Animator { get; private set; }
         public HealthModule HealthModule { get; private set; }
 
         [SerializeField] private AvatarController _inputController;
+        
+        public AvatarController InputController { get; private set; }
 
         private void Awake()
         {
