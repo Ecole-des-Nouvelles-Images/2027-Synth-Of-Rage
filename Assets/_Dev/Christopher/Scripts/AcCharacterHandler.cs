@@ -95,7 +95,7 @@ namespace _Dev.Christopher.Scripts
         }
         private void HandleAtkL02Animation()
         {
-            Debug.Log("coup 2 OK");
+            //Debug.Log("coup 2 OK");
             MyAnimator.SetTrigger(LightAttack02);
         }
         private void HandleAtkH01Animation()

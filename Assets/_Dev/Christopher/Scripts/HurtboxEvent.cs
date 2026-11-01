@@ -33,7 +33,7 @@ namespace _Dev.Christopher.Scripts
 
         private void OnTriggerEnter(Collider other)
         {
-            Debug.Log("enter object: "+other.gameObject.name);
+            //Debug.Log("enter object: "+other.gameObject.name);
             if (other.CompareTag("Enemy"))
             {
                 Destroy(other.gameObject);
