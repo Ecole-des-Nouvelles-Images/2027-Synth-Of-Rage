@@ -77,31 +77,10 @@ MonoBehaviour:
       - rid: 7235807097812418565
       - rid: 3333531869672636675
       - rid: 3333531869672636676
+      - rid: 6807399787374313475
+      - rid: 6807399787374313476
     m_RuntimeSettings:
-      m_List:
-      - rid: 6852985685364965378
-      - rid: 6852985685364965380
-      - rid: 6852985685364965381
-      - rid: 6852985685364965384
-      - rid: 6852985685364965386
-      - rid: 6852985685364965389
-      - rid: 6852985685364965392
-      - rid: 6852985685364965393
-      - rid: 6852985685364965394
-      - rid: 8712630790384254976
-      - rid: 4284062438471237637
-      - rid: 5747374308340793346
-      - rid: 5747374308340793347
-      - rid: 5747374308340793348
-      - rid: 6588237625532874753
-      - rid: 6588237625532874756
-      - rid: 6588237625532874757
-      - rid: 6588237625532874759
-      - rid: 6588237625532874761
-      - rid: 7235807097812418562
-      - rid: 7235807097812418563
-      - rid: 3333531869672636675
-      - rid: 3333531869672636676
+      m_List: []
   m_AssetVersion: 14
   m_ObsoleteDefaultVolumeProfile: {fileID: 0}
   m_RenderingLayerNames:
@@ -179,7 +158,6 @@ MonoBehaviour:
         easuPS: {fileID: 4800000, guid: 562b7ae4f629f144aa97780546fce7c6, type: 3}
         uberPostPS: {fileID: 4800000, guid: e7857e9d0c934dc4f83f270f8447b006, type: 3}
         finalPostPassPS: {fileID: 4800000, guid: c49e63ed1bbcb334780a3bd19dfed403, type: 3}
-        reactiveMaskPS: {fileID: 4800000, guid: a32e79e9a0e86a14894684c864a169a3, type: 3}
         m_ShaderResourcesVersion: 0
     - rid: 5747374308340793346
       type: {class: ScreenSpaceAmbientOcclusionBlueNoiseResources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
@@ -198,6 +176,7 @@ MonoBehaviour:
       data:
         m_RasterizationShader: {fileID: 4800000, guid: 0849e84e3d62649e8882e9d6f056a017, type: 3}
         m_GTAOComputeShader: {fileID: 7200000, guid: 0e79c0fbcc6ffc642834ff60779ad086, type: 3}
+        m_GTAODepthPrefilterComputeShader: {fileID: 7200000, guid: 42244eac3d92497eb7dd4ad591a29e19, type: 3}
         m_Version: 0
     - rid: 5747374308340793348
       type: {class: UniversalRenderPipelineRuntimeXRResources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
@@ -366,6 +345,15 @@ MonoBehaviour:
         m_BuildHlbvh: {fileID: 7200000, guid: 2d70cd6be91bd7843a39a54b51c15b13, type: 3}
         m_RestructureBvh: {fileID: 7200000, guid: 56641cb88dcb31a4398a4997ef7a7a8c, type: 3}
         m_Scatter: {fileID: 7200000, guid: a2eaeefdac4637a44b734e85b7be9186, type: 3}
+    - rid: 6807399787374313475
+      type: {class: UpscalerReactiveMaskResources, ns: UnityEngine.Rendering, asm: Unity.RenderPipelines.Core.Runtime}
+      data:
+        m_Version: 0
+        m_reactiveMaskPS: {fileID: 4800000, guid: a32e79e9a0e86a14894684c864a169a3, type: 3}
+    - rid: 6807399787374313476
+      type: {class: AlphaUpscaler/RuntimeResources, ns: UnityEngine.Rendering, asm: Unity.RenderPipelines.Core.Runtime}
+      data:
+        m_AlphaUpscaleCS: {fileID: 7200000, guid: f10c23179af641eea368ee165b2e97cf, type: 3}
     - rid: 6852985685364965376
       type: {class: URPShaderStrippingSetting, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
