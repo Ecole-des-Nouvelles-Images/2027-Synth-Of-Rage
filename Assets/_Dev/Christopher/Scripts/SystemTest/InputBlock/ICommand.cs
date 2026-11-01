@@ -1,7 +1,6 @@
 using SynthOfRage.Scripts.Utilities;
-using UnityEngine;
 
-namespace _Dev.Christopher.Scripts.InputBlock
+namespace _Dev.Christopher.Scripts.SystemTest.InputBlock
 {
     public interface ICommand
     {

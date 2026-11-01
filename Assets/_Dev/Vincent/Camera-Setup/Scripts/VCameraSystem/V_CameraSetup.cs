@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
 {
     public class VCameraSetup : MonoBehaviour

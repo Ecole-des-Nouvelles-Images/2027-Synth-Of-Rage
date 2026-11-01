@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
 {
     [CreateAssetMenu(fileName = "VCameraShake_", menuName = "SynthOfRage/VCameraSystem/Camera Shake Preset")]
     public class CameraShakePreset : ScriptableObject

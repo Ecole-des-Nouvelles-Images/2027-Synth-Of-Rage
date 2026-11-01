@@ -2,7 +2,7 @@
 
 using UnityEditor;
 
-namespace SynthOfRage.Scripts.CameraSystem.Editor
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes.Editor
 {
     [CustomEditor(typeof(CameraShakeTrigger))]
     public class CameraShakeTriggerEditor : UnityEditor.Editor

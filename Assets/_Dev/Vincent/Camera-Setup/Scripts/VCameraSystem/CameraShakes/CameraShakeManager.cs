@@ -1,14 +1,14 @@
 using Unity.Cinemachine;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
 {
     [RequireComponent(typeof(CinemachineImpulseSource))]
-    public class CameraShakeManager : MonoBehaviour
+    public partial class CameraShakeManager : MonoBehaviour
     {
-        public static CameraShakeManager Instance { get; private set; }
-        public static bool HasInstance => Instance != null;
+        [AutoStaticsCleanup] public static CameraShakeManager Instance { get; private set; }
+        [AutoStaticsCleanup] public static bool HasInstance => Instance != null;
 
         [Header("References")]
         [SerializeField] private CinemachineImpulseSource impulseSource;
@@ -122,7 +122,7 @@ namespace SynthOfRage.Scripts.CameraSystem
                 _ => CinemachineImpulseDefinition.ImpulseShapes.Rumble
             };
         }
-        
+
         public void PlayWorldDirection(CameraShakePreset preset, Vector3 worldDirection, float powerMultiplier = 1f)
         {
             if (preset == null || worldDirection.sqrMagnitude <= 0.0001f)

@@ -1,19 +1,23 @@
 using System;
 using System.Collections.Generic;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor;
 using UnityEngine;
 
-namespace SynthOfRage.Editor
+namespace _Dev.Vincent.ToonShaders.Editor
 {
-    public sealed class SORShaderGUI : ShaderGUI
+    public sealed partial class SORShaderGUI : ShaderGUI
     {
         private const float HelpWidth = 22f;
 
+        [AutoStaticsCleanup]
         private static readonly Color HelpColor = new Color(0.1f, 1f, 0.55f, 0.95f);
+        [AutoStaticsCleanup]
         private static readonly Color HelpHoverColor = new Color(0.1f, 1f, 0.55f, 0.45f);
-        private static GUIStyle helpStyle;
+        [AutoStaticsCleanup]
+        private static GUIStyle _helpStyle;
 
-
+        [AutoStaticsCleanup]
         private static readonly Dictionary<string, string> Tooltips =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -211,9 +215,9 @@ namespace SynthOfRage.Editor
                 hovered ? HelpHoverColor : HelpColor
             );
 
-            if (helpStyle == null)
+            if (_helpStyle == null)
             {
-                helpStyle = new GUIStyle(EditorStyles.boldLabel)
+                _helpStyle = new GUIStyle(EditorStyles.boldLabel)
                 {
                     alignment = TextAnchor.MiddleCenter,
                     fontSize = 11,
@@ -221,14 +225,14 @@ namespace SynthOfRage.Editor
                     padding = new RectOffset(0, 0, 0, 0)
                 };
 
-                helpStyle.normal.textColor = Color.black;
-                helpStyle.hover.textColor = Color.black;
+                _helpStyle.normal.textColor = Color.black;
+                _helpStyle.hover.textColor = Color.black;
             }
 
             GUI.Label(
                 helpRect,
                 new GUIContent("?", tooltip),
-                helpStyle
+                _helpStyle
             );
 
             if (hovered)

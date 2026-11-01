@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using SynthOfRage.Character.Enemies;
 using SynthOfRage.Scripts.Gameplay.Common.Modules;
 using UnityEngine;
 

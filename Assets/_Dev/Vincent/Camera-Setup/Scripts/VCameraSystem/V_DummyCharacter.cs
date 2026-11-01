@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
 {
     [RequireComponent(typeof(CharacterController))]

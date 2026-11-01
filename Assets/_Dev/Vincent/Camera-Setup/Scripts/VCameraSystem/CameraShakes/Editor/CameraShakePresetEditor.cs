@@ -3,7 +3,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.CameraSystem.Editor
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes.Editor
 {
     [CustomEditor(typeof(CameraShakePreset))]
     public class CameraShakePresetEditor : UnityEditor.Editor

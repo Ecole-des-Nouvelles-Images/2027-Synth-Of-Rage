@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using _Dev.Christopher.Scripts.InputBlock;
 using _Dev.Christopher.Scripts.SystemTest.InputBlock;
 using UnityEngine;
 using Avatar = SynthOfRage.Scripts.Gameplay.Unit.Player.Avatar;

@@ -1,28 +1,30 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ObjectEnableTrigger : MonoBehaviour
+namespace SynthOfRage.Scripts.Gameplay
 {
-    public List<GameObject> objectsToEnable;
-
-    private void Awake()
+    public class ObjectEnableTrigger : MonoBehaviour
     {
-        foreach (var Obj in objectsToEnable)
-        {
-            Obj.SetActive(false);
-        }
-    }
+        public List<GameObject> objectsToEnable;
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
+        private void Awake()
         {
             foreach (var Obj in objectsToEnable)
             {
-                Obj.SetActive(true);
+                Obj.SetActive(false);
             }
-            Destroy(this.gameObject);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.CompareTag("Player"))
+            {
+                foreach (var Obj in objectsToEnable)
+                {
+                    Obj.SetActive(true);
+                }
+                Destroy(this.gameObject);
+            }
         }
     }
 }
