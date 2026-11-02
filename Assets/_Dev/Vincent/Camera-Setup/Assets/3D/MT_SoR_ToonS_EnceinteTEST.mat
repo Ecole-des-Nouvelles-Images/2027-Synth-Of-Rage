@@ -11,8 +11,7 @@ Material:
   m_Shader: {fileID: 4800000, guid: ea5b715a42e3d044bbf264fde10e6634, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _HALFTONE_WORLD_SPACE
+  m_ValidKeywords: []
   m_InvalidKeywords:
   - _STEPPATTERNINVERT_ON
   m_LightmapFlags: 4
@@ -50,7 +49,7 @@ Material:
     - _HalftoneStrength: 0.565
     - _HalftoneWorldProjectionBlend: 16
     - _HalftoneWorldScale: 3.5
-    - _HalftoneWorldSpace: 1
+    - _HalftoneWorldSpace: 0
     - _LightBands: 4
     - _LightBias: 0
     - _NormalStrength: 2

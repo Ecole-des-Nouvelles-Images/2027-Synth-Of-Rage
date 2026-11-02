@@ -53,7 +53,7 @@ Material:
     - _HalftoneWorldSpace: 1
     - _LightBands: 32
     - _LightBias: 0
-    - _NormalStrength: 0
+    - _NormalStrength: 2
     - _PosterizeSteps: 32
     - _PosterizeStrength: 0
     - _ReceiveShadowStrength: 1

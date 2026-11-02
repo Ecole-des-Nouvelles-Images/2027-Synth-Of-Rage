@@ -1,3 +1,4 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Cinemachine;
@@ -26,6 +27,7 @@ namespace SynthOfRage.Scripts.CameraSystem
         [SerializeField] private Transform target;
         [SerializeField] private List<Transform> groupTargets = new();
         [SerializeField] private PlayerMovement playerMovement;
+        [SerializeField] private List<PlayerMovement> playerMovements = new();
 
         [Header("Initial Movement Space")]
         [SerializeField] private MovementSpace initialMovementSpace;
@@ -44,6 +46,12 @@ namespace SynthOfRage.Scripts.CameraSystem
         [SerializeField, Min(0f)] private float horizontalCorrectionSmoothTime = 0.18f;
         [SerializeField, Range(0f, 1f)] private float framingMultiplierDuringBlend;
         [SerializeField] private Camera outputCamera;
+
+        [Header("Group Camera Framing")]
+        [SerializeField] private bool groupFramingEnabled = true;
+        [SerializeField, Min(1f)] private float groupFramingMargin = 1.2f;
+        [SerializeField, Range(30f, 100f)] private float maxGroupFieldOfView = 75f;
+        [SerializeField, Min(0f)] private float groupFovSmoothTime = 0.25f;
 
         [Header("Combat Knots")]
         [SerializeField] private bool combatEnabled;
@@ -75,21 +83,33 @@ namespace SynthOfRage.Scripts.CameraSystem
         private float horizontalCorrectionVelocity;
         private bool cameraReferenceInitialized;
 
+        private float baseAutoScrollFov;
+        private float currentGroupFov;
+        private float groupFovVelocity;
+
         private bool combatMode;
         private int currentCombatStep;
         private int debugUpdateCounter;
 
         private Coroutine pendingCombatShake;
 
+        // Reusable collections to avoid allocations during camera updates.
+        private readonly List<Transform> cachedGroupTargets = new();
+        private readonly HashSet<Transform> uniqueGroupTargets = new();
+
         private void Start()
         {
-            if (!ValidateReferences()) return;
+            if (!ValidateReferences())
+                return;
 
             splineContainer = autoScrollDolly.Spline;
 
             if (splineContainer == null)
             {
-                UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.", this);
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.",
+                    this
+                );
                 return;
             }
 
@@ -99,6 +119,9 @@ namespace SynthOfRage.Scripts.CameraSystem
                 combatDolly.enabled = false;
 
             outputCamera ??= Camera.main;
+
+            baseAutoScrollFov = autoScrollCamera.Lens.FieldOfView;
+            currentGroupFov = baseAutoScrollFov;
 
             currentSplinePosition = autoScrollDolly.CameraPosition;
             targetSplinePosition = currentSplinePosition;
@@ -115,12 +138,20 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void OnEnable()
         {
-            GameManager.Instance.OnArenaExit += DisableCombat;
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnArenaExit += DisableCombat;
+        }
+
+        private void OnDisable()
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnArenaExit -= DisableCombat;
         }
 
         private void OnDestroy()
         {
-            GameManager.Instance.OnArenaExit -= DisableCombat;
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnArenaExit -= DisableCombat;
         }
 
         private void Update()
@@ -128,7 +159,11 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (debugEnabled && ++debugUpdateCounter >= 30)
             {
                 debugUpdateCounter = 0;
-                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive}", this);
+
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive}",
+                    this
+                );
             }
 
             if (combatMode)
@@ -147,23 +182,185 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void LateUpdate()
         {
-            if (!combatMode)
-                UpdateAutoScrollCameraRotation();
+            if (combatMode)
+                return;
+
+            UpdateAutoScrollCameraRotation();
+            UpdateGroupFraming();
         }
+
+        // =========================================================
+        // GROUP TARGETS
+        // =========================================================
+
+        private void CollectGroupTargets()
+        {
+            cachedGroupTargets.Clear();
+            uniqueGroupTargets.Clear();
+
+            if (groupTargets != null)
+            {
+                foreach (Transform groupTarget in groupTargets)
+                    AddGroupTarget(groupTarget);
+            }
+
+            if (playerMovement != null)
+                AddGroupTarget(playerMovement.transform);
+
+            if (playerMovements != null)
+            {
+                foreach (PlayerMovement movement in playerMovements)
+                {
+                    if (movement != null)
+                        AddGroupTarget(movement.transform);
+                }
+            }
+
+            if (cachedGroupTargets.Count == 0 && target != null)
+                AddGroupTarget(target);
+        }
+
+        private void AddGroupTarget(Transform playerTarget)
+        {
+            if (playerTarget == null)
+                return;
+
+            if (uniqueGroupTargets.Add(playerTarget))
+                cachedGroupTargets.Add(playerTarget);
+        }
+
+        private bool HasValidPlayerMovement()
+        {
+            if (playerMovement != null)
+                return true;
+
+            if (playerMovements != null)
+            {
+                foreach (PlayerMovement movement in playerMovements)
+                {
+                    if (movement != null)
+                        return true;
+                }
+            }
+
+            if (groupTargets != null)
+            {
+                foreach (Transform groupTarget in groupTargets)
+                {
+                    if (groupTarget != null &&
+                        groupTarget.GetComponentInParent<PlayerMovement>() != null)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        // =========================================================
+        // GROUP MOVEMENT SPACE
+        // =========================================================
+
+        private bool TryGetGroupBlend(out MovementSpace.BlendResult blend)
+        {
+            blend = default;
+
+            CollectGroupTargets();
+
+            foreach (Transform groupTarget in cachedGroupTargets)
+            {
+                if (groupTarget == null)
+                    continue;
+
+                PlayerMovement movement =
+                    groupTarget.GetComponentInParent<PlayerMovement>();
+
+                if (movement != null &&
+                    movement.TryGetActiveMovementSpaceBlend(out blend))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private Quaternion GetGroupMovementSpaceRotation()
+        {
+            if (TryGetGroupBlend(out MovementSpace.BlendResult blend))
+                return blend.Rotation;
+
+            if (playerMovement != null)
+                return playerMovement.GetEffectiveMovementSpaceRotation();
+
+            CollectGroupTargets();
+
+            foreach (Transform groupTarget in cachedGroupTargets)
+            {
+                if (groupTarget == null)
+                    continue;
+
+                PlayerMovement movement =
+                    groupTarget.GetComponentInParent<PlayerMovement>();
+
+                if (movement != null)
+                    return movement.GetEffectiveMovementSpaceRotation();
+            }
+
+            return Quaternion.identity;
+        }
+
+        private void ApplyMovementSpaceToAllPlayers(Transform movementSpace)
+        {
+            if (movementSpace == null)
+                return;
+
+            HashSet<PlayerMovement> appliedPlayers = new();
+
+            void Apply(PlayerMovement movement)
+            {
+                if (movement == null || !appliedPlayers.Add(movement))
+                    return;
+
+                movement.SetMovementSpace(movementSpace);
+            }
+
+            Apply(playerMovement);
+
+            if (playerMovements != null)
+            {
+                foreach (PlayerMovement movement in playerMovements)
+                    Apply(movement);
+            }
+
+            CollectGroupTargets();
+
+            foreach (Transform groupTarget in cachedGroupTargets)
+            {
+                if (groupTarget == null)
+                    continue;
+
+                Apply(groupTarget.GetComponentInParent<PlayerMovement>());
+            }
+        }
+
+        // =========================================================
+        // FOLLOW
+        // =========================================================
 
         private void UpdateFollow()
         {
-            if (playerMovement == null) return;
+            if (!TryGetTrackingPoint(out _))
+                return;
 
-            bool hasBlend = playerMovement.TryGetActiveMovementSpaceBlend(out MovementSpace.BlendResult blend);
+            bool hasBlend = TryGetGroupBlend(out MovementSpace.BlendResult blend);
 
             if (hasBlend && !previousFrameWasBlend)
                 BeginBlendRail(blend);
 
             currentBlendActive = hasBlend;
 
-            if (hasBlend) UpdateBlendFollow(blend);
-            else UpdateNormalFollow();
+            if (hasBlend)
+                UpdateBlendFollow(blend);
+            else
+                UpdateNormalFollow();
 
             if (!hasBlend && previousFrameWasBlend)
                 ClearBlendRailCache();
@@ -174,7 +371,8 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void UpdateNormalFollow()
         {
-            if (!TryGetTrackingPoint(out Vector3 trackingPoint)) return;
+            if (!TryGetTrackingPoint(out Vector3 trackingPoint))
+                return;
 
             targetSplinePosition = GetSplinePosition(trackingPoint);
 
@@ -185,7 +383,12 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return;
             }
 
-            currentSplinePosition = Mathf.SmoothDamp(currentSplinePosition, targetSplinePosition, ref splineVelocity, followSmoothTime);
+            currentSplinePosition = Mathf.SmoothDamp(
+                currentSplinePosition,
+                targetSplinePosition,
+                ref splineVelocity,
+                followSmoothTime
+            );
         }
 
         private void BeginBlendRail(MovementSpace.BlendResult blend)
@@ -203,7 +406,12 @@ namespace SynthOfRage.Scripts.CameraSystem
             targetSplinePosition = currentSplinePosition;
 
             if (debugEnabled)
-                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Blend Rail | Start={cachedBlendStartSplinePosition:F3} End={cachedBlendEndSplinePosition:F3} T={blend.T:F3}", this);
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Blend Rail | Start={cachedBlendStartSplinePosition:F3} End={cachedBlendEndSplinePosition:F3} T={blend.T:F3}",
+                    this
+                );
+            }
         }
 
         private void UpdateBlendFollow(MovementSpace.BlendResult blend)
@@ -216,11 +424,19 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return;
             }
 
-            float desiredSplinePosition = Mathf.Lerp(cachedBlendStartSplinePosition, cachedBlendEndSplinePosition, Mathf.Clamp01(blend.T));
+            float desiredSplinePosition = Mathf.Lerp(
+                cachedBlendStartSplinePosition,
+                cachedBlendEndSplinePosition,
+                Mathf.Clamp01(blend.T)
+            );
 
             targetSplinePosition = blendTargetMaxSpeed <= 0f
                 ? desiredSplinePosition
-                : Mathf.MoveTowards(targetSplinePosition, desiredSplinePosition, blendTargetMaxSpeed * Time.deltaTime);
+                : Mathf.MoveTowards(
+                    targetSplinePosition,
+                    desiredSplinePosition,
+                    blendTargetMaxSpeed * Time.deltaTime
+                );
 
             if (blendFollowSmoothTime <= 0f)
             {
@@ -229,7 +445,12 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return;
             }
 
-            currentSplinePosition = Mathf.SmoothDamp(currentSplinePosition, targetSplinePosition, ref splineVelocity, blendFollowSmoothTime);
+            currentSplinePosition = Mathf.SmoothDamp(
+                currentSplinePosition,
+                targetSplinePosition,
+                ref splineVelocity,
+                blendFollowSmoothTime
+            );
         }
 
         private void RefreshBlendRailCacheIfNeeded(MovementSpace.BlendResult blend)
@@ -265,49 +486,36 @@ namespace SynthOfRage.Scripts.CameraSystem
         {
             trackingPoint = Vector3.zero;
 
-            int count = 0;
-            Vector3 minimum = Vector3.zero;
-            Vector3 maximum = Vector3.zero;
+            CollectGroupTargets();
 
-            if (groupTargets != null)
+            if (cachedGroupTargets.Count == 0)
+                return false;
+
+            Vector3 minimum = cachedGroupTargets[0].position;
+            Vector3 maximum = minimum;
+
+            for (int i = 1; i < cachedGroupTargets.Count; i++)
             {
-                for (int i = 0; i < groupTargets.Count; i++)
-                {
-                    Transform groupTarget = groupTargets[i];
-                    if (groupTarget == null) continue;
+                Vector3 position = cachedGroupTargets[i].position;
 
-                    if (count == 0)
-                    {
-                        minimum = groupTarget.position;
-                        maximum = groupTarget.position;
-                    }
-                    else
-                    {
-                        minimum = Vector3.Min(minimum, groupTarget.position);
-                        maximum = Vector3.Max(maximum, groupTarget.position);
-                    }
-
-                    count++;
-                }
+                minimum = Vector3.Min(minimum, position);
+                maximum = Vector3.Max(maximum, position);
             }
 
-            if (count > 0)
-            {
-                trackingPoint = (minimum + maximum) * 0.5f;
-                return true;
-            }
-
-            if (target == null) return false;
-
-            trackingPoint = target.position;
+            trackingPoint = (minimum + maximum) * 0.5f;
             return true;
         }
 
+        // =========================================================
+        // CAMERA ROTATION
+        // =========================================================
+
         private void InitializeCameraReference()
         {
-            if (autoScrollCamera == null || playerMovement == null) return;
+            if (autoScrollCamera == null || !HasValidPlayerMovement())
+                return;
 
-            Quaternion movementSpaceRotation = playerMovement.GetEffectiveMovementSpaceRotation();
+            Quaternion movementSpaceRotation = GetGroupMovementSpaceRotation();
 
             cameraRotationOffsetFromMovementSpace =
                 Quaternion.Inverse(movementSpaceRotation) *
@@ -320,20 +528,33 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void UpdateAutoScrollCameraRotation()
         {
-            if (autoScrollCamera == null || playerMovement == null) return;
-            if (!cameraReferenceInitialized) InitializeCameraReference();
+            if (autoScrollCamera == null || !HasValidPlayerMovement())
+                return;
 
-            Quaternion movementSpaceRotation = playerMovement.GetEffectiveMovementSpaceRotation();
-            Quaternion baseRotation = movementSpaceRotation * cameraRotationOffsetFromMovementSpace;
+            if (!cameraReferenceInitialized)
+                InitializeCameraReference();
+
+            Quaternion movementSpaceRotation = GetGroupMovementSpaceRotation();
+
+            Quaternion baseRotation =
+                movementSpaceRotation * cameraRotationOffsetFromMovementSpace;
 
             float targetCorrection = 0f;
 
-            if (framingCorrectionEnabled && TryGetTrackingPoint(out Vector3 trackingPoint))
+            if (framingCorrectionEnabled &&
+                TryGetTrackingPoint(out Vector3 trackingPoint))
             {
                 Vector3 framingPoint = trackingPoint + framingTargetOffset;
 
-                if (TryGetHorizontalViewportPosition(baseRotation, framingPoint, out float viewportX))
-                    targetCorrection = GetHorizontalScreenError(viewportX) * maxHorizontalCorrectionAngle;
+                if (TryGetHorizontalViewportPosition(
+                    baseRotation,
+                    framingPoint,
+                    out float viewportX))
+                {
+                    targetCorrection =
+                        GetHorizontalScreenError(viewportX) *
+                        maxHorizontalCorrectionAngle;
+                }
             }
 
             if (currentBlendActive)
@@ -361,7 +582,10 @@ namespace SynthOfRage.Scripts.CameraSystem
                 baseRotation;
         }
 
-        private bool TryGetHorizontalViewportPosition(Quaternion baseRotation, Vector3 worldPoint, out float viewportX)
+        private bool TryGetHorizontalViewportPosition(
+            Quaternion baseRotation,
+            Vector3 worldPoint,
+            out float viewportX)
         {
             viewportX = desiredViewportX;
 
@@ -369,7 +593,8 @@ namespace SynthOfRage.Scripts.CameraSystem
                 Quaternion.Inverse(baseRotation) *
                 (worldPoint - autoScrollCamera.transform.position);
 
-            if (localDirection.z <= 0.001f) return false;
+            if (localDirection.z <= 0.001f)
+                return false;
 
             float aspect = outputCamera != null && outputCamera.aspect > 0f
                 ? outputCamera.aspect
@@ -380,10 +605,10 @@ namespace SynthOfRage.Scripts.CameraSystem
                 Mathf.Deg2Rad;
 
             float tanHalfHorizontalFov =
-                Mathf.Tan(verticalFov * 0.5f) *
-                aspect;
+                Mathf.Tan(verticalFov * 0.5f) * aspect;
 
-            if (tanHalfHorizontalFov <= 0.0001f) return false;
+            if (tanHalfHorizontalFov <= 0.0001f)
+                return false;
 
             viewportX =
                 0.5f +
@@ -403,27 +628,132 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return 0f;
 
             if (viewportX > right)
-                return Mathf.Clamp01((viewportX - right) / Mathf.Max(0.001f, 1f - right));
+            {
+                return Mathf.Clamp01(
+                    (viewportX - right) / Mathf.Max(0.001f, 1f - right)
+                );
+            }
 
-            return -Mathf.Clamp01((left - viewportX) / Mathf.Max(0.001f, left));
+            return -Mathf.Clamp01(
+                (left - viewportX) / Mathf.Max(0.001f, left)
+            );
         }
 
         private void ApplyMovementSpaceCameraRotationImmediate()
         {
-            if (autoScrollCamera == null || playerMovement == null) return;
-            if (!cameraReferenceInitialized) InitializeCameraReference();
+            if (autoScrollCamera == null || !HasValidPlayerMovement())
+                return;
+
+            if (!cameraReferenceInitialized)
+                InitializeCameraReference();
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
 
             autoScrollCamera.transform.rotation =
-                playerMovement.GetEffectiveMovementSpaceRotation() *
+                GetGroupMovementSpaceRotation() *
                 cameraRotationOffsetFromMovementSpace;
         }
 
+        // =========================================================
+        // GROUP FRAMING / DYNAMIC FOV
+        // =========================================================
+
+        private void UpdateGroupFraming()
+        {
+            if (!groupFramingEnabled || autoScrollCamera == null)
+                return;
+
+            if (combatMode)
+                return;
+
+            CollectGroupTargets();
+
+            float requiredFov = baseAutoScrollFov;
+
+            if (cachedGroupTargets.Count > 0)
+            {
+                Transform cameraTransform = autoScrollCamera.transform;
+
+                float aspect = outputCamera != null && outputCamera.aspect > 0f
+                    ? outputCamera.aspect
+                    : 16f / 9f;
+
+                float requiredTangent = 0f;
+
+                foreach (Transform playerTarget in cachedGroupTargets)
+                {
+                    if (playerTarget == null)
+                        continue;
+
+                    Vector3 worldPosition =
+                        playerTarget.position + framingTargetOffset;
+
+                    Vector3 localPosition =
+                        cameraTransform.InverseTransformPoint(worldPosition);
+
+                    if (localPosition.z <= 0.01f)
+                        continue;
+
+                    float verticalTangent =
+                        Mathf.Abs(localPosition.y) / localPosition.z;
+
+                    float horizontalTangent =
+                        Mathf.Abs(localPosition.x) /
+                        (localPosition.z * aspect);
+
+                    requiredTangent = Mathf.Max(
+                        requiredTangent,
+                        verticalTangent,
+                        horizontalTangent
+                    );
+                }
+
+                if (requiredTangent > 0f)
+                {
+                    float requiredHalfFov = Mathf.Atan(
+                        requiredTangent * groupFramingMargin
+                    );
+
+                    requiredFov = Mathf.Max(
+                        baseAutoScrollFov,
+                        requiredHalfFov * 2f * Mathf.Rad2Deg
+                    );
+                }
+            }
+
+            requiredFov = Mathf.Clamp(
+                requiredFov,
+                baseAutoScrollFov,
+                maxGroupFieldOfView
+            );
+
+            if (groupFovSmoothTime <= 0f)
+            {
+                currentGroupFov = requiredFov;
+                groupFovVelocity = 0f;
+            }
+            else
+            {
+                currentGroupFov = Mathf.SmoothDamp(
+                    currentGroupFov,
+                    requiredFov,
+                    ref groupFovVelocity,
+                    groupFovSmoothTime
+                );
+            }
+
+            autoScrollCamera.Lens.FieldOfView = currentGroupFov;
+        }
+
+        // =========================================================
+        // SPLINE
+        // =========================================================
+
         private float GetSplinePosition(Vector3 worldPosition)
         {
-            if (splineContainer == null) return 0f;
+            if (splineContainer == null)
+                return 0f;
 
             int samples = Mathf.Max(50, splineProjectionSamples);
             float closestT = 0f;
@@ -432,11 +762,21 @@ namespace SynthOfRage.Scripts.CameraSystem
             for (int i = 0; i <= samples; i++)
             {
                 float t = i / (float)samples;
-                Vector3 splinePosition = splineContainer.transform.TransformPoint(splineContainer.Spline.EvaluatePosition(t));
-                Vector2 difference = new(worldPosition.x - splinePosition.x, worldPosition.z - splinePosition.z);
+
+                Vector3 splinePosition =
+                    splineContainer.transform.TransformPoint(
+                        splineContainer.Spline.EvaluatePosition(t)
+                    );
+
+                Vector2 difference = new(
+                    worldPosition.x - splinePosition.x,
+                    worldPosition.z - splinePosition.z
+                );
+
                 float distance = difference.sqrMagnitude;
 
-                if (distance >= closestDistance) continue;
+                if (distance >= closestDistance)
+                    continue;
 
                 closestDistance = distance;
                 closestT = t;
@@ -450,9 +790,14 @@ namespace SynthOfRage.Scripts.CameraSystem
             );
         }
 
+        // =========================================================
+        // COMBAT KNOTS
+        // =========================================================
+
         private void CheckCombatKnot()
         {
-            if (currentCombatStep >= combatKnots.Count) return;
+            if (currentCombatStep >= combatKnots.Count)
+                return;
 
             CombatKnot combatKnot = combatKnots[currentCombatStep];
 
@@ -462,13 +807,17 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return;
             }
 
-            if (autoScrollDolly.CameraPosition >= combatKnot.KnotIndex - combatTolerance)
+            if (autoScrollDolly.CameraPosition >=
+                combatKnot.KnotIndex - combatTolerance)
+            {
                 StartCombat(combatKnot);
+            }
         }
 
         private void StartCombat(CombatKnot combatKnot)
         {
-            if (combatKnot == null) return;
+            if (combatKnot == null)
+                return;
 
             combatMode = true;
             combatEnabled = true;
@@ -491,33 +840,52 @@ namespace SynthOfRage.Scripts.CameraSystem
             combatCamera.Priority.Value = 10;
             combatCamera.Prioritize();
 
-            QueueCombatShake(combatKnot.StartShakePreset, combatKnot.StartShakeDelay);
+            QueueCombatShake(
+                combatKnot.StartShakePreset,
+                combatKnot.StartShakeDelay
+            );
 
             combatKnot.EnableCombatObjects();
 
             if (debugEnabled)
-                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat commencé : {combatKnot.name}.", combatKnot);
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Combat commencé : {combatKnot.name}.",
+                    combatKnot
+                );
+            }
         }
 
         private void ApplyCombatPreset(CombatKnot combatKnot)
         {
             VCameraPreset preset = combatKnot.CameraPreset;
-            if (preset == null) return;
+
+            if (preset == null)
+                return;
 
             if (combatKnot.CombatCenter != null)
             {
-                Vector3 cameraPosition = combatKnot.CombatCenter.TransformPoint(preset.CameraOffset);
-                Quaternion cameraRotation = combatKnot.CombatCenter.rotation * Quaternion.Euler(preset.CameraRotation);
+                Vector3 cameraPosition =
+                    combatKnot.CombatCenter.TransformPoint(preset.CameraOffset);
 
-                combatCamera.ForceCameraPosition(cameraPosition, cameraRotation);
+                Quaternion cameraRotation =
+                    combatKnot.CombatCenter.rotation *
+                    Quaternion.Euler(preset.CameraRotation);
+
+                combatCamera.ForceCameraPosition(
+                    cameraPosition,
+                    cameraRotation
+                );
             }
 
             if (combatKnot.MovementSpace != null)
             {
-                combatKnot.MovementSpace.localRotation = Quaternion.Euler(preset.MovementSpaceRotation);
+                combatKnot.MovementSpace.localRotation =
+                    Quaternion.Euler(preset.MovementSpaceRotation);
 
-                if (playerMovement != null)
-                    playerMovement.SetMovementSpace(combatKnot.MovementSpace);
+                ApplyMovementSpaceToAllPlayers(
+                    combatKnot.MovementSpace
+                );
             }
 
             combatCamera.Lens.FieldOfView = preset.FieldOfView;
@@ -525,21 +893,30 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void ApplyInitialMovementSpace()
         {
-            if (playerMovement != null && initialMovementSpace != null)
-                playerMovement.SetMovementSpace(initialMovementSpace.transform);
+            if (initialMovementSpace != null)
+            {
+                ApplyMovementSpaceToAllPlayers(
+                    initialMovementSpace.transform
+                );
+            }
         }
 
         private void EndCombat()
         {
             CombatKnot completedCombatKnot =
-                currentCombatStep >= 0 && currentCombatStep < combatKnots.Count
+                currentCombatStep >= 0 &&
+                currentCombatStep < combatKnots.Count
                     ? combatKnots[currentCombatStep]
                     : null;
 
             completedCombatKnot?.DisableCombatObjects();
 
-            if (completedCombatKnot?.NextMovementSpace != null && playerMovement != null)
-                playerMovement.SetMovementSpace(completedCombatKnot.NextMovementSpace.transform);
+            if (completedCombatKnot?.NextMovementSpace != null)
+            {
+                ApplyMovementSpaceToAllPlayers(
+                    completedCombatKnot.NextMovementSpace.transform
+                );
+            }
 
             combatMode = false;
             currentCombatStep++;
@@ -559,20 +936,37 @@ namespace SynthOfRage.Scripts.CameraSystem
             ApplyMovementSpaceCameraRotationImmediate();
 
             if (completedCombatKnot != null)
-                QueueCombatShake(completedCombatKnot.EndShakePreset, completedCombatKnot.EndShakeDelay);
+            {
+                QueueCombatShake(
+                    completedCombatKnot.EndShakePreset,
+                    completedCombatKnot.EndShakeDelay
+                );
+            }
 
             if (debugEnabled && completedCombatKnot != null)
-                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name}.", completedCombatKnot);
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name}.",
+                    completedCombatKnot
+                );
+            }
         }
+
+        // =========================================================
+        // CAMERA SHAKE
+        // =========================================================
 
         private void QueueCombatShake(CameraShakePreset preset, float delay)
         {
-            if (preset == null) return;
+            if (preset == null)
+                return;
 
             if (pendingCombatShake != null)
                 StopCoroutine(pendingCombatShake);
 
-            pendingCombatShake = StartCoroutine(PlayCombatShake(preset, Mathf.Max(0f, delay)));
+            pendingCombatShake = StartCoroutine(
+                PlayCombatShake(preset, Mathf.Max(0f, delay))
+            );
         }
 
         private IEnumerator PlayCombatShake(CameraShakePreset preset, float delay)
@@ -589,50 +983,104 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             if (!CameraShakeManager.HasInstance)
             {
-                UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Impossible de jouer '{preset.name}' : aucun CameraShakeManager actif.", this);
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Impossible de jouer '{preset.name}' : aucun CameraShakeManager actif.",
+                    this
+                );
                 yield break;
             }
 
             CameraShakeManager.PlayShake(preset);
 
             if (debugEnabled)
-                UnityDebug.Log($"[{nameof(VCameraSetup_Follow)}] Combat Shake joué : {preset.name} | Delay={delay:F2}s", this);
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Combat Shake joué : {preset.name} | Delay={delay:F2}s",
+                    this
+                );
+            }
         }
+
+        // =========================================================
+        // VALIDATION
+        // =========================================================
 
         private bool ValidateReferences()
         {
             bool valid = true;
 
-            if (autoScrollCamera == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Camera non assignée.", this); valid = false; }
-            if (combatCamera == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Camera non assignée.", this); valid = false; }
-            if (autoScrollDolly == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Auto Scroll Dolly non assigné.", this); valid = false; }
-            if (target == null && !HasValidGroupTarget()) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Aucun Target valide.", this); valid = false; }
-            if (playerMovement == null) { UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] PlayerMovement non assigné.", this); valid = false; }
+            if (autoScrollCamera == null)
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Auto Scroll Camera non assignée.",
+                    this
+                );
+                valid = false;
+            }
+
+            if (combatCamera == null)
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Combat Camera non assignée.",
+                    this
+                );
+                valid = false;
+            }
+
+            if (autoScrollDolly == null)
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Auto Scroll Dolly non assigné.",
+                    this
+                );
+                valid = false;
+            }
+
+            if (!HasValidPlayerMovement() &&
+                !HasValidGroupTarget())
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Aucun joueur ou Target valide.",
+                    this
+                );
+                valid = false;
+            }
 
             return valid;
         }
 
         private bool HasValidGroupTarget()
         {
-            if (groupTargets == null) return false;
+            if (groupTargets != null)
+            {
+                foreach (Transform groupTarget in groupTargets)
+                {
+                    if (groupTarget != null)
+                        return true;
+                }
+            }
 
-            for (int i = 0; i < groupTargets.Count; i++)
-                if (groupTargets[i] != null)
-                    return true;
-
-            return false;
+            return target != null;
         }
 
         private void ValidateCombatKnots()
         {
-            if (combatKnots == null) return;
+            if (combatKnots == null || splineContainer == null)
+                return;
 
             for (int i = 0; i < combatKnots.Count; i++)
             {
                 CombatKnot knot = combatKnots[i];
 
-                if (knot != null && (knot.KnotIndex < 0 || knot.KnotIndex >= splineContainer.Spline.Count))
-                    UnityDebug.LogError($"[{nameof(VCameraSetup_Follow)}] Combat Knot '{knot.name}' : Knot Index {knot.KnotIndex} invalide.", knot);
+                if (knot != null &&
+                    (knot.KnotIndex < 0 ||
+                     knot.KnotIndex >= splineContainer.Spline.Count))
+                {
+                    UnityDebug.LogError(
+                        $"[{nameof(VCameraSetup_Follow)}] Combat Knot '{knot.name}' : Knot Index {knot.KnotIndex} invalide.",
+                        knot
+                    );
+                }
             }
         }
 
@@ -641,10 +1089,15 @@ namespace SynthOfRage.Scripts.CameraSystem
             autoScrollCamera.Priority.Value = combatMode ? 0 : 10;
             combatCamera.Priority.Value = combatMode ? 10 : 0;
 
-            if (combatMode) combatCamera.Prioritize();
-            else autoScrollCamera.Prioritize();
+            if (combatMode)
+                combatCamera.Prioritize();
+            else
+                autoScrollCamera.Prioritize();
         }
 
-        private void DisableCombat() => combatEnabled = false;
+        private void DisableCombat()
+        {
+            combatEnabled = false;
+        }
     }
 }
