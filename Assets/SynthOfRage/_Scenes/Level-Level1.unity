@@ -1349,7 +1349,7 @@ GameObject:
   - component: {fileID: 139857192}
   - component: {fileID: 139857190}
   m_Layer: 0
-  m_Name: CM_Elevator
+  m_Name: Elevator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1363,7 +1363,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 139857188}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.09623403, y: 0.6698104, z: -0.08818223, w: 0.7309699}
+  m_LocalRotation: {x: 0, y: 0.6755902, z: 0, w: 0.7372774}
   m_LocalPosition: {x: -18.250002, y: 3.5, z: 0.000001907349}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1395,7 +1395,7 @@ MonoBehaviour:
       Time: 2
     Restrictions: 0
   TiltAxis:
-    Value: 15.000004
+    Value: 0
     Center: 0
     Range: {x: -70, y: 70}
     Wrap: 0
@@ -1411,7 +1411,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 139857188}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
   m_Name: 
@@ -18037,8 +18037,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3547725517890786343}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.130402, y: -0.04324625, z: 0.0056934813, w: 0.9905013}
-  m_LocalPosition: {x: 109.33382, y: 5.54639, z: -17.807043}
+  m_LocalRotation: {x: 0.1305262, y: 0, z: 0, w: 0.9914449}
+  m_LocalPosition: {x: 2.94033, y: 5.19, z: -8.00745}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
