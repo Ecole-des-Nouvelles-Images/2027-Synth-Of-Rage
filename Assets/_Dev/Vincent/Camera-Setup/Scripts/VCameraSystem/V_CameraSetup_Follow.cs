@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Cinemachine;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine.Splines;
 using SynthOfRage.Scripts.Gameplay.Core;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
@@ -14,6 +17,8 @@ namespace SynthOfRage.Scripts.CameraSystem
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour
     {
+        
+        
         [Header("Cameras")]
         [SerializeField] private CinemachineCamera autoScrollCamera;
         [SerializeField] private CinemachineCamera combatCamera;
@@ -23,14 +28,47 @@ namespace SynthOfRage.Scripts.CameraSystem
         [SerializeField] private CinemachineSplineDolly combatDolly;
         [SerializeField, Range(50, 1000)] private int splineProjectionSamples = 500;
 
-        [Header("Player / Group")]
-        [SerializeField] private Transform target;
-        [SerializeField] private List<Transform> groupTargets = new();
-        [SerializeField] private PlayerMovement playerMovement;
-        [SerializeField] private List<PlayerMovement> playerMovements = new();
+        [Header("Player Manager")]
+        [SerializeField] private PlayerManager playerManager;
 
         [Header("Initial Movement Space")]
         [SerializeField] private MovementSpace initialMovementSpace;
+
+        [Header("Player 1 Camera Lock")]
+        [Tooltip("La caméra utilise uniquement le premier joueur actif comme référence.")]
+        [SerializeField] private bool lockCameraToPlayer1 = true;
+
+        [Header("Other Players Camera Constraint")]
+        [Tooltip("Empêche les joueurs secondaires de dépasser la limite extérieure de la caméra.")]
+        [SerializeField] private bool constrainOtherPlayersToCamera = true;
+
+        [Tooltip("Distance maximale autorisée au-delà du cadre visible, en unités monde.")]
+        [SerializeField, Min(0f)] private float cameraConstraintWorldTolerance = 2f;
+
+        [Tooltip("Affiche les informations de détection et les corrections dans la Console.")]
+        [SerializeField] private bool debugCameraConstraint = true;
+
+        [Tooltip("Dessine dans la Scene View les limites visibles et la zone de tolérance de chaque joueur secondaire.")]
+        [SerializeField] private bool drawCameraConstraintGizmos = true;
+
+        [Tooltip("Dessine aussi les limites lorsque le composant n'est pas sélectionné.")]
+        [SerializeField] private bool drawCameraConstraintGizmosAlways = true;
+
+        [Header("Camera Constraint Bounds - Debug Definition")]
+        [Tooltip("Distance fixe depuis la caméra à laquelle dessiner le rectangle de référence. Cette profondeur sert uniquement au DebugDraw.")]
+        [SerializeField, Min(0.1f)] private float debugBoundsReferenceDepth = 10f;
+
+        [Tooltip("Échelle visuelle appliquée aux rectangles du DebugDraw. 1 = dimensions réelles calculées depuis la caméra.")]
+        [SerializeField, Min(0.01f)] private float debugBoundsVisualScale = 1f;
+
+        [Tooltip("Dessine également les limites à la profondeur réelle de chaque joueur secondaire.")]
+        [SerializeField] private bool drawBoundsAtEachPlayerDepth = true;
+
+        [Tooltip("Dessine les coins et les centres des rectangles pour les rendre plus faciles à repérer.")]
+        [SerializeField] private bool drawDebugBoundsMarkers = true;
+
+        [Tooltip("Affiche les dimensions et la profondeur des limites dans la Scene View.")]
+        [SerializeField] private bool drawDebugBoundsLabels = true;
 
         [Header("Position Follow")]
         [SerializeField, Min(0f)] private float followSmoothTime = 0.5f;
@@ -90,12 +128,21 @@ namespace SynthOfRage.Scripts.CameraSystem
         private bool combatMode;
         private int currentCombatStep;
         private int debugUpdateCounter;
+        private float lastPlayerDetectionDebugTime = -1f;
+
+        private bool previousCameraLockState;
 
         private Coroutine pendingCombatShake;
 
-        // Reusable collections to avoid allocations during camera updates.
-        private readonly List<Transform> cachedGroupTargets = new();
-        private readonly HashSet<Transform> uniqueGroupTargets = new();
+        // Movement Space de Player 1 sauvegardé avant le combat.
+        private Transform movementSpaceBeforeCombat;
+
+        // Tous les joueurs actifs.
+        private readonly List<PlayerMovement> cachedPlayerMovements = new();
+
+        // Joueurs pris en compte par le calcul de la caméra.
+        private readonly List<PlayerMovement> cachedCameraMovements = new();
+        private readonly List<Transform> cachedCameraTargets = new();
 
         private void Start()
         {
@@ -106,7 +153,7 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             if (splineContainer == null)
             {
-                UnityDebug.LogError(
+                if(debugEnabled)UnityDebug.LogError(
                     $"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.",
                     this
                 );
@@ -131,27 +178,49 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             ApplyCameraState();
             ApplyInitialMovementSpace();
+
+            previousCameraLockState = lockCameraToPlayer1;
+
             InitializeCameraReference();
             ApplyMovementSpaceCameraRotationImmediate();
             ValidateCombatKnots();
         }
 
+        private Coroutine cameraConstraintRoutine;
+
         private void OnEnable()
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.OnArenaExit += DisableCombat;
+
+            cameraConstraintRoutine = StartCoroutine(
+                CameraConstraintRoutine()
+            );
         }
 
         private void OnDisable()
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.OnArenaExit -= DisableCombat;
+
+            if (cameraConstraintRoutine != null)
+            {
+                StopCoroutine(cameraConstraintRoutine);
+                cameraConstraintRoutine = null;
+            }
         }
 
-        private void OnDestroy()
+        private IEnumerator CameraConstraintRoutine()
         {
-            if (GameManager.Instance != null)
-                GameManager.Instance.OnArenaExit -= DisableCombat;
+            WaitForEndOfFrame wait = new WaitForEndOfFrame();
+
+            while (true)
+            {
+                yield return wait;
+
+                if (!combatMode)
+                    ConstrainOtherPlayersToCamera();
+            }
         }
 
         private void Update()
@@ -160,8 +229,8 @@ namespace SynthOfRage.Scripts.CameraSystem
             {
                 debugUpdateCounter = 0;
 
-                UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive}",
+                if(debugEnabled)UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive} LockP1={lockCameraToPlayer1}",
                     this
                 );
             }
@@ -185,95 +254,86 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (combatMode)
                 return;
 
+            HandleCameraLockModeChange();
+
             UpdateAutoScrollCameraRotation();
             UpdateGroupFraming();
         }
 
         // =========================================================
-        // GROUP TARGETS
+        // PLAYER COLLECTION
         // =========================================================
 
-        private void CollectGroupTargets()
+        private void CollectAllPlayers()
         {
-            cachedGroupTargets.Clear();
-            uniqueGroupTargets.Clear();
+            cachedPlayerMovements.Clear();
 
-            if (groupTargets != null)
-            {
-                foreach (Transform groupTarget in groupTargets)
-                    AddGroupTarget(groupTarget);
-            }
-
-            if (playerMovement != null)
-                AddGroupTarget(playerMovement.transform);
-
-            if (playerMovements != null)
-            {
-                foreach (PlayerMovement movement in playerMovements)
-                {
-                    if (movement != null)
-                        AddGroupTarget(movement.transform);
-                }
-            }
-
-            if (cachedGroupTargets.Count == 0 && target != null)
-                AddGroupTarget(target);
-        }
-
-        private void AddGroupTarget(Transform playerTarget)
-        {
-            if (playerTarget == null)
+            if (playerManager == null)
                 return;
 
-            if (uniqueGroupTargets.Add(playerTarget))
-                cachedGroupTargets.Add(playerTarget);
+            playerManager.GetActivePlayers(cachedPlayerMovements);
+        }
+
+        private PlayerMovement GetPlayer1()
+        {
+            CollectAllPlayers();
+
+            return cachedPlayerMovements.Count > 0
+                ? cachedPlayerMovements[0]
+                : null;
+        }
+
+        private void CollectCameraTargets()
+        {
+            cachedCameraTargets.Clear();
+            cachedCameraMovements.Clear();
+
+            CollectAllPlayers();
+
+            if (cachedPlayerMovements.Count == 0)
+                return;
+
+            if (lockCameraToPlayer1)
+            {
+                PlayerMovement player1 = cachedPlayerMovements[0];
+
+                if (player1 != null)
+                {
+                    cachedCameraMovements.Add(player1);
+                    cachedCameraTargets.Add(player1.transform);
+                }
+
+                return;
+            }
+
+            foreach (PlayerMovement movement in cachedPlayerMovements)
+            {
+                if (movement == null)
+                    continue;
+
+                cachedCameraMovements.Add(movement);
+                cachedCameraTargets.Add(movement.transform);
+            }
         }
 
         private bool HasValidPlayerMovement()
         {
-            if (playerMovement != null)
-                return true;
-
-            if (playerMovements != null)
-            {
-                foreach (PlayerMovement movement in playerMovements)
-                {
-                    if (movement != null)
-                        return true;
-                }
-            }
-
-            if (groupTargets != null)
-            {
-                foreach (Transform groupTarget in groupTargets)
-                {
-                    if (groupTarget != null &&
-                        groupTarget.GetComponentInParent<PlayerMovement>() != null)
-                        return true;
-                }
-            }
-
-            return false;
+            CollectCameraTargets();
+            return cachedCameraMovements.Count > 0;
         }
 
         // =========================================================
-        // GROUP MOVEMENT SPACE
+        // MOVEMENT SPACE
         // =========================================================
 
-        private bool TryGetGroupBlend(out MovementSpace.BlendResult blend)
+        private bool TryGetCameraBlend(out MovementSpace.BlendResult blend)
         {
             blend = default;
 
-            CollectGroupTargets();
+            CollectCameraTargets();
 
-            foreach (Transform groupTarget in cachedGroupTargets)
+            foreach (PlayerMovement movement in cachedCameraMovements)
             {
-                if (groupTarget == null)
-                    continue;
-
-                PlayerMovement movement =
-                    groupTarget.GetComponentInParent<PlayerMovement>();
-
                 if (movement != null &&
                     movement.TryGetActiveMovementSpaceBlend(out blend))
                     return true;
@@ -282,29 +342,39 @@ namespace SynthOfRage.Scripts.CameraSystem
             return false;
         }
 
-        private Quaternion GetGroupMovementSpaceRotation()
+        private Quaternion GetCameraMovementSpaceRotation()
         {
-            if (TryGetGroupBlend(out MovementSpace.BlendResult blend))
-                return blend.Rotation;
+            CollectCameraTargets();
 
-            if (playerMovement != null)
-                return playerMovement.GetEffectiveMovementSpaceRotation();
+            if (cachedCameraMovements.Count == 0)
+                return Quaternion.identity;
 
-            CollectGroupTargets();
+            if (lockCameraToPlayer1)
+                return cachedCameraMovements[0].GetEffectiveMovementSpaceRotation();
 
-            foreach (Transform groupTarget in cachedGroupTargets)
+            Quaternion averageRotation = Quaternion.identity;
+            int validCount = 0;
+
+            foreach (PlayerMovement movement in cachedCameraMovements)
             {
-                if (groupTarget == null)
+                if (movement == null)
                     continue;
 
-                PlayerMovement movement =
-                    groupTarget.GetComponentInParent<PlayerMovement>();
+                Quaternion playerRotation =
+                    movement.GetEffectiveMovementSpaceRotation();
 
-                if (movement != null)
-                    return movement.GetEffectiveMovementSpaceRotation();
+                validCount++;
+
+                averageRotation = validCount == 1
+                    ? playerRotation
+                    : Quaternion.Slerp(
+                        averageRotation,
+                        playerRotation,
+                        1f / validCount
+                    );
             }
 
-            return Quaternion.identity;
+            return averageRotation;
         }
 
         private void ApplyMovementSpaceToAllPlayers(Transform movementSpace)
@@ -312,32 +382,12 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (movementSpace == null)
                 return;
 
-            HashSet<PlayerMovement> appliedPlayers = new();
+            CollectAllPlayers();
 
-            void Apply(PlayerMovement movement)
+            foreach (PlayerMovement movement in cachedPlayerMovements)
             {
-                if (movement == null || !appliedPlayers.Add(movement))
-                    return;
-
-                movement.SetMovementSpace(movementSpace);
-            }
-
-            Apply(playerMovement);
-
-            if (playerMovements != null)
-            {
-                foreach (PlayerMovement movement in playerMovements)
-                    Apply(movement);
-            }
-
-            CollectGroupTargets();
-
-            foreach (Transform groupTarget in cachedGroupTargets)
-            {
-                if (groupTarget == null)
-                    continue;
-
-                Apply(groupTarget.GetComponentInParent<PlayerMovement>());
+                if (movement != null)
+                    movement.SetMovementSpace(movementSpace);
             }
         }
 
@@ -350,7 +400,7 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (!TryGetTrackingPoint(out _))
                 return;
 
-            bool hasBlend = TryGetGroupBlend(out MovementSpace.BlendResult blend);
+            bool hasBlend = TryGetCameraBlend(out MovementSpace.BlendResult blend);
 
             if (hasBlend && !previousFrameWasBlend)
                 BeginBlendRail(blend);
@@ -486,17 +536,23 @@ namespace SynthOfRage.Scripts.CameraSystem
         {
             trackingPoint = Vector3.zero;
 
-            CollectGroupTargets();
+            CollectCameraTargets();
 
-            if (cachedGroupTargets.Count == 0)
+            if (cachedCameraTargets.Count == 0)
                 return false;
 
-            Vector3 minimum = cachedGroupTargets[0].position;
+            if (lockCameraToPlayer1)
+            {
+                trackingPoint = cachedCameraTargets[0].position;
+                return true;
+            }
+
+            Vector3 minimum = cachedCameraTargets[0].position;
             Vector3 maximum = minimum;
 
-            for (int i = 1; i < cachedGroupTargets.Count; i++)
+            for (int i = 1; i < cachedCameraTargets.Count; i++)
             {
-                Vector3 position = cachedGroupTargets[i].position;
+                Vector3 position = cachedCameraTargets[i].position;
 
                 minimum = Vector3.Min(minimum, position);
                 maximum = Vector3.Max(maximum, position);
@@ -510,12 +566,44 @@ namespace SynthOfRage.Scripts.CameraSystem
         // CAMERA ROTATION
         // =========================================================
 
+        private void HandleCameraLockModeChange()
+        {
+            if (previousCameraLockState == lockCameraToPlayer1)
+                return;
+
+            // Conserve l'orientation actuelle de la caméra au changement de mode.
+            Quaternion currentCameraRotation = autoScrollCamera.transform.rotation;
+            Quaternion newMovementRotation = GetCameraMovementSpaceRotation();
+
+            cameraRotationOffsetFromMovementSpace =
+                Quaternion.Inverse(newMovementRotation) *
+                currentCameraRotation;
+
+            cameraReferenceInitialized = true;
+            currentHorizontalCorrection = 0f;
+            horizontalCorrectionVelocity = 0f;
+
+            previousCameraLockState = lockCameraToPlayer1;
+
+            previousFrameWasBlend = false;
+            currentBlendActive = false;
+            ClearBlendRailCache();
+
+            if (debugEnabled)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Camera lock changé : {lockCameraToPlayer1}",
+                    this
+                );
+            }
+        }
+
         private void InitializeCameraReference()
         {
             if (autoScrollCamera == null || !HasValidPlayerMovement())
                 return;
 
-            Quaternion movementSpaceRotation = GetGroupMovementSpaceRotation();
+            Quaternion movementSpaceRotation = GetCameraMovementSpaceRotation();
 
             cameraRotationOffsetFromMovementSpace =
                 Quaternion.Inverse(movementSpaceRotation) *
@@ -534,7 +622,7 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (!cameraReferenceInitialized)
                 InitializeCameraReference();
 
-            Quaternion movementSpaceRotation = GetGroupMovementSpaceRotation();
+            Quaternion movementSpaceRotation = GetCameraMovementSpaceRotation();
 
             Quaternion baseRotation =
                 movementSpaceRotation * cameraRotationOffsetFromMovementSpace;
@@ -651,8 +739,473 @@ namespace SynthOfRage.Scripts.CameraSystem
             horizontalCorrectionVelocity = 0f;
 
             autoScrollCamera.transform.rotation =
-                GetGroupMovementSpaceRotation() *
+                GetCameraMovementSpaceRotation() *
                 cameraRotationOffsetFromMovementSpace;
+        }
+
+        // =========================================================
+        // OTHER PLAYERS CAMERA CONSTRAINT
+        // =========================================================
+
+        private void ConstrainOtherPlayersToCamera()
+        {
+            if (!lockCameraToPlayer1 ||
+                !constrainOtherPlayersToCamera ||
+                combatMode)
+            {
+                return;
+            }
+
+            // Always refresh the PlayerManager list before checking its contents.
+            CollectAllPlayers();
+
+            // Diagnostic runs BEFORE the player-count and camera checks so we can
+            // determine whether Player 2 is actually being returned by PlayerManager.
+            DebugCameraPlayerDetection();
+
+            // Resolve the real render camera at runtime as well as in the gizmo path.
+            // CinemachineCamera is a virtual camera; constraints must use the Unity Camera
+            // that actually renders its output.
+            if (outputCamera == null)
+                outputCamera = Camera.main;
+
+            if (outputCamera == null)
+            {
+                if (debugCameraConstraint)
+                    if(debugEnabled)UnityDebug.LogError(
+                        $"[{nameof(VCameraSetup_Follow)}] CONSTRAINT ABORTED: outputCamera is NULL. " +
+                        "Assign the real Unity Camera (Cinemachine Brain output) to Output Camera.",
+                        this
+                    );
+                return;
+            }
+
+            if (cachedPlayerMovements.Count <= 1)
+                return;
+
+            PlayerMovement player1 = cachedPlayerMovements[0];
+
+            if (player1 == null)
+                return;
+
+            Transform cameraTransform = outputCamera.transform;
+
+            // Camera-relative axes: these automatically account for camera rotation.
+            Vector3 cameraPosition = cameraTransform.position;
+            Vector3 cameraRight = cameraTransform.right;
+            Vector3 cameraUp = cameraTransform.up;
+            Vector3 cameraForward = cameraTransform.forward;
+
+            float halfHeight;
+            float halfWidth;
+
+            for (int i = 1; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement movement = cachedPlayerMovements[i];
+
+                if (movement == null || movement == player1)
+                    continue;
+
+                Vector3 worldPosition = movement.transform.position;
+                Vector3 targetPosition = worldPosition + framingTargetOffset;
+                Vector3 relativePosition = targetPosition - cameraPosition;
+
+                float depth = Vector3.Dot(relativePosition, cameraForward);
+                bool isBehindOrTooClose = depth <= outputCamera.nearClipPlane;
+
+                // A player behind the camera must NOT be skipped. ViewportPoint
+                // returns (0,0,0) for this case, but that does not mean the player
+                // should be ignored by the leash. Project the correction onto a
+                // small plane in front of the camera and place the player on the
+                // nearest horizontal edge of the expanded bounds.
+                if (isBehindOrTooClose)
+                {
+                    depth = Mathf.Max(outputCamera.nearClipPlane + 1f, 1.5f);
+                }
+
+                if (outputCamera.orthographic)
+                {
+                    halfHeight = outputCamera.orthographicSize;
+                    halfWidth = halfHeight * outputCamera.aspect;
+                }
+                else
+                {
+                    halfHeight = depth *
+                        Mathf.Tan(outputCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                    halfWidth = halfHeight * outputCamera.aspect;
+                }
+
+                float cameraX = Vector3.Dot(relativePosition, cameraRight);
+                float cameraY = Vector3.Dot(relativePosition, cameraUp);
+
+                if (isBehindOrTooClose)
+                {
+                    // Preserve a rough left/right preference, but force the
+                    // target outside the visible frame so the normal leash
+                    // correction moves it onto the tolerance boundary.
+                    float side = Mathf.Abs(cameraX) > 0.01f
+                        ? Mathf.Sign(cameraX)
+                        : (Mathf.Abs(cameraY) > 0.01f ? Mathf.Sign(cameraY) : 1f);
+
+                    cameraX = side * (halfWidth + cameraConstraintWorldTolerance + 0.25f);
+                    cameraY = 0f;
+                }
+
+                float outsideX = Mathf.Max(Mathf.Abs(cameraX) - halfWidth, 0f);
+                float outsideY = Mathf.Max(Mathf.Abs(cameraY) - halfHeight, 0f);
+                float outsideDistance = new Vector2(outsideX, outsideY).magnitude;
+
+                if (outsideDistance <= cameraConstraintWorldTolerance)
+                    continue;
+
+                float correctionRatio = cameraConstraintWorldTolerance / outsideDistance;
+
+                float correctedX = cameraX;
+                float correctedY = cameraY;
+
+                if (outsideX > 0f)
+                {
+                    correctedX = Mathf.Sign(cameraX) *
+                        (halfWidth + outsideX * correctionRatio);
+                }
+
+                if (outsideY > 0f)
+                {
+                    correctedY = Mathf.Sign(cameraY) *
+                        (halfHeight + outsideY * correctionRatio);
+                }
+
+                Vector3 correctedTargetPosition =
+                    cameraPosition +
+                    cameraForward * depth +
+                    cameraRight * correctedX +
+                    cameraUp * correctedY;
+
+                Vector3 correctedWorldPosition = correctedTargetPosition - framingTargetOffset;
+
+                // Route the correction through PlayerMovement instead of writing directly
+                // to Transform. Direct Transform writes can be overwritten by the next
+                // CharacterController / MovementSpace update.
+                Vector3 correctionDelta = correctedWorldPosition - worldPosition;
+                movement.ApplyExternalMovement(correctionDelta);
+
+                Vector3 actualAfterPosition = movement.transform.position;
+
+                if (debugCameraConstraint)
+                {
+                    if(debugEnabled)UnityDebug.LogWarning(
+                        $"[{nameof(VCameraSetup_Follow)}] PLAYER {i} CONSTRAINT APPLIED | " +
+                        $"Name={movement.name} | Outside={outsideDistance:F2} | " +
+                        $"Tolerance={cameraConstraintWorldTolerance:F2} | " +
+                        $"BehindOrTooClose={isBehindOrTooClose} | ProjectedDepth={depth:F2} | " +
+                        $"RequestedDelta={correctionDelta} | Before={worldPosition} | " +
+                        $"RequestedAfter={correctedWorldPosition} | ActualAfter={actualAfterPosition}",
+                        movement
+                    );
+
+                    UnityDebug.DrawLine(worldPosition, correctedWorldPosition, Color.red, 0.2f);
+                    UnityDebug.DrawLine(correctedWorldPosition, actualAfterPosition, Color.magenta, 0.2f);
+                    UnityDebug.DrawRay(actualAfterPosition, cameraRight * 0.5f, Color.green, 0.2f);
+                }
+            }
+        }
+
+        private void OnDrawGizmos()
+        {
+            // Intentionally independent from lockCameraToPlayer1 and
+            // constrainOtherPlayersToCamera: the debug geometry must remain
+            // visible even while the constraint itself is disabled.
+            if (!drawCameraConstraintGizmos)
+                return;
+
+            DrawCameraConstraintGizmos();
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            // OnDrawGizmos already handles the always-on case. This callback
+            // is retained as a fallback when Always is disabled.
+            if (!drawCameraConstraintGizmos || drawCameraConstraintGizmosAlways)
+                return;
+
+            DrawCameraConstraintGizmos();
+        }
+
+        private Camera ResolveCameraForGizmos()
+        {
+            if (outputCamera != null)
+                return outputCamera;
+
+            if (Camera.main != null)
+                return Camera.main;
+
+            // Camera.main only finds cameras tagged MainCamera. Cinemachine
+            // output cameras are not guaranteed to carry that tag.
+            Camera[] cameras = Camera.allCameras;
+            for (int i = 0; i < cameras.Length; i++)
+            {
+                if (cameras[i] != null && cameras[i].enabled && cameras[i].gameObject.activeInHierarchy)
+                    return cameras[i];
+            }
+
+            // Useful when this component is placed on the actual camera rig.
+            return GetComponentInChildren<Camera>(true);
+        }
+
+        private void DrawCameraConstraintGizmos()
+        {
+            Camera cameraToDraw = ResolveCameraForGizmos();
+
+            if (cameraToDraw == null)
+            {
+#if UNITY_EDITOR
+                Handles.color = Color.red;
+                Handles.Label(transform.position,
+                    "VCameraSetup_Follow: NO OUTPUT CAMERA FOUND\nAssign Output Camera in the Inspector.");
+#endif
+                // Make the missing-camera state impossible to overlook.
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireSphere(transform.position, 0.75f);
+                Gizmos.DrawLine(transform.position - Vector3.right, transform.position + Vector3.right);
+                Gizmos.DrawLine(transform.position - Vector3.up, transform.position + Vector3.up);
+                return;
+            }
+
+            Transform cameraTransform = cameraToDraw.transform;
+            Vector3 cameraPosition = cameraTransform.position;
+            Vector3 cameraRight = cameraTransform.right;
+            Vector3 cameraUp = cameraTransform.up;
+            Vector3 cameraForward = cameraTransform.forward;
+
+            // Reference bounds: fixed world depth, always drawn when gizmos are enabled.
+            float referenceDepth = Mathf.Max(cameraToDraw.nearClipPlane + 0.1f, debugBoundsReferenceDepth);
+            DrawBoundsAtDepth(
+                cameraToDraw, cameraPosition, cameraRight, cameraUp, cameraForward,
+                referenceDepth, "CAMERA REFERENCE", Mathf.Max(0.01f, debugBoundsVisualScale)
+            );
+
+            // Draw a visible axis marker at the actual output camera position.
+            float markerSize = Mathf.Max(0.2f, referenceDepth * 0.025f);
+            Gizmos.color = Color.white;
+            Gizmos.DrawWireSphere(cameraPosition, markerSize);
+            Gizmos.DrawLine(cameraPosition, cameraPosition + cameraForward * referenceDepth);
+
+#if UNITY_EDITOR
+            if (drawDebugBoundsLabels)
+            {
+                Handles.color = Color.white;
+                Handles.Label(cameraPosition + cameraUp * markerSize * 2f,
+                    $"OUTPUT CAMERA: {cameraToDraw.name}\nDepth: {referenceDepth:F1} | FOV: {cameraToDraw.fieldOfView:F1} | Aspect: {cameraToDraw.aspect:F2}");
+            }
+#endif
+
+            // Player-dependent bounds are supplementary; the camera reference
+            // rectangle above does not depend on PlayerManager or Play Mode.
+            if (!Application.isPlaying || !drawBoundsAtEachPlayerDepth || playerManager == null)
+                return;
+
+            CollectAllPlayers();
+            if (cachedPlayerMovements.Count <= 1 || cachedPlayerMovements[0] == null)
+                return;
+
+            for (int i = 1; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement movement = cachedPlayerMovements[i];
+                if (movement == null || movement == cachedPlayerMovements[0])
+                    continue;
+
+                Vector3 targetPosition = movement.transform.position + framingTargetOffset;
+                float playerDepth = Vector3.Dot(targetPosition - cameraPosition, cameraForward);
+
+                Gizmos.color = playerDepth <= cameraToDraw.nearClipPlane ? Color.red : Color.magenta;
+                Gizmos.DrawWireSphere(targetPosition, markerSize * 0.75f);
+                Gizmos.DrawLine(targetPosition, cameraPosition + cameraForward * Mathf.Max(0f, playerDepth));
+
+                if (playerDepth > cameraToDraw.nearClipPlane)
+                {
+                    DrawBoundsAtDepth(
+                        cameraToDraw, cameraPosition, cameraRight, cameraUp, cameraForward,
+                        playerDepth, $"PLAYER {i} DEPTH", Mathf.Max(0.01f, debugBoundsVisualScale)
+                    );
+                }
+#if UNITY_EDITOR
+                else if (drawDebugBoundsLabels)
+                {
+                    Handles.color = Color.red;
+                    Handles.Label(targetPosition, $"PLAYER {i}: BEHIND / BEFORE NEAR CLIP");
+                }
+#endif
+            }
+        }
+
+        private void DrawBoundsAtDepth(
+            Camera cameraToDraw,
+            Vector3 cameraPosition,
+            Vector3 cameraRight,
+            Vector3 cameraUp,
+            Vector3 cameraForward,
+            float depth,
+            string label,
+            float visualScale)
+        {
+            float halfHeight;
+            float halfWidth;
+
+            if (cameraToDraw.orthographic)
+            {
+                halfHeight = cameraToDraw.orthographicSize;
+                halfWidth = halfHeight * cameraToDraw.aspect;
+            }
+            else
+            {
+                halfHeight = depth * Mathf.Tan(cameraToDraw.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                halfWidth = halfHeight * cameraToDraw.aspect;
+            }
+
+            halfHeight *= visualScale;
+            halfWidth *= visualScale;
+            Vector3 planeCenter = cameraPosition + cameraForward * depth;
+            float tolerance = cameraConstraintWorldTolerance * visualScale;
+
+            // Actual visible frame (cyan) and tolerance envelope (yellow).
+            DrawCameraConstraintRectangle(
+                planeCenter, cameraRight, cameraUp, halfWidth, halfHeight, Color.cyan
+            );
+            DrawCameraConstraintRectangle(
+                planeCenter, cameraRight, cameraUp,
+                halfWidth + tolerance, halfHeight + tolerance, Color.yellow
+            );
+
+            if (drawDebugBoundsMarkers)
+            {
+                float marker = Mathf.Max(0.08f, depth * 0.008f);
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(planeCenter, marker);
+                Gizmos.DrawWireSphere(planeCenter - cameraRight * halfWidth - cameraUp * halfHeight, marker);
+                Gizmos.DrawWireSphere(planeCenter + cameraRight * halfWidth + cameraUp * halfHeight, marker);
+                Gizmos.DrawWireSphere(planeCenter - cameraRight * halfWidth + cameraUp * halfHeight, marker);
+                Gizmos.DrawWireSphere(planeCenter + cameraRight * halfWidth - cameraUp * halfHeight, marker);
+
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawWireSphere(planeCenter - cameraRight * (halfWidth + tolerance) - cameraUp * (halfHeight + tolerance), marker);
+                Gizmos.DrawWireSphere(planeCenter + cameraRight * (halfWidth + tolerance) + cameraUp * (halfHeight + tolerance), marker);
+            }
+
+#if UNITY_EDITOR
+            if (drawDebugBoundsLabels)
+            {
+                Handles.color = Color.cyan;
+                Handles.Label(planeCenter,
+                    $"{label} - VISIBLE\nDepth: {depth:F1} | Half: {halfWidth:F1} x {halfHeight:F1}");
+                Handles.color = Color.yellow;
+                Handles.Label(planeCenter + cameraUp * (halfHeight + tolerance),
+                    $"OUTER LIMIT: +{cameraConstraintWorldTolerance:F1} units");
+            }
+#endif
+        }
+
+        private static void DrawCameraConstraintRectangle(
+            Vector3 center,
+            Vector3 right,
+            Vector3 up,
+            float halfWidth,
+            float halfHeight,
+            Color color)
+        {
+            Vector3 topLeft = center - right * halfWidth + up * halfHeight;
+            Vector3 topRight = center + right * halfWidth + up * halfHeight;
+            Vector3 bottomRight = center + right * halfWidth - up * halfHeight;
+            Vector3 bottomLeft = center - right * halfWidth - up * halfHeight;
+
+            Gizmos.color = color;
+            Gizmos.DrawLine(topLeft, topRight);
+            Gizmos.DrawLine(topRight, bottomRight);
+            Gizmos.DrawLine(bottomRight, bottomLeft);
+            Gizmos.DrawLine(bottomLeft, topLeft);
+        }
+
+        private void DebugCameraPlayerDetection()
+        {
+            if (!debugCameraConstraint)
+                return;
+
+            // One diagnostic report per second to avoid flooding the Console.
+            if (Time.unscaledTime - lastPlayerDetectionDebugTime < 1f)
+                return;
+
+            lastPlayerDetectionDebugTime = Time.unscaledTime;
+
+            string cameraName = outputCamera != null ? outputCamera.name : "NULL";
+            string managerName = playerManager != null ? playerManager.name : "NULL";
+
+            if(debugEnabled)UnityDebug.Log(
+                $"========== CAMERA PLAYER DETECTION ==========" +
+                $"\nCamera output: {cameraName}" +
+                $"\nPlayerManager: {managerName}" +
+                $"\nPlayerManager list count: {cachedPlayerMovements.Count}" +
+                $"\nLock camera to Player 1: {lockCameraToPlayer1}" +
+                $"\nConstraint enabled: {constrainOtherPlayersToCamera}",
+                this
+            );
+
+            if (playerManager == null)
+            {
+                if(debugEnabled)UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] PlayerManager is NULL. No players can be collected.",
+                    this
+                );
+                return;
+            }
+
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement player = cachedPlayerMovements[i];
+
+                if (player == null)
+                {
+                    UnityDebug.LogWarning(
+                        $"[{nameof(VCameraSetup_Follow)}] PlayerManager entry [{i}] is NULL.",
+                        this
+                    );
+                    continue;
+                }
+
+                Vector3 worldPosition = player.transform.position;
+                Vector3 viewportPosition = outputCamera != null
+                    ? outputCamera.WorldToViewportPoint(worldPosition + framingTargetOffset)
+                    : Vector3.zero;
+
+                bool inFrontOfCamera = outputCamera != null &&
+                    viewportPosition.z > outputCamera.nearClipPlane;
+
+                bool insideViewport = inFrontOfCamera &&
+                    viewportPosition.x >= 0f && viewportPosition.x <= 1f &&
+                    viewportPosition.y >= 0f && viewportPosition.y <= 1f;
+
+                if(debugEnabled)UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] PLAYER [{i}] " +
+                    $"{(i == 0 ? "(CAMERA TARGET / PLAYER 1)" : "(SECONDARY PLAYER)")}" +
+                    $"\nName: {player.name}" +
+                    $"\nInstance ID: {player.GetEntityId()}" +
+                    $"\nGameObject active: {player.gameObject.activeInHierarchy}" +
+                    $"\nPlayerMovement enabled: {player.enabled}" +
+                    $"\nWorld position: {worldPosition}" +
+                    $"\nViewport position: {viewportPosition}" +
+                    $"\nIn front of camera: {inFrontOfCamera}" +
+                    $"\nInside visible viewport: {insideViewport}",
+                    player
+                );
+            }
+
+            if (cachedPlayerMovements.Count <= 1)
+            {
+                UnityDebug.LogWarning(
+                    $"[{nameof(VCameraSetup_Follow)}] PlayerManager currently returns " +
+                    $"{cachedPlayerMovements.Count} active PlayerMovement component(s). " +
+                    "Player 2 is therefore NOT available to the camera constraint.",
+                    this
+                );
+            }
         }
 
         // =========================================================
@@ -667,11 +1220,11 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (combatMode)
                 return;
 
-            CollectGroupTargets();
+            CollectCameraTargets();
 
             float requiredFov = baseAutoScrollFov;
 
-            if (cachedGroupTargets.Count > 0)
+            if (cachedCameraTargets.Count > 0)
             {
                 Transform cameraTransform = autoScrollCamera.transform;
 
@@ -681,7 +1234,7 @@ namespace SynthOfRage.Scripts.CameraSystem
 
                 float requiredTangent = 0f;
 
-                foreach (Transform playerTarget in cachedGroupTargets)
+                foreach (Transform playerTarget in cachedCameraTargets)
                 {
                     if (playerTarget == null)
                         continue;
@@ -819,6 +1372,22 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (combatKnot == null)
                 return;
 
+            // Sauvegarde le Movement Space de Player 1 avant
+            // toute modification effectuée par le preset de combat.
+            PlayerMovement player1 = GetPlayer1();
+
+            movementSpaceBeforeCombat = player1 != null
+                ? player1.GetMovementSpace()
+                : null;
+
+            if (debugEnabled)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Movement Space sauvegardé avant combat : {movementSpaceBeforeCombat?.name ?? "Aucun"}",
+                    this
+                );
+            }
+
             combatMode = true;
             combatEnabled = true;
 
@@ -911,12 +1480,41 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             completedCombatKnot?.DisableCombatObjects();
 
+            Transform nextMovementSpace = null;
+
+            // Priorité au Movement Space explicitement défini sur le Combat Knot.
             if (completedCombatKnot?.NextMovementSpace != null)
             {
-                ApplyMovementSpaceToAllPlayers(
-                    completedCombatKnot.NextMovementSpace.transform
+                nextMovementSpace =
+                    completedCombatKnot.NextMovementSpace.transform;
+            }
+            else
+            {
+                // Restauration du Movement Space sauvegardé avant le combat.
+                nextMovementSpace = movementSpaceBeforeCombat;
+
+                if (debugEnabled && nextMovementSpace != null)
+                {
+                    UnityDebug.Log(
+                        $"[{nameof(VCameraSetup_Follow)}] Next Movement Space absent : restauration de {nextMovementSpace.name}.",
+                        this
+                    );
+                }
+            }
+
+            if (nextMovementSpace != null)
+            {
+                ApplyMovementSpaceToAllPlayers(nextMovementSpace);
+            }
+            else
+            {
+                UnityDebug.LogWarning(
+                    $"[{nameof(VCameraSetup_Follow)}] Aucun Movement Space disponible à la sortie du combat.",
+                    this
                 );
             }
+
+            movementSpaceBeforeCombat = null;
 
             combatMode = false;
             currentCombatStep++;
@@ -924,14 +1522,22 @@ namespace SynthOfRage.Scripts.CameraSystem
             currentSplinePosition = autoScrollDolly.CameraPosition;
             targetSplinePosition = currentSplinePosition;
             splineVelocity = 0f;
+
             previousFrameWasBlend = false;
             currentBlendActive = false;
 
             ClearBlendRailCache();
 
+            // Réactivation de la caméra de déplacement.
             autoScrollCamera.Priority.Value = 10;
             combatCamera.Priority.Value = 0;
             autoScrollCamera.Prioritize();
+
+            // Conserve le décalage de rotation initial.
+            // Ne pas réinitialiser cameraReferenceInitialized ici :
+            // cela ferait mémoriser l'ancienne rotation de combat.
+            currentHorizontalCorrection = 0f;
+            horizontalCorrectionVelocity = 0f;
 
             ApplyMovementSpaceCameraRotationImmediate();
 
@@ -946,7 +1552,8 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (debugEnabled && completedCombatKnot != null)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name}.",
+                    $"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name} | " +
+                    $"Movement Space restauré : {nextMovementSpace?.name ?? "Aucun"}",
                     completedCombatKnot
                 );
             }
@@ -1036,31 +1643,23 @@ namespace SynthOfRage.Scripts.CameraSystem
                 valid = false;
             }
 
-            if (!HasValidPlayerMovement() &&
-                !HasValidGroupTarget())
+            if (playerManager == null)
             {
                 UnityDebug.LogError(
-                    $"[{nameof(VCameraSetup_Follow)}] Aucun joueur ou Target valide.",
+                    $"[{nameof(VCameraSetup_Follow)}] PlayerManager non assigné.",
                     this
                 );
                 valid = false;
             }
-
-            return valid;
-        }
-
-        private bool HasValidGroupTarget()
-        {
-            if (groupTargets != null)
+            else if (!HasValidPlayerMovement())
             {
-                foreach (Transform groupTarget in groupTargets)
-                {
-                    if (groupTarget != null)
-                        return true;
-                }
+                UnityDebug.LogWarning(
+                    $"[{nameof(VCameraSetup_Follow)}] Aucun joueur actif dans le PlayerManager.",
+                    this
+                );
             }
 
-            return target != null;
+            return valid;
         }
 
         private void ValidateCombatKnots()
@@ -1101,3 +1700,4 @@ namespace SynthOfRage.Scripts.CameraSystem
         }
     }
 }
+

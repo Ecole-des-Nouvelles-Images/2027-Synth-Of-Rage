@@ -114,7 +114,13 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private float _previousJumpHeight;
         private float _verticalVelocity;
 
+        // [ELEVATOR] Indique que le joueur est actuellement transporté par une cabine.
+        // Le CharacterController reste actif : le joueur conserve son contrôle.
+        private bool _isElevatorTransportActive;
+
         public bool IsMovementSpaceBlending => _isMovementSpaceBlending;
+        public bool IsElevatorTransportLocked => false;
+        public bool IsElevatorTransportActive => _isElevatorTransportActive;
 
         private void Awake()
         {
@@ -266,6 +272,53 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 _animator.SetBool(IsDashing, true);
                 SetAnimatorVerticalVelocity(0f);
             }
+        }
+
+        // =========================================================
+        // ELEVATOR TRANSPORT
+        // =========================================================
+
+        /// <summary>
+        /// Active le transport de cabine sans désactiver le CharacterController.
+        /// Le joueur conserve son déplacement normal pendant toute la montée.
+        /// </summary>
+        public bool BeginElevatorTransport()
+        {
+            if (!_controller || !_controller.enabled)
+                return false;
+
+            _isElevatorTransportActive = true;
+
+            if (_debugEnabled)
+                UnityEngine.Debug.Log("[PlayerMovement] Transport ascenseur démarré.", this);
+
+            return true;
+        }
+
+        /// <summary>
+        /// Applique le déplacement de la cabine au joueur via son CharacterController.
+        /// Cette méthode ne remplace pas le déplacement normal du joueur.
+        /// </summary>
+        public void ApplyElevatorTransportMovement(Vector3 movement)
+        {
+            if (!_isElevatorTransportActive || !_controller || !_controller.enabled || movement.sqrMagnitude <= 0f)
+                return;
+
+            _controller.Move(movement);
+        }
+
+        /// <summary>
+        /// Termine le transport de cabine. Le CharacterController est déjà actif.
+        /// </summary>
+        public void EndElevatorTransport()
+        {
+            if (!_isElevatorTransportActive)
+                return;
+
+            _isElevatorTransportActive = false;
+
+            if (_debugEnabled)
+                UnityEngine.Debug.Log("[PlayerMovement] Transport ascenseur terminé.", this);
         }
 
         // =========================================================
@@ -661,6 +714,9 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void MoveWithMovementSpaceLimits(Vector3 movement)
         {
+            if (!_controller || !_controller.enabled)
+                return;
+
             if (!_movementSpace)
             {
                 _controller.Move(movement);

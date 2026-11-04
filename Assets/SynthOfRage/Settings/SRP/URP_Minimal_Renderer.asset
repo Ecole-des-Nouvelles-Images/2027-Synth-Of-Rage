@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fb9f2fe3baf0e8c46bf390df937e6187, type: 3}
   m_Name: ScreenSpaceReflectionRendererFeature
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ScreenSpaceReflectionRendererFeature
-  m_Active: 1
+  m_Active: 0
   afterOpaque: 0
 --- !u!114 &-2451748209634047866
 MonoBehaviour:
