@@ -12,8 +12,7 @@ GameObject:
   - component: {fileID: 4353614825614424940}
   - component: {fileID: 7851011993599390371}
   - component: {fileID: 2418223425040162170}
-  - component: {fileID: 31823028685928173}
-  - component: {fileID: 4806079222224458548}
+  - component: {fileID: 8813181141587568562}
   m_Layer: 7
   m_Name: HurtCollider
   m_TagString: Untagged
@@ -108,11 +107,19 @@ MonoBehaviour:
   _stunBeats: 1.75
   _blinkBeats: 1.5
   _blinkIntervalBeats: 0.125
-  _hitAudioSource: {fileID: 4806079222224458548}
-  _normalHitClip: {fileID: 8300000, guid: 4f01f4b314e1f844a93464652ba17166, type: 3}
-  _comboHitClip: {fileID: 8300000, guid: 773a63e603ecca44d86dda96e0a70c88, type: 3}
-  _finisherHitClip: {fileID: 8300000, guid: 9aba746037b951948ae38d3190b90a6d, type: 3}
-  _hitVolume: 0.7
+  _audioSource: {fileID: 8813181141587568562}
+  _hitImpactSounds:
+  - {fileID: 8300000, guid: 07e6317338fc9eb46b981a2c07bd62eb, type: 3}
+  - {fileID: 8300000, guid: 775f0d2978eb79c48b31a88d89ed2771, type: 3}
+  - {fileID: 8300000, guid: f4b95ac6e00640440bece0c37829f643, type: 3}
+  - {fileID: 8300000, guid: 09196ae837c57b1429c1f5cc2ad721e3, type: 3}
+  _hitImpactVolume: 0.95
+  _whiffSounds:
+  - {fileID: 8300000, guid: 783b81a9e851a9d4e9b47c20b0c7cbb5, type: 3}
+  - {fileID: 8300000, guid: f10398637adb9fe40b37737a19319138, type: 3}
+  - {fileID: 8300000, guid: ad25d1413713fc84dae487f61f582f17, type: 3}
+  - {fileID: 8300000, guid: 83c5156ab8c68da41a56242e427e99b3, type: 3}
+  _whiffVolume: 0.5
   _debugEnabled: 0
 --- !u!114 &2418223425040162170
 MonoBehaviour:
@@ -132,7 +139,7 @@ MonoBehaviour:
   directionMode: 2
   customDirection: {x: 1, y: 0}
   directionOrigin: {fileID: 8773182339248956847}
---- !u!82 &31823028685928173
+--- !u!82 &8813181141587568562
 AudioSource:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -151,104 +158,7 @@ AudioSource:
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 25
-  DopplerLevel: 1
-  MinDistance: 1
-  MaxDistance: 500
-  Pan2D: 0
-  rolloffMode: 0
-  BypassEffects: 0
-  BypassListenerEffects: 0
-  BypassReverbZones: 0
-  rolloffCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  panLevelCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  spreadCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reverbZoneMixCustomCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
---- !u!82 &4806079222224458548
-AudioSource:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7589879528162080959}
-  m_Enabled: 1
-  serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
-  m_Volume: 1
-  m_Pitch: 1
-  Loop: 0
-  Mute: 0
-  Spatialize: 0
-  SpatializePostEffects: 0
-  Priority: 25
+  Priority: 128
   DopplerLevel: 1
   MinDistance: 1
   MaxDistance: 500
@@ -523,7 +433,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Gameplay.Unit.Player.Avatar
   _inputController:
     _inputActionAsset: {fileID: -944628639613478452, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
-  _inputActionAsset: {fileID: 0}
+  _inputActionAsset: {fileID: -944628639613478452, guid: 458f7270ef121a1459907fce0fb844db, type: 3}
 --- !u!114 &3632700079071963896
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -536,8 +446,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf4ae5a05379b594abbb86ab819be7fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.PlayerCore
-  debugEnabled: 1
-  playerIndex: 1
+  debugEnabled: 0
+  playerIndex: 0
   moveAction: {fileID: 4852421195020343848, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
   jumpAction: {fileID: -4128646940876294509, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
   dashAction: {fileID: -4781708078038806543, guid: 0b2dc913f009dc5488adbf54713de1e3, type: 3}
@@ -722,6 +632,10 @@ MonoBehaviour:
   _attackClipFPS: 60
   _fallbackBPM: 87
   _debugEnabled: 0
+  _lightAttackStemId: Guitar_S
+  _heavyAttackStemId: Guitar_L
+  _lightStemDurationBeats: 1
+  _heavyStemDurationBeats: 2
 --- !u!114 &3251084375532607197
 MonoBehaviour:
   m_ObjectHideFlags: 0

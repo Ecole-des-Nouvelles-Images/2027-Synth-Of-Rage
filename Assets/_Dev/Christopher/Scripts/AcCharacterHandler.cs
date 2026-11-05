@@ -1,4 +1,6 @@
+
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using SynthOfRage.Scripts.Gameplay.Core;
@@ -81,12 +83,22 @@ namespace _Dev.Christopher.Scripts
         [SerializeField, Min(1f)] private float _fallbackBPM = 87f;
         [SerializeField] private bool _debugEnabled;
 
+        [Header("Audio - Attack Stems")]
+        [Tooltip("Stem ID for successful light attacks.")]
+        [SerializeField] private string _lightAttackStemId = "Guitar_S";
+        [Tooltip("Stem ID for successful heavy attacks.")]
+        [SerializeField] private string _heavyAttackStemId = "Guitar_L";
+        [Tooltip("Duration of the light attack stem after the finisher or an abandoned combo, in beats.")]
+        [SerializeField, Min(0.01f)] private float _lightStemDurationBeats = 1f;
+        [Tooltip("Duration of the heavy attack stem, in beats.")]
+        [SerializeField, Min(0.01f)] private float _heavyStemDurationBeats = 2f;
+
         private CharacterController _characterController;
         private HealthModule _healthModule;
         private readonly List<HurtboxEvent> _ownedHurtboxes = new();
         private readonly Queue<double> _bufferedFollowupInputs = new();
 
-        private int _comboCounter; // 0 = none, 1 = attack 01, 2 = attack 02, 3 = finisher 03.
+        private int _comboCounter;
         private bool _hitConfirmed;
         private bool _pendingAttack;
         private int _pendingStep;
@@ -101,6 +113,16 @@ namespace _Dev.Christopher.Scripts
         private double _nextHeavyAllowedBeat;
         private double _heavyFinishBeat;
 
+        // Tracks the type of the currently active attack.
+        private bool _currentAttackIsHeavy;
+
+        // Temporary attack stem handling.
+        private Coroutine _activeStemOffRoutine;
+        private int _stemActivationVersion;
+
+        // True while Guitar_S must remain active during a confirmed light combo.
+        private bool _lightStemHeldForCombo;
+
         private bool _attackSpeedParameterPresent;
         private bool _warnedAnimatorParameter;
         private bool _warnedAnimatorSpeed;
@@ -112,8 +134,12 @@ namespace _Dev.Christopher.Scripts
         {
             _characterController = GetComponent<CharacterController>();
             _healthModule = GetComponent<HealthModule>();
-            if (!playerCore) playerCore = GetComponent<PlayerCore>();
-            if (!MyAnimator) MyAnimator = GetComponentInChildren<Animator>(true);
+
+            if (!playerCore)
+                playerCore = GetComponent<PlayerCore>();
+
+            if (!MyAnimator)
+                MyAnimator = GetComponentInChildren<Animator>(true);
         }
 
         private void OnEnable()
@@ -129,23 +155,28 @@ namespace _Dev.Christopher.Scripts
             _warnedFrozenAttack = false;
             _warnedThirdTrigger = false;
 
-            // Initialize the multiplier BEFORE the first attack enters its Animator state.
             UpdateAttackAnimationSpeed();
             UpdateHeavyAttackAnimationSpeed();
             ResetComboChain();
+
             _nextAllowedBeat = 0.0;
             _nextHeavyAllowedBeat = 0.0;
             _heavyFinishBeat = 0.0;
             _pendingHeavyAttack = false;
+            _currentAttackIsHeavy = false;
+
             playerCore.OnPlayerAtkL += AtkLComboManager;
             playerCore.OnPlayerAtkH += AtkHManager;
 
-            // Listen to every hurtbox owned by the player, including inactive children.
             _ownedHurtboxes.Clear();
             GetComponentsInChildren(true, _ownedHurtboxes);
+
             foreach (HurtboxEvent hurtbox in _ownedHurtboxes)
-                if (hurtbox) hurtbox.OnHitConfirmed += HandleAttackHitConfirmed;
-            if (_healthModule) _healthModule.OnStunChanged += HandleStunChanged;
+                if (hurtbox)
+                    hurtbox.OnHitConfirmed += HandleAttackHitConfirmed;
+
+            if (_healthModule)
+                _healthModule.OnStunChanged += HandleStunChanged;
         }
 
         private void OnDisable()
@@ -155,12 +186,33 @@ namespace _Dev.Christopher.Scripts
                 playerCore.OnPlayerAtkL -= AtkLComboManager;
                 playerCore.OnPlayerAtkH -= AtkHManager;
             }
-            if (_healthModule) _healthModule.OnStunChanged -= HandleStunChanged;
+
+            if (_healthModule)
+                _healthModule.OnStunChanged -= HandleStunChanged;
+
             foreach (HurtboxEvent hurtbox in _ownedHurtboxes)
-                if (hurtbox) hurtbox.OnHitConfirmed -= HandleAttackHitConfirmed;
+                if (hurtbox)
+                    hurtbox.OnHitConfirmed -= HandleAttackHitConfirmed;
+
             _ownedHurtboxes.Clear();
+
             ResetComboChain();
             _pendingHeavyAttack = false;
+            _currentAttackIsHeavy = false;
+
+            StopAttackStemRoutine();
+            _lightStemHeldForCombo = false;
+
+            RhythmManager rhythm = RhythmManager.Instance;
+
+            if (rhythm &&
+                rhythm.CurrentAudioMode == RhythmManager.AudioMode.StemSystem)
+            {
+                rhythm.SetStems(
+                    (_lightAttackStemId, false),
+                    (_heavyAttackStemId, false)
+                );
+            }
         }
 
         private void OnDestroy()
@@ -170,12 +222,12 @@ namespace _Dev.Christopher.Scripts
 
         private void Start()
         {
-            if (!_characterController) _characterController = GetComponent<CharacterController>();
+            if (!_characterController)
+                _characterController = GetComponent<CharacterController>();
         }
 
         private void Update()
         {
-            // Recover if another component or controller resets AttackSpeed to zero.
             if (MyAnimator && _attackSpeedParameterPresent &&
                 MyAnimator.GetFloat(_attackSpeedParameter) <= 0.0001f)
                 UpdateAttackAnimationSpeed();
@@ -192,19 +244,24 @@ namespace _Dev.Christopher.Scripts
             if (_pendingHeavyAttack && now + 1e-6 >= _scheduledHeavyBeat)
             {
                 _pendingHeavyAttack = false;
-                if (CanLaunchHeavy(now)) LaunchHeavyAttack(now);
+
+                if (CanLaunchHeavy(now))
+                    LaunchHeavyAttack(now);
             }
 
             if (_pendingAttack && now + 1e-6 >= _scheduledBeat)
             {
                 int step = _pendingStep;
+
                 _pendingAttack = false;
                 _pendingStep = 0;
 
-                if (CanLaunchStep(step, now)) LaunchAttack(now, step);
+                if (CanLaunchStep(step, now))
+                    LaunchAttack(now, step);
             }
 
-            if (_comboCounter == 0) return;
+            if (_comboCounter == 0)
+                return;
 
             if (now > _comboExpireBeat ||
                 (_comboCounter == 3 && now >= _attackFinishBeat) ||
@@ -221,6 +278,7 @@ namespace _Dev.Christopher.Scripts
         private double BeatNow()
         {
             RhythmManager clock = RhythmManager.Instance;
+
             return _useRhythm && clock
                 ? clock.CurrentBeat
                 : Time.timeAsDouble * _fallbackBPM / 60.0;
@@ -236,96 +294,134 @@ namespace _Dev.Christopher.Scripts
 
         private void AtkHManager()
         {
-            if (!MyAnimator || (_healthModule && (_healthModule.IsStunned || _healthModule.HP <= 0))) return;
-            if (_useRhythm && RhythmManager.Instance && !RhythmManager.Instance.IsReady) return;
-            if (_pendingHeavyAttack) return;
+            if (!MyAnimator || (_healthModule && (_healthModule.IsStunned || _healthModule.HP <= 0)))
+                return;
+
+            if (_useRhythm && RhythmManager.Instance && !RhythmManager.Instance.IsReady)
+                return;
+
+            if (_pendingHeavyAttack)
+                return;
 
             double now = BeatNow();
             double earliest = Math.Max(now, _nextHeavyAllowedBeat);
-            if (earliest > now + 1e-6 && earliest - now > _inputBufferBeats) return;
+
+            if (earliest > now + 1e-6 && earliest - now > _inputBufferBeats)
+                return;
 
             double scheduled = earliest;
+
             if (_enableHeavyBeatSnapping && RhythmReady())
             {
                 double offset = _heavySnapToFirstHit
                     ? (double)_heavyFirstHitFrame / _heavyAttackClipFrames * _heavyAttackDurationBeats
                     : 0.0;
+
                 scheduled = RhythmManager.Instance.HybridSnapBeat(
                     earliest, _heavySnapEveryBeats, _heavyMaxSnapDelaySeconds, offset);
             }
 
-            if (scheduled <= now + 1e-6) LaunchHeavyAttack(now);
+            if (scheduled <= now + 1e-6)
+                LaunchHeavyAttack(now);
             else
             {
                 _scheduledHeavyBeat = scheduled;
                 _pendingHeavyAttack = true;
+
                 UnityEngine.Debug.Log($"HeavyAttack01 queued for beat {scheduled:F3}.");
             }
         }
 
         private void LaunchHeavyAttack(double now)
         {
-            if (!CanLaunchHeavy(now)) return;
+            if (!CanLaunchHeavy(now))
+                return;
 
             // A heavy attack interrupts the light combo and clears its queued inputs.
             ResetComboChain();
+
+            _currentAttackIsHeavy = true;
+
             UpdateHeavyAttackAnimationSpeed();
+
             foreach (HurtboxEvent hurtbox in _ownedHurtboxes)
-                if (hurtbox) hurtbox.PrepareAttackStep(1f,
-                    (float)(_heavyFirstHitFrame / (double)_heavyAttackClipFrames *
-                            _heavyAttackDurationBeats * (RhythmReady()
-                                ? RhythmManager.Instance.SecondsPerBeat : 60.0 / _fallbackBPM)),
-                    0, 0f);
+                if (hurtbox)
+                    hurtbox.PrepareAttackStep(
+                        1f,
+                        (float)(_heavyFirstHitFrame / (double)_heavyAttackClipFrames *
+                                _heavyAttackDurationBeats * (RhythmReady()
+                                    ? RhythmManager.Instance.SecondsPerBeat : 60.0 / _fallbackBPM)),
+                        0,
+                        0f);
 
             MyAnimator.ResetTrigger(LightAttack01);
             MyAnimator.ResetTrigger(LightAttack02);
-            if (HasTriggerParameter(LightAttack03)) MyAnimator.ResetTrigger(LightAttack03);
+
+            if (HasTriggerParameter(LightAttack03))
+                MyAnimator.ResetTrigger(LightAttack03);
+
             MyAnimator.ResetTrigger(HeavyAttack01);
             MyAnimator.SetTrigger(HeavyAttack01);
 
             _nextHeavyAllowedBeat = now + Math.Max(_heavyAttackDurationBeats, _heavyAttackCooldownBeats);
             _heavyFinishBeat = now + _heavyAttackDurationBeats;
             _nextAllowedBeat = Math.Max(_nextAllowedBeat, _heavyFinishBeat);
+
             UnityEngine.Debug.Log("HeavyAttack01 START.");
         }
 
         private void UpdateHeavyAttackAnimationSpeed()
         {
-            if (!MyAnimator) return;
+            if (!MyAnimator)
+                return;
+
             if (!HasFloatParameter(_heavyAttackSpeedParameter))
             {
                 if (_syncAttackAnimationSpeed)
                     Debug.LogWarning($"[AcCharacterHandler] Animator Float '{_heavyAttackSpeedParameter}' missing. HeavyAttack01 will keep its current speed.", this);
+
                 return;
             }
 
             float speed = 1f;
+
             if (_syncAttackAnimationSpeed)
             {
                 double beatSeconds = RhythmReady()
-                    ? RhythmManager.Instance.SecondsPerBeat : 60.0 / _fallbackBPM;
+                    ? RhythmManager.Instance.SecondsPerBeat
+                    : 60.0 / _fallbackBPM;
+
                 speed = (float)((_heavyAttackClipFrames / _heavyAttackClipFPS) /
                     (Math.Max(0.1, _heavyAttackDurationBeats) * beatSeconds));
             }
-            if (float.IsNaN(speed) || float.IsInfinity(speed)) speed = 1f;
+
+            if (float.IsNaN(speed) || float.IsInfinity(speed))
+                speed = 1f;
+
             MyAnimator.SetFloat(_heavyAttackSpeedParameter, Mathf.Max(MinimumAttackSpeed, speed));
         }
 
         private void AtkLComboManager()
         {
-            if (!MyAnimator || (_healthModule && (_healthModule.IsStunned || _healthModule.HP <= 0))) return;
-            if (_useRhythm && RhythmManager.Instance && !RhythmManager.Instance.IsReady) return;
+            if (!MyAnimator || (_healthModule && (_healthModule.IsStunned || _healthModule.HP <= 0)))
+                return;
+
+            if (_useRhythm && RhythmManager.Instance && !RhythmManager.Instance.IsReady)
+                return;
 
             double now = BeatNow();
-            if (_pendingHeavyAttack || now < _heavyFinishBeat) return;
-            if (_comboCounter != 0 && now > _comboExpireBeat) ResetComboChain();
+
+            if (_pendingHeavyAttack || now < _heavyFinishBeat)
+                return;
+
+            if (_comboCounter != 0 && now > _comboExpireBeat)
+                ResetComboChain();
 
             if (_enableHitConfirmCombo)
             {
-                if (_comboCounter == 3 || (_pendingAttack && _pendingStep == 3)) return;
+                if (_comboCounter == 3 || (_pendingAttack && _pendingStep == 3))
+                    return;
 
-                // Queue up to two follow-up presses even during attack 01, so fast
-                // input sequences are preserved instead of being swallowed.
                 if (_comboCounter > 0 || _pendingAttack)
                 {
                     if (_bufferedFollowupInputs.Count < 2)
@@ -333,21 +429,27 @@ namespace _Dev.Christopher.Scripts
                         _bufferedFollowupInputs.Enqueue(now);
                         UnityEngine.Debug.Log($"Combo input buffered ({_bufferedFollowupInputs.Count}/2).");
                     }
+
                     TryScheduleBufferedFollowup(now);
                     return;
                 }
             }
-            else if (_pendingAttack) return;
+            else if (_pendingAttack)
+                return;
 
             double earliest = Math.Max(now, _nextAllowedBeat);
-            if (earliest > now + 1e-6 && earliest - now > _inputBufferBeats) return;
+
+            if (earliest > now + 1e-6 && earliest - now > _inputBufferBeats)
+                return;
 
             double scheduled = earliest;
+
             if (_enableBeatSnapping && RhythmReady())
             {
                 double offset = _snapToFirstHit
                     ? (double)_firstHitFrame / _attackClipFrames * _attackDurationBeats
                     : 0.0;
+
                 scheduled = RhythmManager.Instance.HybridSnapBeat(
                     earliest, _snapEveryBeats, _maxSnapDelaySeconds, offset);
             }
@@ -355,41 +457,208 @@ namespace _Dev.Christopher.Scripts
             int nextStep = !_enableHitConfirmCombo && _comboCounter >= 1 && _comboCounter < 3
                 ? _comboCounter + 1
                 : 1;
+
             QueueAttack(scheduled, nextStep, now);
         }
 
         private void HandleAttackHitConfirmed(GameObject target)
         {
+            ActivateAttackStem(_currentAttackIsHeavy);
+
             if (!_enableHitConfirmCombo || _pendingAttack ||
-                _comboCounter < 1 || _comboCounter >= 3 || _hitConfirmed) return;
+                _comboCounter < 1 || _comboCounter >= 3 || _hitConfirmed)
+                return;
 
             double now = BeatNow();
-            if (now > _attackFinishBeat + 0.05) return;
+
+            if (now > _attackFinishBeat + 0.05)
+                return;
 
             _hitConfirmed = true;
+
             double step = Math.Max(0.01, _comboEveryBeats);
-            // Strictly AFTER the confirmed hit, not at the grid point just crossed.
+
             _comboEarliestBeat = (Math.Floor(now / step + 1e-6) + 1.0) * step;
 
-            UnityEngine.Debug.Log($"Attack 0{_comboCounter} hit {target.name}; follow-up 0{_comboCounter + 1} unlocked at beat {_comboEarliestBeat:F3}.");
+            UnityEngine.Debug.Log(
+                $"Attack 0{_comboCounter} hit {target.name}; follow-up 0{_comboCounter + 1} unlocked at beat {_comboEarliestBeat:F3}.");
+
             TryScheduleBufferedFollowup(now);
+        }
+
+        // Activates the appropriate attack stem.
+        // Light combo hits 01 and 02 hold Guitar_S until the combo ends.
+        private void ActivateAttackStem(bool heavy)
+        {
+            RhythmManager rhythm = RhythmManager.Instance;
+
+            if (!rhythm ||
+                rhythm.CurrentAudioMode != RhythmManager.AudioMode.StemSystem ||
+                !rhythm.IsReady)
+                return;
+
+            StopAttackStemRoutine();
+
+            string activeStem = heavy ? _heavyAttackStemId : _lightAttackStemId;
+            string inactiveStem = heavy ? _lightAttackStemId : _heavyAttackStemId;
+
+            rhythm.SetStems(
+                (inactiveStem, false),
+                (activeStem, true)
+            );
+
+            // A confirmed light hit on step 01 or 02 is part of an ongoing combo.
+            bool holdForCombo = !heavy &&
+                                _enableHitConfirmCombo &&
+                                (_comboCounter == 1 || _comboCounter == 2);
+
+            if (holdForCombo)
+            {
+                _lightStemHeldForCombo = true;
+
+                if (_debugEnabled)
+                    Debug.Log(
+                        $"[AcCharacterHandler] {activeStem} held for combo step {_comboCounter}.",
+                        this);
+
+                return;
+            }
+
+            // The finisher, a non-combo light hit, or a heavy hit uses a normal timer.
+            _lightStemHeldForCombo = false;
+
+            double durationBeats = heavy
+                ? _heavyStemDurationBeats
+                : _lightStemDurationBeats;
+
+            StartStemOffTimer(rhythm, activeStem, durationBeats);
+
+            if (_debugEnabled)
+            {
+                Debug.Log(
+                    $"[AcCharacterHandler] {(heavy ? "HEAVY" : "LIGHT")} hit confirmed. " +
+                    $"{activeStem} activated for {durationBeats:F2} beat(s).",
+                    this);
+            }
+        }
+
+        // Starts a timer based on the musical clock.
+        private void StartStemOffTimer(
+            RhythmManager rhythm,
+            string stemId,
+            double durationBeats)
+        {
+            if (!rhythm || !rhythm.IsReady)
+                return;
+
+            _stemActivationVersion++;
+
+            _activeStemOffRoutine = StartCoroutine(
+                DisableStemAfterBeats(
+                    rhythm,
+                    stemId,
+                    durationBeats,
+                    _stemActivationVersion
+                )
+            );
+        }
+
+        // Called when a held light combo is abandoned or expires.
+        // Guitar_S remains active for one additional beat before switching off.
+        private void ReleaseComboStem()
+        {
+            if (!_lightStemHeldForCombo)
+                return;
+
+            _lightStemHeldForCombo = false;
+
+            if (!isActiveAndEnabled)
+                return;
+
+            RhythmManager rhythm = RhythmManager.Instance;
+
+            if (!rhythm ||
+                rhythm.CurrentAudioMode != RhythmManager.AudioMode.StemSystem ||
+                !rhythm.IsReady)
+                return;
+
+            StopAttackStemRoutine();
+
+            StartStemOffTimer(
+                rhythm,
+                _lightAttackStemId,
+                _lightStemDurationBeats
+            );
+
+            if (_debugEnabled)
+                Debug.Log(
+                    $"[AcCharacterHandler] Combo ended. {_lightAttackStemId} will deactivate after {_lightStemDurationBeats:F2} beat(s).",
+                    this);
+        }
+
+        private IEnumerator DisableStemAfterBeats(
+            RhythmManager rhythm,
+            string stemId,
+            double durationBeats,
+            int activationVersion)
+        {
+            double endBeat = rhythm.CurrentBeat + durationBeats;
+
+            // Keep waiting if the musical clock temporarily becomes unavailable.
+            while (rhythm && activationVersion == _stemActivationVersion)
+            {
+                if (rhythm.IsReady && rhythm.CurrentBeat >= endBeat)
+                    break;
+
+                yield return null;
+            }
+
+            if (activationVersion != _stemActivationVersion)
+                yield break;
+
+            if (rhythm &&
+                rhythm.CurrentAudioMode == RhythmManager.AudioMode.StemSystem)
+            {
+                rhythm.SetStem(stemId, false);
+
+                if (_debugEnabled)
+                    Debug.Log($"[AcCharacterHandler] {stemId} deactivated.", this);
+            }
+
+            _activeStemOffRoutine = null;
+        }
+
+        private void StopAttackStemRoutine()
+        {
+            _stemActivationVersion++;
+
+            if (_activeStemOffRoutine != null)
+            {
+                StopCoroutine(_activeStemOffRoutine);
+                _activeStemOffRoutine = null;
+            }
         }
 
         private void TryScheduleBufferedFollowup(double now)
         {
             if (!_enableHitConfirmCombo || _pendingAttack ||
                 !_hitConfirmed || _comboCounter < 1 || _comboCounter >= 3 ||
-                now > _comboExpireBeat) return;
+                now > _comboExpireBeat)
+                return;
 
             DiscardExpiredInputs(now);
-            if (_bufferedFollowupInputs.Count == 0) return;
+
+            if (_bufferedFollowupInputs.Count == 0)
+                return;
+
             _bufferedFollowupInputs.Dequeue();
 
-            // Hit-confirm follow-ups bypass _nextAllowedBeat / normal cooldown.
             double scheduled = RhythmReady()
                 ? Math.Max(_comboEarliestBeat, RhythmManager.QuantizeBeat(now, _comboEveryBeats))
                 : now;
-            if (scheduled > _comboExpireBeat + 1e-6) return;
+
+            if (scheduled > _comboExpireBeat + 1e-6)
+                return;
 
             QueueAttack(scheduled, _comboCounter + 1, now);
         }
@@ -405,9 +674,13 @@ namespace _Dev.Christopher.Scripts
         {
             if (!MyAnimator || (_healthModule && (_healthModule.IsStunned || _healthModule.HP <= 0)))
                 return false;
-            if (step == 1) return now + 1e-6 >= _nextAllowedBeat;
+
+            if (step == 1)
+                return now + 1e-6 >= _nextAllowedBeat;
+
             if (step < 2 || step > 3 || _comboCounter != step - 1 || now > _comboExpireBeat)
                 return false;
+
             return !_enableHitConfirmCombo || _hitConfirmed;
         }
 
@@ -416,19 +689,24 @@ namespace _Dev.Christopher.Scripts
             _scheduledBeat = scheduled;
             _pendingStep = step;
             _pendingAttack = true;
+
             UnityEngine.Debug.Log($"Attack 0{step} queued for beat {scheduled:F3}.");
 
             if (scheduled <= now + 1e-6)
             {
                 _pendingAttack = false;
                 _pendingStep = 0;
-                if (CanLaunchStep(step, now)) LaunchAttack(now, step);
+
+                if (CanLaunchStep(step, now))
+                    LaunchAttack(now, step);
             }
         }
 
         private void LaunchAttack(double now, int step)
         {
-            if (!MyAnimator) return;
+            if (!MyAnimator)
+                return;
+
             if (step == 3 && !HasTriggerParameter(LightAttack03))
             {
                 if (!_warnedThirdTrigger)
@@ -436,9 +714,12 @@ namespace _Dev.Christopher.Scripts
                     Debug.LogError("[AcCharacterHandler] Animator Trigger 'LightAttack03' is missing. Create the third attack state and trigger.", this);
                     _warnedThirdTrigger = true;
                 }
+
                 ResetComboChain();
                 return;
             }
+
+            _currentAttackIsHeavy = false;
 
             UpdateAttackAnimationSpeed();
 
@@ -449,22 +730,29 @@ namespace _Dev.Christopher.Scripts
                 _ => LightAttack01
             };
 
-            // The Animator alone controls Hurtbox Collider enabled/disabled curves.
-            // Only the damage gate and enemy knockback multiplier change here.
             double beatSeconds = RhythmReady()
                 ? RhythmManager.Instance.SecondsPerBeat
                 : 60.0 / _fallbackBPM;
+
             float firstHitDelaySeconds = (float)(
                 ((double)_firstHitFrame / _attackClipFrames) * _attackDurationBeats * beatSeconds);
+
             float multiplier = step == 3 ? _thirdHitKnockbackMultiplier : 1f;
+
             foreach (HurtboxEvent hurtbox in _ownedHurtboxes)
-                if (hurtbox) hurtbox.PrepareAttackStep(
-                    multiplier, firstHitDelaySeconds, step,
-                    _delayComboKnockback && _enableHitConfirmCombo ? _comboInputBufferBeats : 0f);
+                if (hurtbox)
+                    hurtbox.PrepareAttackStep(
+                        multiplier,
+                        firstHitDelaySeconds,
+                        step,
+                        _delayComboKnockback && _enableHitConfirmCombo ? _comboInputBufferBeats : 0f);
 
             MyAnimator.ResetTrigger(LightAttack01);
             MyAnimator.ResetTrigger(LightAttack02);
-            if (HasTriggerParameter(LightAttack03)) MyAnimator.ResetTrigger(LightAttack03);
+
+            if (HasTriggerParameter(LightAttack03))
+                MyAnimator.ResetTrigger(LightAttack03);
+
             MyAnimator.SetTrigger(trigger);
 
             _comboCounter = step;
@@ -474,25 +762,34 @@ namespace _Dev.Christopher.Scripts
             _attackFinishBeat = now + _attackDurationBeats;
             _nextAllowedBeat = now + Math.Max(_attackDurationBeats, _attackCooldownBeats);
             _comboExpireBeat = now + _comboResetBeats;
+
             UnityEngine.Debug.Log($"Attack 0{step} START | enemy knockback x{multiplier:F1}.");
         }
 
         private void ResetComboChain()
         {
+            // Release the held light stem when the combo is abandoned or completed.
+            ReleaseComboStem();
+
             _comboCounter = 0;
             _hitConfirmed = false;
             _pendingAttack = false;
             _pendingStep = 0;
             _bufferedFollowupInputs.Clear();
             _comboEarliestBeat = 0.0;
+
             foreach (HurtboxEvent hurtbox in _ownedHurtboxes)
-                if (hurtbox) hurtbox.SetEnemyKnockbackMultiplier(1f);
+                if (hurtbox)
+                    hurtbox.SetEnemyKnockbackMultiplier(1f);
         }
 
         private void UpdateAttackAnimationSpeed()
         {
-            if (!MyAnimator) return;
+            if (!MyAnimator)
+                return;
+
             _attackSpeedParameterPresent = HasFloatParameter(_attackSpeedParameter);
+
             if (!_attackSpeedParameterPresent)
             {
                 if (_syncAttackAnimationSpeed && !_warnedAnimatorParameter)
@@ -501,50 +798,70 @@ namespace _Dev.Christopher.Scripts
                                      "' and assign it to the three light attack states' Speed Multiplier.", this);
                     _warnedAnimatorParameter = true;
                 }
+
                 return;
             }
 
-            // Use normal speed if synchronization is disabled, never zero.
             float speed = 1f;
+
             if (_syncAttackAnimationSpeed)
             {
                 double secondsPerBeat = RhythmReady()
                     ? RhythmManager.Instance.SecondsPerBeat
                     : 60.0 / _fallbackBPM;
+
                 float naturalDuration = _attackClipFrames / _attackClipFPS;
+
                 speed = (float)(naturalDuration / (Math.Max(0.1, _attackDurationBeats) * secondsPerBeat));
             }
 
-            if (float.IsNaN(speed) || float.IsInfinity(speed)) speed = 1f;
+            if (float.IsNaN(speed) || float.IsInfinity(speed))
+                speed = 1f;
+
             MyAnimator.SetFloat(_attackSpeedParameter, Mathf.Max(MinimumAttackSpeed, speed));
         }
 
         private void LateUpdate()
         {
-            if (!_debugEnabled || !MyAnimator || _warnedFrozenAttack) return;
+            if (!_debugEnabled || !MyAnimator || _warnedFrozenAttack)
+                return;
+
             AnimatorStateInfo state = MyAnimator.GetCurrentAnimatorStateInfo(0);
+
             if (!state.IsName("LightAttack01") && !state.IsName("LightAttack02") &&
                 !state.IsName("LightAttack03") && !state.IsName("LightAttack1") &&
-                !state.IsName("LightAttack2") && !state.IsName("LightAttack3")) return;
-            if (state.speed * state.speedMultiplier * MyAnimator.speed > 0.0001f) return;
+                !state.IsName("LightAttack2") && !state.IsName("LightAttack3"))
+                return;
+
+            if (state.speed * state.speedMultiplier * MyAnimator.speed > 0.0001f)
+                return;
 
             _warnedFrozenAttack = true;
+
             Debug.LogError("[AcCharacterHandler] Attack animation is frozen. Set state Speed=1 and Multiplier=AttackSpeed (not VerticalVelocity).", this);
         }
 
         private bool HasFloatParameter(string parameter)
         {
-            if (!MyAnimator || string.IsNullOrEmpty(parameter)) return false;
+            if (!MyAnimator || string.IsNullOrEmpty(parameter))
+                return false;
+
             foreach (AnimatorControllerParameter p in MyAnimator.parameters)
-                if (p.name == parameter && p.type == AnimatorControllerParameterType.Float) return true;
+                if (p.name == parameter && p.type == AnimatorControllerParameterType.Float)
+                    return true;
+
             return false;
         }
 
         private bool HasTriggerParameter(int hash)
         {
-            if (!MyAnimator) return false;
+            if (!MyAnimator)
+                return false;
+
             foreach (AnimatorControllerParameter p in MyAnimator.parameters)
-                if (p.nameHash == hash && p.type == AnimatorControllerParameterType.Trigger) return true;
+                if (p.nameHash == hash && p.type == AnimatorControllerParameterType.Trigger)
+                    return true;
+
             return false;
         }
 
@@ -559,32 +876,38 @@ namespace _Dev.Christopher.Scripts
 
         private void HandleAtkL01Animation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(LightAttack01);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(LightAttack01);
         }
 
         private void HandleAtkL02Animation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(LightAttack02);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(LightAttack02);
         }
 
         private void HandleAtkL03Animation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(LightAttack03);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(LightAttack03);
         }
 
         private void HandleAtkH01Animation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(HeavyAttack01);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(HeavyAttack01);
         }
 
         private void HandleHurtAnimation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(Hurt);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(Hurt);
         }
 
         private void HandleDeathAnimation()
         {
-            if (MyAnimator) MyAnimator.SetTrigger(Death);
+            if (MyAnimator)
+                MyAnimator.SetTrigger(Death);
         }
 
         private void OnValidate()
@@ -598,6 +921,9 @@ namespace _Dev.Christopher.Scripts
             _attackClipFPS = Mathf.Max(1f, _attackClipFPS);
             _fallbackBPM = Mathf.Max(1f, _fallbackBPM);
             _thirdHitKnockbackMultiplier = Mathf.Max(1f, _thirdHitKnockbackMultiplier);
+
+            _lightStemDurationBeats = Mathf.Max(0.01f, _lightStemDurationBeats);
+            _heavyStemDurationBeats = Mathf.Max(0.01f, _heavyStemDurationBeats);
         }
     }
 }

@@ -95,9 +95,15 @@ namespace SynthOfRage.Scripts.CameraSystem
         [SerializeField] private bool combatEnabled;
         [SerializeField] private List<CombatKnot> combatKnots = new();
         [SerializeField] private float combatTolerance = 0.01f;
+        
+        [Header("Audio - Combat Stem")]
+        [SerializeField] private bool useCombatStem = true;
+        [SerializeField] private string combatStemId = "Drums_C";
 
         [Header("Debug")]
         [SerializeField] private bool debugEnabled;
+        
+        
 
         private float currentSplinePosition;
         private float targetSplinePosition;
@@ -200,6 +206,8 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void OnDisable()
         {
+            SetCombatStem(false);
+            
             if (GameManager.Instance != null)
                 GameManager.Instance.OnArenaExit -= DisableCombat;
 
@@ -1390,7 +1398,8 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             combatMode = true;
             combatEnabled = true;
-
+            SetCombatStem(true);
+            
             GameManager.Instance.OnArenaEnter.Invoke();
 
             currentSplinePosition = combatKnot.KnotIndex;
@@ -1472,6 +1481,8 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void EndCombat()
         {
+            SetCombatStem(false);
+            
             CombatKnot completedCombatKnot =
                 currentCombatStep >= 0 &&
                 currentCombatStep < combatKnots.Count
@@ -1660,6 +1671,35 @@ namespace SynthOfRage.Scripts.CameraSystem
             }
 
             return valid;
+        }
+        
+        // =========================================================
+        // COMBAT AUDIO STEM
+        // =========================================================
+
+        private void SetCombatStem(bool enabled)
+        {
+            if (!useCombatStem)
+                return;
+
+            RhythmManager rhythm = RhythmManager.Instance;
+
+            if (rhythm == null ||
+                !rhythm.IsReady ||
+                rhythm.CurrentAudioMode != RhythmManager.AudioMode.StemSystem)
+            {
+                return;
+            }
+
+            rhythm.SetStem(combatStemId, enabled);
+
+            if (debugEnabled)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] Combat stem '{combatStemId}' : {(enabled ? "ON" : "OFF")}.",
+                    this
+                );
+            }
         }
 
         private void ValidateCombatKnots()
