@@ -1,6 +1,9 @@
+
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Users;
 
 namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 {
@@ -18,6 +21,25 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         [Header("Dev Settings")]
         [SerializeField] private bool debugEnabled;
+
+        // ─────────────────────────────────────────────
+        // Local Multiplayer
+        // ─────────────────────────────────────────────
+
+        [Header("Local Multiplayer")]
+        [Tooltip("0 = Player 1 / First Gamepad. 1 = Player 2 / Second Gamepad.")]
+        [SerializeField, Range(0, 1)] private int playerIndex = 0;
+
+        public int PlayerIndex => playerIndex;
+        public Gamepad AssignedGamepad { get; private set; }
+        public bool HasAssignedGamepad => AssignedGamepad != null;
+
+        private InputActionAsset runtimeActions;
+        private InputUser inputUser;
+        private bool inputUserInitialized;
+
+        private InputActionReference[] originalActionReferences;
+        private readonly List<InputActionReference> runtimeActionReferences = new();
 
         // ─────────────────────────────────────────────
         // Gameplay Input Actions
@@ -94,6 +116,8 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
 
         private void OnEnable()
         {
+            InitializePlayerInput();
+
             RegisterGameplayCallbacks();
             RegisterUICallbacks();
 
@@ -108,7 +132,289 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             DisableGameplayMap();
             DisableUIMap();
 
+            CleanupPlayerInput();
+
             inputMapInitialized = false;
+        }
+
+        // ─────────────────────────────────────────────
+        // Local Multiplayer Initialization
+        // ─────────────────────────────────────────────
+
+        private void InitializePlayerInput()
+        {
+            InputActionReference[] originalReferences =
+            {
+                moveAction,
+                jumpAction,
+                dashAction,
+                atkLAction,
+                atkHAction,
+                guardAction,
+                atkSpAction,
+                pauseAction,
+
+                uiMoveAction,
+                uiPauseAction,
+                validateAction,
+                cancelAction,
+                panelAction
+            };
+
+            InputActionReference firstReference = null;
+
+            foreach (InputActionReference reference in originalReferences)
+            {
+                if (reference != null)
+                {
+                    firstReference = reference;
+                    break;
+                }
+            }
+
+            if (firstReference == null)
+            {
+                UnityEngine.Debug.LogError(
+                    "[PlayerCore] No Input Actions assigned.",
+                    this
+                );
+
+                return;
+            }
+
+            InputActionAsset sourceAsset =
+                firstReference.action.actionMap.asset;
+
+            // Verify that every action belongs to the same asset.
+            foreach (InputActionReference reference in originalReferences)
+            {
+                if (reference != null &&
+                    reference.action.actionMap.asset != sourceAsset)
+                {
+                    UnityEngine.Debug.LogError(
+                        "[PlayerCore] All Input Actions must belong to the same Input Action Asset.",
+                        this
+                    );
+
+                    return;
+                }
+            }
+
+            originalActionReferences = originalReferences;
+
+            // Create an independent Input Action Asset for this player.
+            runtimeActions = Instantiate(sourceAsset);
+
+            InputActionReference[] clonedReferences =
+                new InputActionReference[originalReferences.Length];
+
+            for (int i = 0; i < originalReferences.Length; i++)
+            {
+                if (originalReferences[i] == null)
+                    continue;
+
+                InputAction action = runtimeActions.FindAction(
+                    originalReferences[i].action.id.ToString()
+                );
+
+                if (action == null)
+                {
+                    UnityEngine.Debug.LogError(
+                        $"[PlayerCore] Could not find cloned action: {originalReferences[i].action.name}",
+                        this
+                    );
+
+                    continue;
+                }
+
+                InputActionReference reference =
+                    InputActionReference.Create(action);
+
+                clonedReferences[i] = reference;
+                runtimeActionReferences.Add(reference);
+            }
+
+            // Replace serialized references with player-specific references.
+            SetInputReferences(clonedReferences);
+
+            // Create an independent Input User.
+            inputUser = InputUser.CreateUserWithoutPairedDevices();
+
+            inputUser.AssociateActionsWithUser(runtimeActions);
+
+            inputUserInitialized = true;
+
+            // Automatically assign the correct gamepad.
+            TryAssignGamepad();
+
+            // Listen for device connections and disconnections.
+            InputSystem.onDeviceChange += HandleDeviceChange;
+
+            if (debugEnabled)
+            {
+                UnityEngine.Debug.Log(
+                    $"[PlayerCore] Player {playerIndex + 1} initialized.",
+                    this
+                );
+            }
+        }
+
+        private void SetInputReferences(
+            InputActionReference[] references)
+        {
+            moveAction = references[0];
+            jumpAction = references[1];
+            dashAction = references[2];
+            atkLAction = references[3];
+            atkHAction = references[4];
+            guardAction = references[5];
+            atkSpAction = references[6];
+            pauseAction = references[7];
+
+            uiMoveAction = references[8];
+            uiPauseAction = references[9];
+            validateAction = references[10];
+            cancelAction = references[11];
+            panelAction = references[12];
+        }
+
+        // ─────────────────────────────────────────────
+        // Gamepad Assignment
+        // ─────────────────────────────────────────────
+
+        private void TryAssignGamepad()
+        {
+            if (!inputUserInitialized)
+                return;
+
+            if (AssignedGamepad != null)
+                return;
+
+            if (Gamepad.all.Count <= playerIndex)
+                return;
+
+            // Player 1 uses Gamepad 0.
+            // Player 2 uses Gamepad 1.
+            Gamepad gamepad = Gamepad.all[playerIndex];
+
+            if (gamepad == null || !gamepad.added)
+                return;
+
+            // Prevent assigning a gamepad already used by another Input User.
+            InputUser? existingUser =
+                InputUser.FindUserPairedToDevice(gamepad);
+
+            if (existingUser.HasValue && existingUser.Value.valid)
+            {
+                // The gamepad is already assigned to another player.
+                if (existingUser.Value.id != inputUser.id)
+                {
+                    if (debugEnabled)
+                    {
+                        UnityEngine.Debug.LogWarning(
+                            $"[PlayerCore] Gamepad {playerIndex + 1} is already paired with another Input User.",
+                            this
+                        );
+                    }
+
+                    return;
+                }
+            }
+
+            // Pair the gamepad with this player's Input User.
+            inputUser = InputUser.PerformPairingWithDevice(
+                gamepad,
+                inputUser
+            );
+
+            AssignedGamepad = gamepad;
+
+            if (debugEnabled)
+            {
+                UnityEngine.Debug.Log(
+                    $"[PlayerCore] Player {playerIndex + 1} assigned to {gamepad.displayName}.",
+                    this
+                );
+            }
+        }
+
+        private void HandleDeviceChange(
+            InputDevice device,
+            InputDeviceChange change)
+        {
+            if (device is not Gamepad gamepad)
+                return;
+
+            // Handle disconnection.
+            if (change == InputDeviceChange.Removed ||
+                change == InputDeviceChange.Disconnected)
+            {
+                if (AssignedGamepad == gamepad)
+                {
+                    if (debugEnabled)
+                    {
+                        UnityEngine.Debug.LogWarning(
+                            $"[PlayerCore] Player {playerIndex + 1} gamepad disconnected.",
+                            this
+                        );
+                    }
+
+                    if (inputUserInitialized && inputUser.valid)
+                        inputUser.UnpairDevices();
+
+                    AssignedGamepad = null;
+                }
+
+                return;
+            }
+
+            // Handle connection or reconnection.
+            if (change == InputDeviceChange.Added ||
+                change == InputDeviceChange.Reconnected)
+            {
+                TryAssignGamepad();
+            }
+        }
+
+        // ─────────────────────────────────────────────
+        // Cleanup
+        // ─────────────────────────────────────────────
+
+        private void CleanupPlayerInput()
+        {
+            InputSystem.onDeviceChange -= HandleDeviceChange;
+
+            AssignedGamepad = null;
+
+            if (inputUserInitialized && inputUser.valid)
+            {
+                inputUser.UnpairDevicesAndRemoveUser();
+            }
+
+            inputUserInitialized = false;
+
+            // Restore original serialized references.
+            if (originalActionReferences != null)
+            {
+                SetInputReferences(originalActionReferences);
+                originalActionReferences = null;
+            }
+
+            // Destroy temporary references.
+            foreach (InputActionReference reference in runtimeActionReferences)
+            {
+                if (reference != null)
+                    Destroy(reference);
+            }
+
+            runtimeActionReferences.Clear();
+
+            // Destroy the player's private action asset.
+            if (runtimeActions != null)
+            {
+                Destroy(runtimeActions);
+                runtimeActions = null;
+            }
         }
 
         // ─────────────────────────────────────────────
@@ -234,7 +540,6 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private void HandleMove(InputAction.CallbackContext context)
         {
             Vector2 direction = context.ReadValue<Vector2>();
-
             OnPlayerMove?.Invoke(direction);
         }
 
@@ -257,7 +562,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         private void HandleAtkL(InputAction.CallbackContext context)
         {
             if (debugEnabled)
-                //UnityEngine.Debug.Log("[PlayerCore] AtkL");
+                UnityEngine.Debug.Log("[PlayerCore] AtkL");
 
             OnPlayerAtkL?.Invoke();
         }
@@ -300,7 +605,6 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 UnityEngine.Debug.Log("[PlayerCore] Pause : Gameplay -> UI");
 
             OnPlayerPause?.Invoke();
-
             SwitchToUI();
         }
 
@@ -324,7 +628,6 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
                 UnityEngine.Debug.Log("[PlayerCore] Pause : UI -> Gameplay");
 
             OnUIPause?.Invoke();
-
             SwitchToGameplay();
         }
 
@@ -417,8 +720,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (moveAction == null)
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(PlayerCore)}] " +
-                    "Gameplay Move Action reference is missing.",
+                    $"[{nameof(PlayerCore)}] Gameplay Move Action reference is missing.",
                     this
                 );
 
@@ -430,8 +732,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (actionMap == null)
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(PlayerCore)}] " +
-                    "Gameplay Move Action does not belong to an Action Map.",
+                    $"[{nameof(PlayerCore)}] Gameplay Move Action does not belong to an Action Map.",
                     this
                 );
 
@@ -477,8 +778,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (uiMoveAction == null)
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(PlayerCore)}] " +
-                    "UI Move Action reference is missing.",
+                    $"[{nameof(PlayerCore)}] UI Move Action reference is missing.",
                     this
                 );
 
@@ -490,8 +790,7 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
             if (actionMap == null)
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(PlayerCore)}] " +
-                    "UI Move Action does not belong to an Action Map.",
+                    $"[{nameof(PlayerCore)}] UI Move Action does not belong to an Action Map.",
                     this
                 );
 
