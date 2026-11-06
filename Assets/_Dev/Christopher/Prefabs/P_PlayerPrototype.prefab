@@ -588,8 +588,8 @@ MonoBehaviour:
   _dashDurationBeats: 0.5
   _dashCooldownBeats: 1
   _dashOnBeatEveryBeats: 1
-  _dashOnBeatThresholdBeats: 0.15
-  _dashOnBeatVfx: {fileID: 0}
+  _dashOnBeatThresholdBeats: 0.25
+  _dashOnBeatVfx: {fileID: 6249788508060671119, guid: a0e973f0c1fdbb549913c38f00c6f1ea, type: 3}
   _dashOnBeatVfxOffset: {x: 0, y: 0, z: 0}
   _dashOnBeatVfxUsePlayerRotation: 1
 --- !u!114 &5308613982395648816
@@ -613,15 +613,15 @@ MonoBehaviour:
   _idleSpeedParameter: IdleSpeed
   _idleClipFrames: 45
   _idleClipFPS: 60
-  _idleLoopDurationBeats: 1
+  _idleLoopDurationBeats: 2
   _enableBeatSnapping: 1
-  _snapEveryBeats: 1
-  _maxSnapDelayBeats: 0.05
+  _snapEveryBeats: 0.5
+  _maxSnapDelayBeats: 0.25
   _snapToSyncFrame: 1
   _lightAttack01SyncFrame: 9
   _lightAttack02SyncFrame: 10
   _lightAttack03SyncFrame: 10
-  _lightAttack01HitFrame: 10
+  _lightAttack01HitFrame: 9
   _lightAttack02HitFrame: 10
   _lightAttack03HitFrame: 10
   _attackDurationBeats: 0.75
@@ -629,8 +629,8 @@ MonoBehaviour:
   _comboResetBeats: 1.5
   _inputBufferBeats: 0.5
   _enableHeavyBeatSnapping: 1
-  _heavySnapEveryBeats: 2
-  _heavyMaxSnapDelayBeats: 1
+  _heavySnapEveryBeats: 0.5
+  _heavyMaxSnapDelayBeats: 0.45
   _heavySnapToSyncFrame: 1
   _heavyAttack01SyncFrame: 10
   _heavyAttackHitFrame: 15
@@ -640,14 +640,14 @@ MonoBehaviour:
   _heavyAttackClipFPS: 60
   _heavyAttackSpeedParameter: HeavyAttackSpeed
   _enableHitConfirmCombo: 1
-  _comboEveryBeats: 0.5
+  _comboEveryBeats: 1
   _comboInputBufferBeats: 1.5
   _thirdHitKnockbackMultiplier: 3
   _delayComboKnockback: 1
   _onBeatDamageMultiplier: 1.5
   _onBeatHitVfx: {fileID: 6249788508060671119, guid: a0e973f0c1fdbb549913c38f00c6f1ea, type: 3}
-  _onBeatHitVfxOffset: {x: 0, y: 0.5, z: 0}
-  _onBeatVfxUseTargetRotation: 1
+  _onBeatHitVfxOffset: {x: 0, y: 0, z: 0}
+  _onBeatVfxUseTargetRotation: 0
   _syncAttackAnimationSpeed: 1
   _attackSpeedParameter: AttackSpeed
   _attackClipFrames: 60
