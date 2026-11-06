@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -132,7 +131,15 @@ namespace SynthOfRage.Scripts.Gameplay.Core
             public StemDefinition definition;
             public AudioSource source;
 
+            // Effective state: global request OR at least one owner request.
             public bool desiredState;
+
+            // Request made through the legacy/global SetStem API.
+            public bool globalDesiredState;
+
+            // Owners currently requesting this stem.
+            public readonly HashSet<EntityId> ownerRequests = new HashSet<EntityId>();
+
             public bool isPlaying;
 
             // DSP fade state.
@@ -148,6 +155,12 @@ namespace SynthOfRage.Scripts.Gameplay.Core
 
         private readonly List<StemRuntime> _stemRuntime =
             new List<StemRuntime>();
+
+        // Instance ID -> Unity object.
+        // Keeping the object reference lets us detect destroyed owners.
+        private readonly Dictionary<EntityId, UnityEngine.Object> _stemOwners = new Dictionary<EntityId, UnityEngine.Object>();
+
+        private readonly List<EntityId> _ownersToRemove = new List<EntityId>();
 
         // ============================================================
         // UI - BEAT INDICATORS
@@ -275,8 +288,8 @@ namespace SynthOfRage.Scripts.Gameplay.Core
 
         private void Update()
         {
-            // Update stem fades independently from beat callbacks.
             UpdateStemFades();
+            PruneDestroyedStemOwners();
 
             if (!_scheduled)
             {
@@ -329,6 +342,7 @@ namespace SynthOfRage.Scripts.Gameplay.Core
         private void InitializeStems()
         {
             _stemRuntime.Clear();
+            _stemOwners.Clear();
 
             if (_stems == null)
                 return;
@@ -393,6 +407,7 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                 {
                     definition = definition,
                     source = stemSource,
+                    globalDesiredState = definition.enabledOnPlay,
                     desiredState = definition.enabledOnPlay,
                     isPlaying = false,
                     isFading = false,
@@ -432,7 +447,146 @@ namespace SynthOfRage.Scripts.Gameplay.Core
         }
 
         // ============================================================
-        // STEM PUBLIC API
+        // STEM OWNERSHIP
+        // ============================================================
+
+        /// <summary>
+        /// Requests a stem for a specific owner.
+        ///
+        /// A stem remains active while at least one owner requests it,
+        /// or while the global API requests it.
+        ///
+        /// Releasing one owner never releases another owner's request.
+        /// </summary>
+        public void SetStemForOwner(
+            UnityEngine.Object owner,
+            string id,
+            bool enable)
+        {
+            if (!owner)
+                return;
+
+            if (_audioMode != AudioMode.StemSystem)
+                return;
+
+            StemRuntime runtime = FindStemRuntime(id);
+
+            if (runtime == null)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[RhythmManager] Stem '{id}' was not found.",
+                    this);
+                return;
+            }
+
+            EntityId ownerId = owner.GetEntityId();
+
+            _stemOwners[ownerId] = owner;
+
+            bool changed = enable
+                ? runtime.ownerRequests.Add(ownerId)
+                : runtime.ownerRequests.Remove(ownerId);
+
+            if (!changed)
+                return;
+
+            RecalculateStemDesiredState(runtime);
+        }
+
+        /// <summary>
+        /// Releases every stem request belonging to this owner.
+        /// Other owners and global requests are unaffected.
+        /// </summary>
+        public void ReleaseAllStemsForOwner(UnityEngine.Object owner)
+        {
+            if (!owner)
+                return;
+
+            ReleaseAllStemsForOwnerId(owner.GetEntityId());
+        }
+
+        private void ReleaseAllStemsForOwnerId(EntityId ownerId)
+        {
+            bool removedFromAnyStem = false;
+
+            foreach (StemRuntime runtime in _stemRuntime)
+            {
+                if (runtime == null)
+                    continue;
+
+                if (runtime.ownerRequests.Remove(ownerId))
+                {
+                    removedFromAnyStem = true;
+                    RecalculateStemDesiredState(runtime);
+                }
+            }
+
+            _stemOwners.Remove(ownerId);
+
+            if (_debugStems && removedFromAnyStem)
+            {
+                UnityEngine.Debug.Log(
+                    $"[RhythmManager] Released all stem requests for owner {ownerId}.",
+                    this);
+            }
+        }
+
+        private void PruneDestroyedStemOwners()
+        {
+            if (_stemOwners.Count == 0)
+                return;
+
+            _ownersToRemove.Clear();
+
+            foreach (KeyValuePair<EntityId, UnityEngine.Object> pair in _stemOwners)
+            {
+                if (!pair.Value)
+                    _ownersToRemove.Add(pair.Key);
+            }
+
+            for (int i = 0; i < _ownersToRemove.Count; i++)
+            {
+                ReleaseAllStemsForOwnerId(_ownersToRemove[i]);
+            }
+
+            _ownersToRemove.Clear();
+        }
+
+        /// <summary>
+        /// Computes the effective state from all active requests.
+        /// A transition is scheduled only when the effective state changes.
+        /// </summary>
+        private void RecalculateStemDesiredState(StemRuntime runtime)
+        {
+            if (runtime == null)
+                return;
+
+            bool effectiveState =
+                runtime.globalDesiredState ||
+                runtime.ownerRequests.Count > 0;
+
+            if (runtime.desiredState == effectiveState)
+                return;
+
+            runtime.desiredState = effectiveState;
+
+            if (_debugStems)
+            {
+                UnityEngine.Debug.Log(
+                    $"[RhythmManager] Stem '{runtime.definition.id}' effective state: {effectiveState} " +
+                    $"(Global: {runtime.globalDesiredState}, Owners: {runtime.ownerRequests.Count}).",
+                    this);
+            }
+
+            // Remember the state if the musical clock isn't running.
+            if (!_scheduled)
+                return;
+
+            ScheduleStemTransition(runtime);
+        }
+
+        // ============================================================
+        // STEM PUBLIC API - GLOBAL / LEGACY
         // ============================================================
 
         public void EnableStem(string id)
@@ -445,6 +599,12 @@ namespace SynthOfRage.Scripts.Gameplay.Core
             SetStem(id, false);
         }
 
+        /// <summary>
+        /// Global stem request.
+        ///
+        /// This API is intentionally independent from owner requests.
+        /// Calling SetStem(id, false) does not cancel requests made by players.
+        /// </summary>
         public void SetStem(string id, bool enable)
         {
             if (_audioMode != AudioMode.StemSystem)
@@ -472,27 +632,12 @@ namespace SynthOfRage.Scripts.Gameplay.Core
             if (!runtime.source)
                 return;
 
-            // Avoid restarting a transition when the requested state is unchanged.
-            if (runtime.desiredState == enable &&
-                !runtime.isFading)
+            if (runtime.globalDesiredState == enable)
                 return;
 
-            runtime.desiredState = enable;
+            runtime.globalDesiredState = enable;
 
-            // Remember the desired state if the musical clock isn't running.
-            if (!_scheduled)
-            {
-                if (_debugStems)
-                {
-                    UnityEngine.Debug.Log(
-                        $"[RhythmManager] Stem '{id}' desired state: {enable} (waiting for playback).",
-                        this);
-                }
-
-                return;
-            }
-
-            ScheduleStemTransition(runtime);
+            RecalculateStemDesiredState(runtime);
         }
 
         public void SetStems(params (string id, bool enabled)[] stems)
@@ -510,7 +655,13 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                 return;
 
             foreach (StemRuntime runtime in _stemRuntime)
-                SetStem(runtime.definition.id, true);
+            {
+                if (runtime == null)
+                    continue;
+
+                runtime.globalDesiredState = true;
+                RecalculateStemDesiredState(runtime);
+            }
         }
 
         public void DisableAllStems()
@@ -519,7 +670,13 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                 return;
 
             foreach (StemRuntime runtime in _stemRuntime)
-                SetStem(runtime.definition.id, false);
+            {
+                if (runtime == null)
+                    continue;
+
+                runtime.globalDesiredState = false;
+                RecalculateStemDesiredState(runtime);
+            }
         }
 
         public bool IsStemEnabled(string id)
@@ -549,7 +706,6 @@ namespace SynthOfRage.Scripts.Gameplay.Core
 
             runtime.definition.volume = volume;
 
-            // If no fade is running, update the actual volume immediately.
             if (!runtime.isFading)
                 runtime.source.volume = volume;
             else
@@ -584,13 +740,9 @@ namespace SynthOfRage.Scripts.Gameplay.Core
             }
 
             if (runtime.desiredState)
-            {
                 StartStem(runtime, targetDsp);
-            }
             else
-            {
                 StopStem(runtime, targetDsp);
-            }
         }
 
         private double GetNextGridDspTime(double gridBeats)
@@ -617,7 +769,7 @@ namespace SynthOfRage.Scripts.Gameplay.Core
 
             CancelStemFade(runtime);
 
-            // Cancel any previous scheduled playback or ending.
+            // Cancel previous scheduled playback or ending.
             stemSource.Stop();
 
             stemSource.clip = clip;
@@ -628,7 +780,6 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                 runtime.definition.fadeIn &&
                 runtime.definition.fadeInBeats > 0f;
 
-            // A fade-in starts at zero volume.
             stemSource.volume = useFadeIn
                 ? 0f
                 : runtime.definition.volume;
@@ -719,7 +870,6 @@ namespace SynthOfRage.Scripts.Gameplay.Core
             {
                 if (runtime.isPlaying)
                 {
-                    // The audio engine handles the actual stop at the requested DSP time.
                     runtime.source.SetScheduledEndTime(targetDsp);
                 }
                 else
@@ -787,7 +937,6 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                     !runtime.isFading)
                     continue;
 
-                // Wait until the scheduled fade start.
                 if (currentDsp < runtime.fadeStartDsp)
                     continue;
 
@@ -871,7 +1020,6 @@ namespace SynthOfRage.Scripts.Gameplay.Core
                 return;
             }
 
-            // UI-only musical clock. Gameplay uses the unmodified DSP clock.
             double visualBeat =
                 (AudioSettings.dspTime - _firstBeatDsp) / SecondsPerBeat
                 + _beatIndicatorAnticipationBeats;
@@ -1010,15 +1158,22 @@ namespace SynthOfRage.Scripts.Gameplay.Core
 
                 foreach (StemRuntime runtime in _stemRuntime)
                 {
-                    runtime.desiredState =
+                    if (runtime == null)
+                        continue;
+
+                    // enabledOnPlay controls the global request.
+                    // Owner requests remain independent.
+                    runtime.globalDesiredState =
                         runtime.definition.enabledOnPlay;
+
+                    runtime.desiredState =
+                        runtime.globalDesiredState ||
+                        runtime.ownerRequests.Count > 0;
 
                     runtime.isPlaying = false;
 
                     if (runtime.desiredState)
-                    {
                         StartStem(runtime, _songStartDsp);
-                    }
                 }
             }
 
@@ -1150,6 +1305,8 @@ namespace SynthOfRage.Scripts.Gameplay.Core
         private void OnDestroy()
         {
             StopAllStemSources();
+
+            _stemOwners.Clear();
 
             if (Instance == this)
                 Instance = null;

@@ -5,9 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/SynthOfRage/_Scenes/LevelTest.unity
     guid: 9a23c70179b4e4640a7539804060783a
+  - enabled: 1
+    path: Assets/SynthOfRage/_Scenes/Level-Level1.unity
+    guid: c44f22ab495e366418fd1043ddb6b80d
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: ee3ecf1474c67f74ebfc46847e97c8a9, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 458f7270ef121a1459907fce0fb844db, type: 3}

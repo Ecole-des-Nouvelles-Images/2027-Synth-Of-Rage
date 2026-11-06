@@ -3,6 +3,7 @@ using System.Collections;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
 using SynthOfRage.Scripts.Gameplay.Core;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SynthOfRage.Scripts.Gameplay.Common.Modules
 {
@@ -24,10 +25,13 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
         private Coroutine _reactionCoroutine;
         private bool _isStunned;
 
+        [SerializeField] private Slider _healthBar;
+
         public event Action<int, int> OnHealthChanged;
         public event Action OnEmptyHealth;
         public event Action<int> OnDamageTaken;
         public event Action<bool> OnStunChanged;
+        public event Action OnDeath;
 
         /// <summary>True only during the active frames of a player attack.</summary>
         public bool IsAttackInvincible { get; private set; }
@@ -120,7 +124,7 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
         public void Apply(int delta, bool updateMaxHP = false, bool reflectMaxHPChangeToCurrent = false)
         {
             if (delta == 0) return;
-
+            
             if (updateMaxHP)
             {
                 MaxHP = Mathf.Max(1, MaxHP + delta);
@@ -131,6 +135,12 @@ namespace SynthOfRage.Scripts.Gameplay.Common.Modules
             else
             {
                 HP = Mathf.Clamp(HP + delta, 0, MaxHP);
+            }
+            _healthBar.value = HP;
+
+            if (HP <= 0)
+            {
+                if (OnDeath != null) OnDeath.Invoke();
             }
         }
 

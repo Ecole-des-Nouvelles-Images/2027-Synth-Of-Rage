@@ -377,21 +377,28 @@ namespace _Dev.Christopher.Scripts
             StopAttackStemRoutine();
             _lightStemHeldForCombo = false;
 
+            // Release only this character's requests.
+            // Other players and global stem requests remain untouched.
             RhythmManager rhythm = RhythmManager.Instance;
 
             if (rhythm &&
                 rhythm.CurrentAudioMode == RhythmManager.AudioMode.StemSystem)
             {
-                rhythm.SetStems(
-                    (_lightAttackStemId, false),
-                    (_heavyAttackStemId, false)
-                );
+                rhythm.ReleaseAllStemsForOwner(this);
             }
         }
 
         private void OnDestroy()
         {
-            // Event subscriptions are released in OnDisable, including when destroyed.
+            // Event subscriptions are released in OnDisable.
+            // This is an additional safety release for this owner.
+            RhythmManager rhythm = RhythmManager.Instance;
+
+            if (rhythm &&
+                rhythm.CurrentAudioMode == RhythmManager.AudioMode.StemSystem)
+            {
+                rhythm.ReleaseAllStemsForOwner(this);
+            }
         }
 
         private void Start()
@@ -1100,7 +1107,7 @@ namespace _Dev.Christopher.Scripts
         }
 
         // ============================================================
-        // ATTACK STEMS
+        // ATTACK STEMS - OWNER-BASED
         // ============================================================
 
         private void ActivateAttackStem(bool heavy)
@@ -1115,15 +1122,17 @@ namespace _Dev.Christopher.Scripts
             string activeStem = heavy ? _heavyAttackStemId : _lightAttackStemId;
             string inactiveStem = heavy ? _lightAttackStemId : _heavyAttackStemId;
 
-            // Heavy attacks always use their own independent activation.
+            // Heavy attacks release this character's Light request,
+            // then activate this character's Heavy request.
+            // Requests belonging to other players are untouched.
             if (heavy)
             {
                 StopAttackStemRoutine();
 
-                rhythm.SetStems(
-                    (inactiveStem, false),
-                    (activeStem, true)
-                );
+                _lightStemHeldForCombo = false;
+
+                rhythm.SetStemForOwner(this, inactiveStem, false);
+                rhythm.SetStemForOwner(this, activeStem, true);
 
                 StartStemOffTimer(
                     rhythm,
@@ -1180,10 +1189,11 @@ namespace _Dev.Christopher.Scripts
             // First activation of the Light combo.
             StopAttackStemRoutine();
 
-            rhythm.SetStems(
-                (inactiveStem, false),
-                (activeStem, true)
-            );
+            // Release only this character's Heavy request.
+            rhythm.SetStemForOwner(this, inactiveStem, false);
+
+            // Activate only this character's Light request.
+            rhythm.SetStemForOwner(this, activeStem, true);
 
             if (holdForCombo)
             {
@@ -1283,10 +1293,13 @@ namespace _Dev.Christopher.Scripts
             if (rhythm &&
                 rhythm.CurrentAudioMode == RhythmManager.AudioMode.StemSystem)
             {
-                rhythm.SetStem(stemId, false);
+                // Release only this character's request.
+                rhythm.SetStemForOwner(this, stemId, false);
 
                 if (_debugEnabled)
-                    Debug.Log($"[AcCharacterHandler] {stemId} deactivated.", this);
+                    Debug.Log(
+                        $"[AcCharacterHandler] {stemId} request released by this character.",
+                        this);
             }
 
             _activeStemOffRoutine = null;
