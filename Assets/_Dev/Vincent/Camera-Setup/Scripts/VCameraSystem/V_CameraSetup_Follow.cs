@@ -1,6 +1,8 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
+using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
 using Unity.Cinemachine;
 using UnityEngine;
 #if UNITY_EDITOR
@@ -1740,4 +1742,3 @@ namespace SynthOfRage.Scripts.CameraSystem
         }
     }
 }
-

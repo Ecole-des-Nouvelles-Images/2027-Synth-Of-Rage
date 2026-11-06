@@ -17,7 +17,7 @@ namespace _Dev.Christopher.Scripts.SystemTest.InputBlock
 
         private void OnEnable()
         {
-            _avatar.InputController.OnAttackLightInput += AtkLCommandGenerator;
+            //_avatar.InputController.OnAttackLightInput += AtkLCommandGenerator;
         }
         private void AtkLCommandGenerator(InputAction.CallbackContext callbackContext)
         {

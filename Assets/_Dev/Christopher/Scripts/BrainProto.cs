@@ -146,6 +146,7 @@ namespace _Dev.Christopher.Scripts
             switch (_state)
             {
                 case AttackState.Chase:
+                    Debug.Log("Chase");
                     if (_agent.isStopped && !_ownsNavStop)
                     {
                         SetMovementAnimation(false); // External stun / stop owns the agent.
@@ -165,6 +166,7 @@ namespace _Dev.Christopher.Scripts
                     break;
 
                 case AttackState.WaitingForBeat:
+                    Debug.Log("WaitingForBeat");
                     if (distance > leaveRange)
                     {
                         CancelWaiting();
@@ -182,6 +184,7 @@ namespace _Dev.Christopher.Scripts
                     break;
 
                 case AttackState.Attacking:
+                    Debug.Log("Attacking");
                     // A landed first hit can start attack 02 on the next half-beat,
                     // even though the normal attack/cooldown period has not expired.
                     if (_comboQueued && now + 1e-6 >= _comboScheduledBeat &&
@@ -204,6 +207,7 @@ namespace _Dev.Christopher.Scripts
                     break;
 
                 case AttackState.Cooldown:
+                    Debug.Log("Cooldown");
                     if (now >= _cooldownFinishBeat)
                     {
                         _state = AttackState.Chase;
