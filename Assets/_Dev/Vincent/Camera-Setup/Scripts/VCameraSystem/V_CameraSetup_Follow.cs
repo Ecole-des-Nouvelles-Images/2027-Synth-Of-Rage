@@ -1742,4 +1742,3 @@ namespace SynthOfRage.Scripts.CameraSystem
         }
     }
 }
-

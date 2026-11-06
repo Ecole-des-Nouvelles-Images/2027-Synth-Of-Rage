@@ -133,8 +133,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82b09449875b5864f8d7d7e221086681, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Script.BrainProto
-  _attackRange: 1
-  _chaseResumeRange: 2
+  _attackRange: 2.5
+  _chaseResumeRange: 2.5
   _useRhythm: 1
   _enableBeatSnapping: 1
   _snapEveryBeats: 2
