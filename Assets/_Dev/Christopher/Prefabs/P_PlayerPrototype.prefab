@@ -587,6 +587,11 @@ MonoBehaviour:
   _syncDashToBeats: 1
   _dashDurationBeats: 0.5
   _dashCooldownBeats: 1
+  _dashOnBeatEveryBeats: 1
+  _dashOnBeatThresholdBeats: 0.15
+  _dashOnBeatVfx: {fileID: 0}
+  _dashOnBeatVfxOffset: {x: 0, y: 0, z: 0}
+  _dashOnBeatVfxUsePlayerRotation: 1
 --- !u!114 &5308613982395648816
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601,21 +606,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Dev.Christopher.Scripts.AcCharacterHandler
   playerCore: {fileID: 0}
   MyAnimator: {fileID: 2182655559030908427}
-  _useRhythm: 1
+  _syncIdleAnimationToBpm: 1
+  _snapIdleStartToBeat: 1
+  _idleStateFullPath: Base Layer.Idle
+  _idleAnimatorLayer: 0
+  _idleSpeedParameter: IdleSpeed
+  _idleClipFrames: 45
+  _idleClipFPS: 60
+  _idleLoopDurationBeats: 1
   _enableBeatSnapping: 1
   _snapEveryBeats: 1
-  _maxSnapDelaySeconds: 0.15
-  _snapToFirstHit: 1
-  _firstHitFrame: 10
+  _maxSnapDelayBeats: 0.05
+  _snapToSyncFrame: 1
+  _lightAttack01SyncFrame: 9
+  _lightAttack02SyncFrame: 10
+  _lightAttack03SyncFrame: 10
+  _lightAttack01HitFrame: 10
+  _lightAttack02HitFrame: 10
+  _lightAttack03HitFrame: 10
   _attackDurationBeats: 0.75
   _attackCooldownBeats: 0.25
   _comboResetBeats: 1.5
   _inputBufferBeats: 0.5
   _enableHeavyBeatSnapping: 1
-  _heavySnapEveryBeats: 1
-  _heavyMaxSnapDelaySeconds: 0.09
-  _heavySnapToFirstHit: 1
-  _heavyFirstHitFrame: 10
+  _heavySnapEveryBeats: 2
+  _heavyMaxSnapDelayBeats: 1
+  _heavySnapToSyncFrame: 1
+  _heavyAttack01SyncFrame: 10
+  _heavyAttackHitFrame: 15
   _heavyAttackDurationBeats: 2
   _heavyAttackCooldownBeats: 1
   _heavyAttackClipFrames: 120
@@ -626,11 +644,14 @@ MonoBehaviour:
   _comboInputBufferBeats: 1.5
   _thirdHitKnockbackMultiplier: 3
   _delayComboKnockback: 1
+  _onBeatDamageMultiplier: 1.5
+  _onBeatHitVfx: {fileID: 6249788508060671119, guid: a0e973f0c1fdbb549913c38f00c6f1ea, type: 3}
+  _onBeatHitVfxOffset: {x: 0, y: 0.5, z: 0}
+  _onBeatVfxUseTargetRotation: 1
   _syncAttackAnimationSpeed: 1
   _attackSpeedParameter: AttackSpeed
   _attackClipFrames: 60
   _attackClipFPS: 60
-  _fallbackBPM: 87
   _debugEnabled: 0
   _lightAttackStemId: Guitar_S
   _heavyAttackStemId: Guitar_L

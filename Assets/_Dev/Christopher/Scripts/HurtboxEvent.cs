@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using SynthOfRage.Scripts.Gameplay.Common.Modules;
@@ -71,6 +70,8 @@ namespace _Dev.Christopher.Scripts
         private bool _wasColliderEnabled;
 
         private float _enemyKnockbackMultiplier = 1f;
+        private float _currentDamageMultiplier = 1f;
+
         private int _attackStep;
         private float _comboKnockbackDelayBeats;
         private double _damageAllowedAtTime;
@@ -186,9 +187,11 @@ namespace _Dev.Christopher.Scripts
                             RhythmManager.Instance &&
                             RhythmManager.Instance.IsReady;
 
+            // RhythmManager is the only source of BPM.
+            // If it is unavailable, use the legacy second-based durations.
             double secondsPerBeat = beatMode
                 ? RhythmManager.Instance.SecondsPerBeat
-                : 60.0 / 87.0;
+                : 0.0;
 
             float knockSeconds = beatMode
                 ? (float)(_knockbackBeats * secondsPerBeat)
@@ -208,6 +211,10 @@ namespace _Dev.Christopher.Scripts
 
             if (HurtboxDamage <= 0)
                 return;
+
+            int finalDamage = Mathf.Max(
+                1,
+                Mathf.RoundToInt(HurtboxDamage * _currentDamageMultiplier));
 
             if (enemy)
             {
@@ -238,7 +245,7 @@ namespace _Dev.Christopher.Scripts
                     pending.CancelPending(transform.root);
 
                 enemy.TakeDamage(
-                    HurtboxDamage,
+                    finalDamage,
                     hitOrigin,
                     deferPush ? 0f : distance,
                     stunSeconds,
@@ -268,7 +275,9 @@ namespace _Dev.Christopher.Scripts
                 {
                     ConfirmSuccessfulHit(target);
 
-                    Log($"Enemy hit confirmed: {target.name}, damage {previousHP - enemy.Health}");
+                    Log(
+                        $"Enemy hit confirmed: {target.name}, " +
+                        $"damage {previousHP - enemy.Health}.");
                 }
             }
             else if (health)
@@ -281,7 +290,7 @@ namespace _Dev.Christopher.Scripts
                 if (beatMode)
                 {
                     health.ReceiveHitBeats(
-                        HurtboxDamage,
+                        finalDamage,
                         hitOrigin,
                         PlayerKnockback,
                         _knockbackBeats,
@@ -295,7 +304,7 @@ namespace _Dev.Christopher.Scripts
                 else
                 {
                     health.ReceiveHit(
-                        HurtboxDamage,
+                        finalDamage,
                         hitOrigin,
                         PlayerKnockback,
                         knockSeconds,
@@ -311,7 +320,9 @@ namespace _Dev.Christopher.Scripts
                 {
                     ConfirmSuccessfulHit(target);
 
-                    Log($"Player hit confirmed: {target.name}, remaining HP {health.HP}");
+                    Log(
+                        $"Player hit confirmed: {target.name}, " +
+                        $"remaining HP {health.HP}.");
                 }
             }
         }
@@ -334,12 +345,17 @@ namespace _Dev.Christopher.Scripts
         /// The Animator remains the only owner of its enabled keyframes.
         /// A brief damage gate avoids carrying a previous attack window into the next clip.
         /// </summary>
-        public void PrepareAttackStep(float enemyKnockbackMultiplier, float firstHitDelaySeconds)
+        public void PrepareAttackStep(
+            float enemyKnockbackMultiplier,
+            float firstHitDelaySeconds)
         {
             Initialize();
 
             _enemyKnockbackMultiplier = Mathf.Max(0f, enemyKnockbackMultiplier);
-            _damageAllowedAtTime = Time.timeAsDouble + Mathf.Max(0f, firstHitDelaySeconds);
+            _currentDamageMultiplier = 1f;
+
+            _damageAllowedAtTime =
+                Time.timeAsDouble + Mathf.Max(0f, firstHitDelaySeconds);
 
             _hitTargets.Clear();
             _attackStep = 0;
@@ -360,10 +376,39 @@ namespace _Dev.Christopher.Scripts
             int attackStep,
             float knockbackDelayBeats)
         {
-            PrepareAttackStep(enemyKnockbackMultiplier, firstHitDelaySeconds);
+            PrepareAttackStep(
+                enemyKnockbackMultiplier,
+                firstHitDelaySeconds);
 
             _attackStep = attackStep;
             _comboKnockbackDelayBeats = Mathf.Max(0f, knockbackDelayBeats);
+        }
+
+        /// <summary>
+        /// Prepares an attack with an optional On-Beat damage reward.
+        /// The damage multiplier is independent from the enemy knockback multiplier.
+        /// </summary>
+        public void PrepareAttackStep(
+            float enemyKnockbackMultiplier,
+            float firstHitDelaySeconds,
+            int attackStep,
+            float knockbackDelayBeats,
+            float damageMultiplier)
+        {
+            PrepareAttackStep(
+                enemyKnockbackMultiplier,
+                firstHitDelaySeconds,
+                attackStep,
+                knockbackDelayBeats);
+
+            _currentDamageMultiplier = Mathf.Max(1f, damageMultiplier);
+
+            if (_debugEnabled && _currentDamageMultiplier > 1f)
+            {
+                Log(
+                    $"On-Beat damage reward prepared: " +
+                    $"x{_currentDamageMultiplier:F2}.");
+            }
         }
 
         /// <summary>
@@ -386,6 +431,7 @@ namespace _Dev.Christopher.Scripts
             }
 
             _attackInProgress = false;
+            _currentDamageMultiplier = 1f;
         }
 
         /// <summary>
@@ -411,7 +457,8 @@ namespace _Dev.Christopher.Scripts
             if (validClips.Count == 0)
                 return;
 
-            AudioClip selectedClip = validClips[UnityEngine.Random.Range(0, validClips.Count)];
+            AudioClip selectedClip =
+                validClips[UnityEngine.Random.Range(0, validClips.Count)];
 
             _audioSource.PlayOneShot(selectedClip, Mathf.Clamp01(volume));
         }
