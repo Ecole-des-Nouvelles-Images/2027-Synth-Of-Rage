@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: MT_Undergrounds_Roads
+  m_Shader: {fileID: 4800000, guid: ea5b715a42e3d044bbf264fde10e6634, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _HALFTONE_WORLD_SPACE
+  m_InvalidKeywords:
+  - _STEPPATTERNINVERT_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BaseMap:
+        m_Texture: {fileID: 2800000, guid: d827ce1ae020dc74cb6109625352c7e5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 6b48b0e736d719d458538869b539475f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _StepPattern:
+        m_Texture: {fileID: 2800000, guid: 5aed56393881c914394e84222bf77be7, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _AdditionalLightStrength: 3
+    - _AmbientStrength: 2
+    - _DirectLightStrength: 3
+    - _HalftoneAngle: 127
+    - _HalftoneLevels: 8
+    - _HalftoneMaxRadius: 0.543
+    - _HalftoneMinRadius: 0
+    - _HalftoneSize: 2
+    - _HalftoneStrength: 0.438
+    - _HalftoneWorldProjectionBlend: 16
+    - _HalftoneWorldScale: 2
+    - _HalftoneWorldSpace: 1
+    - _LightBands: 32
+    - _LightBias: 0
+    - _NormalStrength: 2
+    - _PosterizeSteps: 21.7
+    - _PosterizeStrength: 0.356
+    - _ReceiveShadowStrength: 1
+    - _RimPatternStrength: 0.1
+    - _RimPower: 0.1
+    - _RimStrength: 0
+    - _RimThreshold: 0.5
+    - _SpecularPower: 1
+    - _SpecularStrength: 0
+    - _SpecularThreshold: 0
+    - _StepPatternContrast: 8
+    - _StepPatternInvert: 1
+    - _StepPatternProjectionBlend: 16
+    - _StepPatternStrength: 0.1
+    - _StepPatternWorldScale: 0.03
+    - _UseStepPattern: 0
+    m_Colors:
+    - _BaseColor: {r: 0.3773585, g: 0.3773585, b: 0.3773585, a: 1}
+    - _HalftoneColor: {r: 0, g: 0, b: 0, a: 1}
+    - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _RimColor: {r: 0, g: 0.050694704, b: 1, a: 1}
+    - _ShadowColor: {r: 0.5849056, g: 0.5849056, b: 0.5849056, a: 1}
+    - _SpecularColor: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    - _StepPatternWorldOffset: {r: 0, g: 0, b: 0, a: 0}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

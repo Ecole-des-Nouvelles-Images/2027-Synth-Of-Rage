@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.Serialization;
 using SynthOfRage.Scripts.Gameplay.Common.Modules;
@@ -471,6 +472,78 @@ namespace SynthOfRage.Scripts.Gameplay.Unit.Player
         // =========================================================
         // MOVEMENT
         // =========================================================
+
+        /// <summary>
+        /// Immediately cancels all active movement.
+        ///
+        /// This method is intended for external systems such as
+        /// FallingPlayerTrigger that need to stop the player before
+        /// disabling PlayerMovement and CharacterController.
+        ///
+        /// Dash cooldowns and movement configuration are preserved.
+        /// </summary>
+        public void CancelMovementImmediately()
+        {
+            // --------------------------------------------------------
+            // MOVEMENT INPUT
+            // --------------------------------------------------------
+
+            _moveInput = Vector2.zero;
+
+            // --------------------------------------------------------
+            // JUMP
+            // --------------------------------------------------------
+
+            _isJumping = false;
+            _jumpTimer = 0f;
+            _previousJumpHeight = 0f;
+            _verticalVelocity = 0f;
+
+            // --------------------------------------------------------
+            // DASH
+            // --------------------------------------------------------
+
+            _isDashing = false;
+            _dashDirection = Vector3.zero;
+            _dashTimer = 0f;
+            _dashPreviousProgress = 0f;
+            _dashUsingRhythm = false;
+            _dashActiveDurationSeconds = 0f;
+
+            // --------------------------------------------------------
+            // ELEVATOR
+            // --------------------------------------------------------
+
+            _isElevatorTransportActive = false;
+
+            // --------------------------------------------------------
+            // MOVEMENT SPACE
+            // --------------------------------------------------------
+
+            ClearMovementSpaceBlend();
+
+            _movementSpaceRotationVelocity = 0f;
+
+            // --------------------------------------------------------
+            // ANIMATOR
+            // --------------------------------------------------------
+
+            if (_animator)
+            {
+                _animator.SetBool(Move, false);
+                _animator.SetBool(IsJumping, false);
+                _animator.SetBool(IsDashing, false);
+
+                SetAnimatorVerticalVelocity(0f);
+            }
+
+            if (_debugEnabled)
+            {
+                UnityEngine.Debug.Log(
+                    "[PlayerMovement] All movement immediately cancelled.",
+                    this);
+            }
+        }
 
         private void HandleStunChanged(bool stunned)
         {

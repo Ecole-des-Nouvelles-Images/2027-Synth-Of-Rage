@@ -285,6 +285,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Sprite3DOutlineToggle
   useOutline: 0
+  affectOtherOutlines: 1
+  targetRenderer: {fileID: 8592611151959225744}
 --- !u!212 &8592611151959225744
 SpriteRenderer:
   serializedVersion: 3
@@ -536,14 +538,23 @@ MonoBehaviour:
       inWeight: 0
       outWeight: 0
     - serializedVersion: 3
-      time: 0.5
-      value: 1
+      time: 0.18777466
+      value: 0.98666763
       inSlope: 0
       outSlope: 0
       tangentMode: 0
       weightedMode: 0
       inWeight: 0.33333334
       outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.78142995
+      value: 0.95522225
+      inSlope: -0.038987722
+      outSlope: -0.038987722
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.6164423
     - serializedVersion: 3
       time: 1
       value: 0
@@ -557,7 +568,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   _jumpDurationMultiplier: 1
-  _dashDistance: 5.5
+  _dashDistance: 7.5
   _dashDuration: 0.1
   _dashCooldown: 0
   _dashCurve:

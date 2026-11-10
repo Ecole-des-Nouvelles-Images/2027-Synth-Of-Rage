@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: FX_Waterfall Interactive
+  m_Shader: {fileID: 4800000, guid: 8aefbc93d5fbe6f4082dde0df8c5ed38, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _HALFTONE_WORLD_SPACE
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _ReflectionTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 128, y: 128}
+        m_Offset: {x: 1.89, y: 0}
+    - _SideNoiseTex:
+        m_Texture: {fileID: 2800000, guid: 0850fc4ed12def14f99573a37434625d, type: 3}
+        m_Scale: {x: 128, y: 128}
+        m_Offset: {x: 0, y: 0}
+    - _TopNoiseTex:
+        m_Texture: {fileID: 2800000, guid: 95441e7a649a93541a9f4bb2189c85db, type: 3}
+        m_Scale: {x: 128, y: 128}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _Amount: 10
+    - _BottomFoamNoise: 0.5
+    - _BottomFoamScale: 10
+    - _BottomFoamSpeed: 5
+    - _BottomFoamStrength: 2
+    - _BottomFoamWidth: 0.5
+    - _Brightness: 2
+    - _DepthOffset: 3.6
+    - _EdgeWidth: 0.5
+    - _Foam: 1
+    - _HalftoneAngle: 69
+    - _HalftoneLevels: 8
+    - _HalftoneMaxRadius: 0.46
+    - _HalftoneMinRadius: 0.7
+    - _HalftoneSize: 64
+    - _HalftoneStrength: 0.313
+    - _HalftoneWorldProjectionBlend: 16
+    - _HalftoneWorldScale: 2.5
+    - _HalftoneWorldSpace: 1
+    - _Height: 0.15
+    - _HorSpeed: 0.14
+    - _NoiseScale: 0.038
+    - _Opacity: 0.8
+    - _Reflectivity: 0
+    - _RimPower: 2.5
+    - _Softness: 0.45
+    - _SpeedV: 10
+    - _Stretch: 0.1
+    - _TopScale: 0.175
+    - _TopSpread: -0.45
+    - _VERTEX: 0
+    - _VertSpeed: 6.8
+    - _VertexFlow: 0
+    - _WaterWaveDetail: 2
+    - _WaterWaveScale: 150
+    - _WaterWaveSpeed: 0
+    - _WaterWaveStrength: 0
+    - _WaterfallJoinWidth: 0.5
+    - _WaveDetail: 1
+    - _WaveScale: 0.1
+    - _WaveSpeed: 2
+    - _WaveStrength: 0.5
+    m_Colors:
+    - _DeepEmissionColor: {r: 0.023020204, g: 0.0754717, b: 0, a: 1}
+    - _EdgeEmissionColor: {r: 0.095560536, g: 0.38679248, b: 0, a: 1}
+    - _FoamColor: {r: 0, g: 1, b: 0.35566992, a: 1}
+    - _FoamEmissionColor: {r: 0.15329325, g: 0.46226418, b: 0.102483094, a: 1}
+    - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
+    - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _RimColor: {r: 0.25, g: 1, b: 0.40679097, a: 1}
+    - _TColor: {r: 0.47368717, g: 1, b: 0.10849059, a: 1}
+    - _WaterColor: {r: 0.1678322, g: 1, b: 0, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -18,9 +19,7 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
             [Tooltip(
                 "Only Sprite3D objects on these layers are included."
             )]
-            public LayerMask layerMask =
-                ~0;
-
+            public LayerMask layerMask = ~0;
 
             [Tooltip(
                 "Must execute BEFORE transparent Sprite3D rendering."
@@ -29,13 +28,9 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 RenderPassEvent.BeforeRenderingTransparents;
         }
 
-
-        public Settings settings =
-            new Settings();
-
+        public Settings settings = new Settings();
 
         private Sprite3DDepthPass pass;
-
 
         // ================================================================
         // CREATE
@@ -43,16 +38,13 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
 
         public override void Create()
         {
-            pass =
-                new Sprite3DDepthPass(
-                    settings.layerMask
-                );
-
+            pass = new Sprite3DDepthPass(
+                settings.layerMask
+            );
 
             pass.renderPassEvent =
                 settings.injectionPoint;
         }
-
 
         // ================================================================
         // ADD RENDER PASSES
@@ -60,40 +52,27 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
 
         public override void AddRenderPasses(
             ScriptableRenderer renderer,
-
             ref RenderingData renderingData
         )
         {
-            if(
-                pass ==
-                null
-            )
-            {
+            if (pass == null)
                 return;
-            }
-
 
             pass.SetLayerMask(
                 settings.layerMask
             );
 
-
             pass.renderPassEvent =
                 settings.injectionPoint;
 
-
-            renderer.EnqueuePass(
-                pass
-            );
+            renderer.EnqueuePass(pass);
         }
-
 
         // ================================================================
         // PASS
         // ================================================================
 
-        private class Sprite3DDepthPass :
-            ScriptableRenderPass
+        private class Sprite3DDepthPass : ScriptableRenderPass
         {
             // ============================================================
             // TAGS
@@ -104,12 +83,15 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                     "SpriteSceneDepth"
                 );
 
-
             private static readonly ShaderTagId OutlineDepthShaderTag =
                 new ShaderTagId(
                     "SpriteOutlineDepth"
                 );
 
+            private static readonly ShaderTagId OutlineOccluderDepthShaderTag =
+                new ShaderTagId(
+                    "SpriteOutlineOccluderDepth"
+                );
 
             // ============================================================
             // GLOBAL TEXTURES
@@ -120,15 +102,17 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                     "_Sprite3DSceneDepthTexture"
                 );
 
-
             private static readonly int OutlineDepthTextureID =
                 Shader.PropertyToID(
                     "_Sprite3DDepthTexture"
                 );
 
+            private static readonly int OutlineOccluderDepthTextureID =
+                Shader.PropertyToID(
+                    "_Sprite3DOutlineOccluderDepthTexture"
+                );
 
             private LayerMask layerMask;
-
 
             // ============================================================
             // PASS DATA
@@ -141,7 +125,6 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 public float clearValue;
             }
 
-
             // ============================================================
             // CONSTRUCTOR
             // ============================================================
@@ -150,10 +133,8 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 LayerMask layerMask
             )
             {
-                this.layerMask =
-                    layerMask;
+                this.layerMask = layerMask;
             }
-
 
             // ============================================================
             // LAYER
@@ -163,10 +144,8 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 LayerMask newLayerMask
             )
             {
-                layerMask =
-                    newLayerMask;
+                layerMask = newLayerMask;
             }
-
 
             // ============================================================
             // RECORD GRAPH
@@ -174,21 +153,17 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
 
             public override void RecordRenderGraph(
                 RenderGraph renderGraph,
-
                 ContextContainer frameData
             )
             {
                 UniversalRenderingData renderingData =
                     frameData.Get<UniversalRenderingData>();
 
-
                 UniversalCameraData cameraData =
                     frameData.Get<UniversalCameraData>();
 
-
                 UniversalLightData lightData =
                     frameData.Get<UniversalLightData>();
-
 
                 // ========================================================
                 // BASE DESCRIPTOR
@@ -197,145 +172,164 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 RenderTextureDescriptor baseDescriptor =
                     cameraData.cameraTargetDescriptor;
 
-
-                baseDescriptor.msaaSamples =
-                    1;
-
-
-                baseDescriptor.depthBufferBits =
-                    0;
-
+                baseDescriptor.msaaSamples = 1;
+                baseDescriptor.depthBufferBits = 0;
 
                 // ========================================================
                 // SCENE DEPTH TEXTURE
                 // ========================================================
                 //
-                // IMPORTANT :
-                //
                 // R32 FLOAT.
                 //
-                // On stocke directement :
-                //
-                // linear eye depth en mètres.
-                //
-                // Ça évite :
-                //
-                // - quantification R16
-                // - normalize / denormalize
-                // - bandes / holes / faux alpha
+                // Stocke directement la profondeur linéaire en unités
+                // Unity pour le tri des Sprite3D.
                 // ========================================================
 
                 RenderTextureDescriptor sceneDepthDescriptor =
                     baseDescriptor;
 
-
                 sceneDepthDescriptor.graphicsFormat =
                     GraphicsFormat.R32_SFloat;
-
 
                 TextureHandle sceneDepthTexture =
                     UniversalRenderer.CreateRenderGraphTexture(
                         renderGraph,
-
                         sceneDepthDescriptor,
-
                         "_Sprite3DSceneDepthTexture",
-
                         false,
-
                         FilterMode.Point,
-
                         TextureWrapMode.Clamp
                     );
-
 
                 // ========================================================
                 // OUTLINE DEPTH TEXTURE
                 // ========================================================
                 //
-                // Celle-ci reste normalisée 0-1 car notre fullscreen
-                // outline actuel attend ce format.
+                // R16 FLOAT.
+                //
+                // Cette texture reste normalisée 0-1 car le shader
+                // Outline existant attend ce format.
                 // ========================================================
 
                 RenderTextureDescriptor outlineDepthDescriptor =
                     baseDescriptor;
 
-
                 outlineDepthDescriptor.graphicsFormat =
                     GraphicsFormat.R16_SFloat;
-
 
                 TextureHandle outlineDepthTexture =
                     UniversalRenderer.CreateRenderGraphTexture(
                         renderGraph,
-
                         outlineDepthDescriptor,
-
                         "_Sprite3DDepthTexture",
-
                         false,
-
                         FilterMode.Point,
-
                         TextureWrapMode.Clamp
                     );
 
+                // ========================================================
+                // OUTLINE OCCLUDER DEPTH TEXTURE
+                // ========================================================
+                //
+                // R32 FLOAT.
+                //
+                // Stocke la profondeur linéaire des Sprite3D autorisés
+                // à masquer les outlines situés derrière eux.
+                //
+                // Cette texture est indépendante de la texture
+                // Sprite3DDepthTexture utilisée pour générer les
+                // outlines des sprites.
+                // ========================================================
+
+                RenderTextureDescriptor outlineOccluderDescriptor =
+                    baseDescriptor;
+
+                outlineOccluderDescriptor.graphicsFormat =
+                    GraphicsFormat.R32_SFloat;
+
+                TextureHandle outlineOccluderDepthTexture =
+                    UniversalRenderer.CreateRenderGraphTexture(
+                        renderGraph,
+                        outlineOccluderDescriptor,
+                        "_Sprite3DOutlineOccluderDepthTexture",
+                        false,
+                        FilterMode.Point,
+                        TextureWrapMode.Clamp
+                    );
+
+                // ========================================================
+                // CLEAR VALUES
+                // ========================================================
+
+                float sceneDepthClearValue =
+                    cameraData.camera.farClipPlane + 1.0f;
+
+                float outlineOccluderClearValue =
+                    cameraData.camera.farClipPlane + 1.0f;
 
                 // ========================================================
                 // ALL SPRITE3D SCENE DEPTH
                 // ========================================================
 
-                float sceneDepthClearValue =
-                    cameraData.camera.farClipPlane +
-                    1.0f;
-
-
                 RecordDepthPass(
                     renderGraph,
-
                     renderingData,
-
                     cameraData,
-
                     lightData,
-
                     SceneDepthShaderTag,
-
                     sceneDepthTexture,
-
                     SceneDepthTextureID,
-
                     "Sprite3D Scene Depth",
-
                     sceneDepthClearValue
                 );
-
 
                 // ========================================================
                 // OUTLINE-ENABLED SPRITE3D DEPTH
                 // ========================================================
+                //
+                // Seuls les Sprite3D ayant _SpriteOutlineEnabled = 1
+                // participent à cette texture.
+                // ========================================================
 
                 RecordDepthPass(
                     renderGraph,
-
                     renderingData,
-
                     cameraData,
-
                     lightData,
-
                     OutlineDepthShaderTag,
-
                     outlineDepthTexture,
-
                     OutlineDepthTextureID,
-
                     "Sprite3D Outline Depth",
-
                     1.0f
                 );
-            }
 
+                // ========================================================
+                // SPRITE3D OUTLINE OCCLUDER DEPTH
+                // ========================================================
+                //
+                // Indépendant de l'activation de leur propre outline.
+                //
+                // Les Sprite3D ayant :
+                //
+                // _SpriteOutlineOcclusionEnabled = 1
+                //
+                // peuvent masquer les outlines situés derrière eux.
+                //
+                // Le shader applique également le seuil alpha configuré.
+                // ========================================================
+
+                RecordDepthPass(
+                    renderGraph,
+                    renderingData,
+                    cameraData,
+                    lightData,
+                    OutlineOccluderDepthShaderTag,
+                    outlineOccluderDepthTexture,
+                    OutlineOccluderDepthTextureID,
+                    "Sprite3D Outline Occluder Depth",
+                    outlineOccluderClearValue
+                );
+            }
 
             // ================================================================
             // RECORD DEPTH PASS
@@ -343,21 +337,13 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
 
             private void RecordDepthPass(
                 RenderGraph renderGraph,
-
                 UniversalRenderingData renderingData,
-
                 UniversalCameraData cameraData,
-
                 UniversalLightData lightData,
-
                 ShaderTagId shaderTag,
-
                 TextureHandle targetTexture,
-
                 int globalTextureID,
-
                 string passName,
-
                 float clearValue
             )
             {
@@ -368,7 +354,6 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 SortingCriteria sortingCriteria =
                     SortingCriteria.CommonTransparent;
 
-
                 // ========================================================
                 // DRAW SETTINGS
                 // ========================================================
@@ -376,16 +361,11 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 DrawingSettings drawingSettings =
                     RenderingUtils.CreateDrawingSettings(
                         shaderTag,
-
                         renderingData,
-
                         cameraData,
-
                         lightData,
-
                         sortingCriteria
                     );
-
 
                 // ========================================================
                 // FILTER
@@ -394,10 +374,8 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 FilteringSettings filteringSettings =
                     new FilteringSettings(
                         RenderQueueRange.transparent,
-
                         layerMask
                     );
-
 
                 // ========================================================
                 // RENDERER LIST
@@ -406,22 +384,18 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 RendererListParams rendererListParams =
                     new RendererListParams(
                         renderingData.cullResults,
-
                         drawingSettings,
-
                         filteringSettings
                     );
-
 
                 // ========================================================
                 // RENDER GRAPH PASS
                 // ========================================================
 
-                using(
+                using (
                     var builder =
                     renderGraph.AddRasterRenderPass<PassData>(
                         passName,
-
                         out var passData
                     )
                 )
@@ -431,41 +405,29 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                             rendererListParams
                         );
 
-
                     passData.clearValue =
                         clearValue;
-
 
                     builder.UseRendererList(
                         passData.rendererList
                     );
 
-
                     builder.SetRenderAttachment(
                         targetTexture,
-
                         0,
-
                         AccessFlags.Write
                     );
 
-
                     builder.SetGlobalTextureAfterPass(
                         targetTexture,
-
                         globalTextureID
                     );
 
-
-                    builder.AllowPassCulling(
-                        false
-                    );
-
+                    builder.AllowPassCulling(false);
 
                     builder.SetRenderFunc(
-                        static(
+                        static (
                             PassData data,
-
                             RasterGraphContext context
                         ) =>
                         {
@@ -476,23 +438,16 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                             Color clearColor =
                                 new Color(
                                     data.clearValue,
-
                                     0.0f,
-
                                     0.0f,
-
                                     1.0f
                                 );
 
-
                             context.cmd.ClearRenderTarget(
                                 false,
-
                                 true,
-
                                 clearColor
                             );
-
 
                             // =============================================
                             // DRAW

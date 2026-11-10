@@ -1,221 +1,115 @@
+
 using UnityEngine;
 
-namespace _Dev.Vincent.ToonShaders
+[DisallowMultipleComponent]
+[RequireComponent(typeof(Renderer))]
+public class Sprite3DOutlineToggle : MonoBehaviour
 {
-    [ExecuteAlways]
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(Renderer))]
-    public class Sprite3DOutlineToggle : MonoBehaviour
+    private static readonly int OutlineEnabledID =
+        Shader.PropertyToID("_SpriteOutlineEnabled");
+
+    private static readonly int OutlineOcclusionEnabledID =
+        Shader.PropertyToID("_SpriteOutlineOcclusionEnabled");
+
+    [Header("Outline")]
+    [SerializeField]
+    private bool useOutline = true;
+
+    [SerializeField]
+    private bool affectOtherOutlines = true;
+
+    [Header("Renderer")]
+    [SerializeField]
+    private Renderer targetRenderer;
+
+    private MaterialPropertyBlock propertyBlock;
+
+    public bool UseOutline => useOutline;
+    public bool AffectOtherOutlines => affectOtherOutlines;
+
+    private void Awake()
     {
-        // ================================================================
-        // SHADER PROPERTY
-        // ================================================================
+        Initialize();
+        RefreshOutline();
+    }
 
-        private static readonly int SpriteOutlineEnabledID =
-            Shader.PropertyToID("_SpriteOutlineEnabled");
+    private void OnEnable()
+    {
+        Initialize();
+        RefreshOutline();
+    }
 
+    private void OnValidate()
+    {
+        if (targetRenderer == null)
+            targetRenderer = GetComponent<Renderer>();
 
-        // ================================================================
-        // SETTINGS
-        // ================================================================
-
-        [Header("Sprite 3D Outline")]
-
-        [SerializeField]
-        private bool useOutline = true;
-
-
-        // ================================================================
-        // REFERENCES
-        // ================================================================
-
-        private Renderer targetRenderer;
-
-        private MaterialPropertyBlock propertyBlock;
-
-
-        // ================================================================
-        // PUBLIC PROPERTY
-        // ================================================================
-
-        public bool UseOutline
+        if (!Application.isPlaying)
         {
-            get
-            {
-                return useOutline;
-            }
-
-            set
-            {
-                if (useOutline == value)
-                    return;
-
-                useOutline = value;
-
-                ApplyOutlineState();
-            }
+            Initialize();
+            RefreshOutline();
         }
+    }
 
+    private void Reset()
+    {
+        targetRenderer = GetComponent<Renderer>();
+    }
 
-        // ================================================================
-        // UNITY
-        // ================================================================
+    private void Initialize()
+    {
+        if (targetRenderer == null)
+            targetRenderer = GetComponent<Renderer>();
 
-        private void Awake()
-        {
-            CacheReferences();
+        if (propertyBlock == null)
+            propertyBlock = new MaterialPropertyBlock();
+    }
 
-            ApplyOutlineState();
-        }
+    public void SetOutlineEnabled(bool enabled)
+    {
+        useOutline = enabled;
+        RefreshOutline();
+    }
 
+    public void EnableOutline() => SetOutlineEnabled(true);
+    public void DisableOutline() => SetOutlineEnabled(false);
+    public void ToggleOutline() => SetOutlineEnabled(!useOutline);
 
-        private void OnEnable()
-        {
-            CacheReferences();
+    public void SetAffectOtherOutlines(bool enabled)
+    {
+        affectOtherOutlines = enabled;
+        RefreshOutline();
+    }
 
-            ApplyOutlineState();
-        }
+    public void EnableOtherOutlinesOcclusion() =>
+        SetAffectOtherOutlines(true);
 
+    public void DisableOtherOutlinesOcclusion() =>
+        SetAffectOtherOutlines(false);
 
-        private void Reset()
-        {
-            CacheReferences();
+    public void ToggleOtherOutlinesOcclusion() =>
+        SetAffectOtherOutlines(!affectOtherOutlines);
 
-            useOutline = true;
+    public void RefreshOutline()
+    {
+        if (targetRenderer == null)
+            return;
 
-            ApplyOutlineState();
-        }
+        Initialize();
 
+        // Preserve existing properties set by other systems.
+        targetRenderer.GetPropertyBlock(propertyBlock);
 
-        private void OnValidate()
-        {
-            CacheReferences();
+        propertyBlock.SetFloat(
+            OutlineEnabledID,
+            useOutline ? 1f : 0f
+        );
 
-            ApplyOutlineState();
-        }
+        propertyBlock.SetFloat(
+            OutlineOcclusionEnabledID,
+            affectOtherOutlines ? 1f : 0f
+        );
 
-
-        // ================================================================
-        // CACHE
-        // ================================================================
-
-        private void CacheReferences()
-        {
-            if (targetRenderer == null)
-            {
-                targetRenderer =
-                    GetComponent<Renderer>();
-            }
-
-
-            if (propertyBlock == null)
-            {
-                propertyBlock =
-                    new MaterialPropertyBlock();
-            }
-        }
-
-
-        // ================================================================
-        // APPLY
-        // ================================================================
-
-        private void ApplyOutlineState()
-        {
-            if (targetRenderer == null)
-                return;
-
-
-            if (propertyBlock == null)
-            {
-                propertyBlock =
-                    new MaterialPropertyBlock();
-            }
-
-
-            // ------------------------------------------------------------
-            // Récupère les autres propriétés déjà présentes.
-            // ------------------------------------------------------------
-            //
-            // Important pour ne pas écraser d'autres MaterialPropertyBlock
-            // utilisés sur le même Renderer.
-            // ------------------------------------------------------------
-
-            targetRenderer.GetPropertyBlock(
-                propertyBlock
-            );
-
-
-            // ------------------------------------------------------------
-            // OUTLINE TOGGLE
-            // ------------------------------------------------------------
-
-            propertyBlock.SetFloat(
-                SpriteOutlineEnabledID,
-
-                useOutline
-                    ? 1.0f
-                    : 0.0f
-            );
-
-
-            // ------------------------------------------------------------
-            // APPLY
-            // ------------------------------------------------------------
-
-            targetRenderer.SetPropertyBlock(
-                propertyBlock
-            );
-        }
-
-
-        // ================================================================
-        // PUBLIC API
-        // ================================================================
-
-        public void SetOutlineEnabled(
-            bool enabled
-        )
-        {
-            UseOutline =
-                enabled;
-        }
-
-
-        public void EnableOutline()
-        {
-            UseOutline =
-                true;
-        }
-
-
-        public void DisableOutline()
-        {
-            UseOutline =
-                false;
-        }
-
-
-        public void ToggleOutline()
-        {
-            UseOutline =
-                !UseOutline;
-        }
-
-
-        // ================================================================
-        // FORCE REFRESH
-        // ================================================================
-        //
-        // Utile si un autre script modifie le MaterialPropertyBlock
-        // et que tu veux réappliquer l'état de l'outline.
-        // ================================================================
-
-        public void RefreshOutline()
-        {
-            CacheReferences();
-
-            ApplyOutlineState();
-        }
+        targetRenderer.SetPropertyBlock(propertyBlock);
     }
 }

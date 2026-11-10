@@ -1,3 +1,4 @@
+
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -8,9 +9,11 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
     /// <summary>
     /// Trigger d'ascenseur :
     /// 1) La détection des joueurs actifs est effectuée via PlayerManager.
-    /// 2) Quand TOUS les joueurs actifs sont à l'intérieur, un délai optionnel
-    ///    s'écoule (annulé si quelqu'un sort), puis l'animation de l'ascenseur
-    ///    et les événements sont déclenchés.
+    /// 2) Selon le Detection Mode :
+    ///    - AllPlayersInside : attend que tous les joueurs actifs soient dedans.
+    ///    - FirstPlayerEnters : déclenche dès qu'au moins un joueur actif entre.
+    ///    Un délai optionnel s'écoule (annulé si la condition n'est plus remplie),
+    ///    puis l'animation de l'ascenseur et les événements sont déclenchés.
     /// 3) Au début du déplacement (Animation Event B), chaque joueur présent
     ///    est transporté avec le déplacement de la cabine via son CharacterController.
     /// 4) À l'arrivée (Animation Event C), le transport est arrêté.
@@ -19,61 +22,90 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
     [RequireComponent(typeof(Collider))]
     public class AllPlayersTrigger : MonoBehaviour
     {
+        public enum DetectionMode
+        {
+            [InspectorName("All Players Inside")]
+            AllPlayersInside,
+
+            [InspectorName("First Player Enters")]
+            FirstPlayerEnters
+        }
+
         [Header("References")]
         [SerializeField] private PlayerManager playerManager;
         [SerializeField] private Collider triggerVolume;
 
         [Header("Detection")]
+        [Tooltip("All Players Inside : attend tous les joueurs actifs. First Player Enters : déclenche dès qu'un joueur actif entre.")]
+        [SerializeField] private DetectionMode detectionMode = DetectionMode.AllPlayersInside;
+
         [Tooltip("Optionnel : offset local appliqué à la position racine de chaque joueur pour le test d'appartenance.")]
         [SerializeField] private Transform detectionPointOverride;
+
         [Min(0f)]
         [SerializeField] private float refreshInterval = 0.05f;
+
         [Min(0f)]
         [SerializeField] private float boundsTolerance = 0.02f;
 
         [Header("Activation Delay")]
-        [Tooltip("Délai (secondes) entre 'tout le monde à l'intérieur' et le déclenchement de l'animation. Le délai est annulé si un joueur ressort pendant l'attente. 0 = déclenchement immédiat.")]
+        [Tooltip("Délai (secondes) entre la condition remplie et le déclenchement. Le délai est annulé si la condition n'est plus remplie. 0 = immédiat.")]
         [Min(0f)]
         [SerializeField] private float activationDelay = 1f;
+
         [Tooltip("Si coché, le délai ignore Time.timeScale (temps réel). Sinon il suit le temps du gameplay.")]
         [SerializeField] private bool delayIgnoresTimeScale;
 
         [Header("Carry (Ascenseur / Plateforme mouvante)")]
         [Tooltip("Si coché, chaque joueur présent au début du déplacement est transporté avec la cabine.")]
         [SerializeField] private bool carryPlayersWhileInside = true;
+
         [Tooltip("Transform animé de la cabine. Si vide, le transform de ce GameObject est utilisé.")]
         [SerializeField] private Transform playerCarryTarget;
+
         [Tooltip("Arrête le transport d'un joueur quand il sort du trigger.")]
         [SerializeField] private bool stopCarryingOnExit = true;
 
         [Header("Behaviour")]
         [SerializeField] private bool repeatWhileAllInside;
+
         [Min(0.05f)]
         [SerializeField] private float repeatInterval = 1f;
 
         [Header("Animation (optional)")]
         [SerializeField] private Animator targetAnimator;
-        [Tooltip("Animator Trigger déclenché après le délai, quand tous les joueurs actifs sont dedans.")]
+
+        [Tooltip("Animator Trigger déclenché après le délai, quand la condition du Detection Mode est remplie.")]
         [SerializeField] private string animatorTriggerName = "AllPlayersInside";
-        [Tooltip("Optionnel : Animator Bool vrai tant que tous les joueurs actifs sont dedans (sans délai).")]
+
+        [Tooltip("Optionnel : Animator Bool vrai tant que la condition du Detection Mode est remplie (sans délai).")]
         [SerializeField] private string animatorBoolName = "";
 
         [Header("Events")]
-        [Tooltip("Déclenché après le délai d'activation (avec l'Animator Trigger).")]
+        [Tooltip("Déclenché après le délai d'activation (avec l'Animator Trigger), lorsque la condition du Detection Mode est remplie.")]
         [SerializeField] private UnityEvent onAllPlayersInside;
-        [Tooltip("Déclenché quand les joueurs ne sont plus tous à l'intérieur (annule aussi le délai en cours).")]
+
+        [Tooltip("Déclenché quand la condition du Detection Mode n'est plus remplie (annule aussi le délai en cours).")]
         [SerializeField] private UnityEvent onNotAllPlayersInside;
+
         [SerializeField] private UnityEvent<int, int> onOccupancyChanged;
 
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs;
         [SerializeField] private bool drawGizmos = true;
+
         [SerializeField] private Color gizmoWaitingColor = new Color(0.1f, 0.9f, 1f, 0.9f);
         [SerializeField] private Color gizmoPendingColor = new Color(1f, 0.85f, 0.2f, 0.9f);
         [SerializeField] private Color gizmoReadyColor = new Color(0.2f, 1f, 0.25f, 0.9f);
 
+        // Liste fournie par PlayerManager.
         private readonly List<PlayerMovement> _activePlayers = new List<PlayerMovement>();
-        private readonly HashSet<EntityId> _insidePlayerIds = new HashSet<EntityId>();
+
+        // Liste des joueurs réellement actifs et valides.
+        private readonly List<PlayerMovement> _validPlayers = new List<PlayerMovement>();
+
+        // Présence détectée directement par référence de PlayerMovement.
+        private readonly HashSet<PlayerMovement> _insidePlayers = new HashSet<PlayerMovement>();
 
         // Joueurs actuellement transportés par la cabine.
         private readonly HashSet<PlayerMovement> _carriedPlayers =
@@ -96,32 +128,40 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
         private float _nextRefreshTime;
         private float _nextRepeatTime;
+
         private int _lastActiveCount = -1;
         private int _lastInsideCount = -1;
+
         private int _triggerHash;
         private int _boolHash;
+
         private bool _hasTrigger;
         private bool _hasBool;
 
         public bool AllPlayersInside => _allPlayersInside;
         public bool ActivationPending => _activationPending;
-        public int ActivePlayerCount => _activePlayers.Count;
-        public int InsidePlayerCount => _insidePlayerIds.Count;
+        public int ActivePlayerCount => _validPlayers.Count;
+        public int InsidePlayerCount => _insidePlayers.Count;
 
         private void Reset()
         {
             triggerVolume = GetComponent<Collider>();
-            if (triggerVolume != null) triggerVolume.isTrigger = true;
+
+            if (triggerVolume != null)
+                triggerVolume.isTrigger = true;
         }
 
         private void Awake()
         {
-            if (triggerVolume == null) triggerVolume = GetComponent<Collider>();
+            if (triggerVolume == null)
+                triggerVolume = GetComponent<Collider>();
 
             if (triggerVolume != null && !triggerVolume.isTrigger)
             {
                 UnityEngine.Debug.LogWarning(
-                    $"[{nameof(AllPlayersTrigger)}] {name}: enabling Is Trigger on {triggerVolume.name}.", this);
+                    $"[{nameof(AllPlayersTrigger)}] {name}: enabling Is Trigger on {triggerVolume.name}.",
+                    this);
+
                 triggerVolume.isTrigger = true;
             }
 
@@ -135,10 +175,21 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
         {
             _allPlayersInside = false;
             _activationPending = false;
+            _activationTimer = 0f;
+
             _hasActivated = false;
             _transportInProgress = false;
             _hasPreviousCarryPosition = false;
+
             _nextRefreshTime = 0f;
+            _nextRepeatTime = 0f;
+
+            _lastActiveCount = -1;
+            _lastInsideCount = -1;
+
+            _insidePlayers.Clear();
+            _validPlayers.Clear();
+
             RefreshOccupancy(true);
         }
 
@@ -154,21 +205,26 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             // 2) Compte à rebours du délai d'activation.
             if (_activationPending)
             {
-                _activationTimer -= delayIgnoresTimeScale ? Time.unscaledDeltaTime : Time.deltaTime;
+                _activationTimer -= delayIgnoresTimeScale
+                    ? Time.unscaledDeltaTime
+                    : Time.deltaTime;
 
                 if (_activationTimer <= 0f)
                 {
                     _activationPending = false;
 
-                    // Re-vérification : tout le monde doit encore être là.
+                    // Re-vérification : la condition doit toujours être remplie.
                     if (_allPlayersInside)
                         Activate();
                 }
             }
 
-            // 3) Répétition optionnelle tant que tout le monde est dedans
-            //    (seulement après l'activation, pas pendant le délai).
-            if (_allPlayersInside && !_activationPending && repeatWhileAllInside &&
+            // 3) Répétition optionnelle.
+            // Elle ne commence qu'après une première activation effective.
+            if (_allPlayersInside &&
+                _hasActivated &&
+                !_activationPending &&
+                repeatWhileAllInside &&
                 Time.unscaledTime >= _nextRepeatTime)
             {
                 _nextRepeatTime = Time.unscaledTime + repeatInterval;
@@ -177,16 +233,17 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
         }
 
         /// <summary>
-        /// Applique le déplacement de la cabine après le déplacement normal des joueurs.
-        /// </summary>
-        /// <summary>
         /// Applique aux joueurs le déplacement monde exact de la cabine.
         /// Fonctionne avec les déplacements diagonaux.
         /// </summary>
         private void LateUpdate()
         {
-            if (!_transportInProgress || _carriedPlayers.Count == 0 || playerCarryTarget == null)
+            if (!_transportInProgress ||
+                _carriedPlayers.Count == 0 ||
+                playerCarryTarget == null)
+            {
                 return;
+            }
 
             Vector3 currentCarryPosition = playerCarryTarget.position;
 
@@ -206,7 +263,8 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
                 foreach (PlayerMovement player in _carriedPlayers)
                 {
-                    if (player == null || !player.isActiveAndEnabled ||
+                    if (player == null ||
+                        !player.isActiveAndEnabled ||
                         !player.gameObject.activeInHierarchy)
                     {
                         invalidPlayers ??= new List<PlayerMovement>();
@@ -234,6 +292,11 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             ReleaseAllCarriedPlayers();
 
             _releasedUntilExit.Clear();
+            _insidePlayers.Clear();
+            _validPlayers.Clear();
+
+            _activationPending = false;
+            _hasActivated = false;
             _transportInProgress = false;
             _hasPreviousCarryPosition = false;
 
@@ -241,64 +304,85 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
                 targetAnimator.SetBool(_boolHash, false);
         }
 
-        public void ForceRefresh() => RefreshOccupancy(false);
+        public void ForceRefresh()
+        {
+            RefreshOccupancy(false);
+        }
 
         // =========================================================
         // DETECTION
         // =========================================================
 
+        /// <summary>
+        /// Actualise la liste des joueurs actifs et leur présence dans le trigger.
+        /// </summary>
         private void RefreshOccupancy(bool forceEvents)
         {
             if (playerManager == null || triggerVolume == null)
             {
                 if (showDebugLogs)
+                {
                     UnityEngine.Debug.LogWarning(
-                        $"[{nameof(AllPlayersTrigger)}] {name}: assign PlayerManager and Trigger Collider.", this);
+                        $"[{nameof(AllPlayersTrigger)}] {name}: assign PlayerManager and Trigger Collider.",
+                        this);
+                }
 
                 ReleaseAllCarriedPlayers();
-                _insidePlayerIds.Clear();
+
+                _insidePlayers.Clear();
+                _validPlayers.Clear();
                 _activePlayers.Clear();
+
                 SetReady(false, forceEvents);
                 return;
             }
 
             _activePlayers.Clear();
-            playerManager.GetActivePlayers(_activePlayers);
-            _insidePlayerIds.Clear();
+            _validPlayers.Clear();
+            _insidePlayers.Clear();
 
-            HashSet<PlayerMovement> validPlayers = new HashSet<PlayerMovement>();
+            playerManager.GetActivePlayers(_activePlayers);
+
+            // Déduplication : un joueur ne doit jamais être compté deux fois.
+            HashSet<PlayerMovement> uniquePlayers = new HashSet<PlayerMovement>();
 
             for (int i = 0; i < _activePlayers.Count; i++)
             {
                 PlayerMovement player = _activePlayers[i];
-                if (player == null || !player.isActiveAndEnabled || !player.gameObject.activeInHierarchy)
+
+                if (player == null ||
+                    !player.isActiveAndEnabled ||
+                    !player.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                if (!uniquePlayers.Add(player))
                     continue;
 
-                validPlayers.Add(player);
+                _validPlayers.Add(player);
 
-                Vector3 point = detectionPointOverride != null
-                    ? player.transform.TransformPoint(detectionPointOverride.localPosition)
-                    : player.transform.position;
-
-                Vector3 closest = triggerVolume.ClosestPoint(point);
-                bool isInside = (closest - point).sqrMagnitude <= boundsTolerance * boundsTolerance;
+                bool isInside = IsPlayerInsideTrigger(player);
 
                 if (isInside)
                 {
-                    _insidePlayerIds.Add(player.GetEntityId());
+                    _insidePlayers.Add(player);
                 }
                 else
                 {
+                    // Une sortie autorise un prochain transport.
                     _releasedUntilExit.Remove(player);
+
                     StopCarryingPlayer(player);
                 }
             }
 
             // Joueurs retirés/désactivés pendant qu'ils étaient transportés : on les libère.
             List<PlayerMovement> stalePlayers = null;
+
             foreach (PlayerMovement player in _carriedPlayers)
             {
-                if (player == null || !validPlayers.Contains(player))
+                if (player == null || !uniquePlayers.Contains(player))
                 {
                     stalePlayers ??= new List<PlayerMovement>();
                     stalePlayers.Add(player);
@@ -311,23 +395,157 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
                     StopCarryingPlayer(stalePlayers[i], true);
             }
 
-            int total = validPlayers.Count;
-            int inside = _insidePlayerIds.Count;
+            int total = _validPlayers.Count;
+            int inside = _insidePlayers.Count;
 
             if (total != _lastActiveCount || inside != _lastInsideCount)
             {
                 onOccupancyChanged?.Invoke(inside, total);
 
                 if (showDebugLogs)
-                    UnityEngine.Debug.Log($"[{nameof(AllPlayersTrigger)}] {name}: {inside}/{total} active players inside.", this);
+                {
+                    UnityEngine.Debug.Log(
+                        $"[{nameof(AllPlayersTrigger)}] {name}: {inside}/{total} active players inside (mode: {detectionMode}).",
+                        this);
+                }
 
                 _lastActiveCount = total;
                 _lastInsideCount = inside;
             }
 
-            SetReady(total > 0 && inside >= total, forceEvents);
+            SetReady(IsActivationConditionMet(total, inside), forceEvents);
         }
 
+        /// <summary>
+        /// Détermine si un joueur est physiquement présent dans le volume.
+        ///
+        /// Si un Detection Point Override est assigné, il est prioritaire.
+        /// Sinon, les colliders actifs du personnage sont utilisés.
+        /// Cela évite de dépendre uniquement du pivot racine du joueur.
+        /// </summary>
+        private bool IsPlayerInsideTrigger(PlayerMovement player)
+        {
+            if (player == null || triggerVolume == null)
+                return false;
+
+            // Mode personnalisé : test d'un point précis du joueur.
+            if (detectionPointOverride != null)
+            {
+                Vector3 point = player.transform.TransformPoint(
+                    detectionPointOverride.localPosition);
+
+                Vector3 closest = triggerVolume.ClosestPoint(point);
+
+                return (closest - point).sqrMagnitude <=
+                       boundsTolerance * boundsTolerance;
+            }
+
+            // Récupération de tous les colliders du joueur.
+            Collider[] playerColliders =
+                player.GetComponentsInChildren<Collider>(false);
+
+            bool hasUsableCollider = false;
+
+            for (int i = 0; i < playerColliders.Length; i++)
+            {
+                Collider playerCollider = playerColliders[i];
+
+                if (playerCollider == null ||
+                    !playerCollider.enabled ||
+                    !playerCollider.gameObject.activeInHierarchy ||
+                    playerCollider == triggerVolume ||
+                    playerCollider.isTrigger)
+                {
+                    continue;
+                }
+
+                hasUsableCollider = true;
+
+                // Premier filtre rapide : les volumes englobants doivent se croiser.
+                if (!triggerVolume.bounds.Intersects(playerCollider.bounds))
+                    continue;
+
+                // Test géométrique précis pour les formes prises en charge.
+                bool penetrationDetected = Physics.ComputePenetration(
+                    triggerVolume,
+                    triggerVolume.transform.position,
+                    triggerVolume.transform.rotation,
+                    playerCollider,
+                    playerCollider.transform.position,
+                    playerCollider.transform.rotation,
+                    out _,
+                    out _
+                );
+
+                if (penetrationDetected)
+                    return true;
+
+                // Tolérance pour les contacts très proches.
+                // Vérifie les points caractéristiques du collider du joueur.
+                Bounds bounds = playerCollider.bounds;
+
+                Vector3[] samplePoints =
+                {
+                    bounds.center,
+                    bounds.min,
+                    bounds.max,
+                    new Vector3(bounds.min.x, bounds.min.y, bounds.max.z),
+                    new Vector3(bounds.min.x, bounds.max.y, bounds.min.z),
+                    new Vector3(bounds.max.x, bounds.min.y, bounds.min.z),
+                    new Vector3(bounds.max.x, bounds.max.y, bounds.min.z),
+                    new Vector3(bounds.min.x, bounds.max.y, bounds.max.z),
+                    new Vector3(bounds.max.x, bounds.min.y, bounds.max.z)
+                };
+
+                for (int p = 0; p < samplePoints.Length; p++)
+                {
+                    Vector3 point = samplePoints[p];
+                    Vector3 closest = triggerVolume.ClosestPoint(point);
+
+                    if ((closest - point).sqrMagnitude <=
+                        boundsTolerance * boundsTolerance)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            // Fallback si le joueur ne possède aucun collider exploitable.
+            if (!hasUsableCollider)
+            {
+                Vector3 point = player.transform.position;
+                Vector3 closest = triggerVolume.ClosestPoint(point);
+
+                return (closest - point).sqrMagnitude <=
+                       boundsTolerance * boundsTolerance;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Évalue la condition d'activation selon le mode choisi dans l'Inspector.
+        /// </summary>
+        private bool IsActivationConditionMet(int total, int inside)
+        {
+            if (total <= 0 || inside <= 0)
+                return false;
+
+            switch (detectionMode)
+            {
+                case DetectionMode.FirstPlayerEnters:
+                    // Un seul joueur actif dans la zone suffit.
+                    return inside >= 1;
+
+                case DetectionMode.AllPlayersInside:
+                default:
+                    return inside >= total;
+            }
+        }
+
+        /// <summary>
+        /// Met à jour l'état de disponibilité du trigger.
+        /// </summary>
         private void SetReady(bool ready, bool forceEvents)
         {
             bool changed = _allPlayersInside != ready;
@@ -338,8 +556,9 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
             if (ready)
             {
-                // Pas de double déclenchement tant que tout le monde reste dedans.
-                if (!changed && !forceEvents)
+                // Ne jamais redémarrer un délai simplement parce qu'un refresh
+                // ou un ForceRefresh a été exécuté.
+                if (!changed)
                     return;
 
                 if (activationDelay <= 0f)
@@ -348,20 +567,23 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
                 }
                 else
                 {
-                    // Délai : on ne déclenche rien tant qu'il n'est pas écoulé
-                    // (et il sera annulé si quelqu'un ressort).
                     _activationPending = true;
                     _activationTimer = activationDelay;
 
                     if (showDebugLogs)
-                        UnityEngine.Debug.Log($"[{nameof(AllPlayersTrigger)}] {name}: activation dans {activationDelay:F2}s.", this);
+                    {
+                        UnityEngine.Debug.Log(
+                            $"[{nameof(AllPlayersTrigger)}] {name}: activation dans {activationDelay:F2}s.",
+                            this);
+                    }
                 }
 
                 return;
             }
 
-            // Sortie de l'état "tout le monde dedans" : on annule le délai en cours.
+            // La condition n'est plus remplie : annulation du délai.
             _activationPending = false;
+            _activationTimer = 0f;
             _hasActivated = false;
 
             if (changed || forceEvents)
@@ -370,8 +592,13 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
         private void Activate()
         {
+            if (!_allPlayersInside)
+                return;
+
+            _activationPending = false;
             _hasActivated = true;
             _nextRepeatTime = Time.unscaledTime + repeatInterval;
+
             InvokeReady();
         }
 
@@ -383,7 +610,11 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             onAllPlayersInside?.Invoke();
 
             if (showDebugLogs)
-                UnityEngine.Debug.Log($"[{nameof(AllPlayersTrigger)}] {name}: all players inside, animation déclenchée.", this);
+            {
+                UnityEngine.Debug.Log(
+                    $"[{nameof(AllPlayersTrigger)}] {name}: condition '{detectionMode}' remplie, animation déclenchée.",
+                    this);
+            }
         }
 
         // =========================================================
@@ -402,7 +633,9 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (playerCarryTarget == null)
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(AllPlayersTrigger)}] {name}: impossible de démarrer le transport, Player Carry Target manquant.", this);
+                    $"[{nameof(AllPlayersTrigger)}] {name}: impossible de démarrer le transport, Player Carry Target manquant.",
+                    this);
+
                 return;
             }
 
@@ -412,8 +645,12 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (!_allPlayersInside)
             {
                 if (showDebugLogs)
+                {
                     UnityEngine.Debug.LogWarning(
-                        $"[{nameof(AllPlayersTrigger)}] {name}: transport annulé, tous les joueurs actifs ne sont plus dans le trigger.", this);
+                        $"[{nameof(AllPlayersTrigger)}] {name}: transport annulé, la condition du Detection Mode n'est plus remplie.",
+                        this);
+                }
+
                 return;
             }
 
@@ -424,14 +661,18 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             int attachedCount = 0;
             bool failed = false;
 
-            for (int i = 0; i < _activePlayers.Count; i++)
+            for (int i = 0; i < _validPlayers.Count; i++)
             {
-                PlayerMovement player = _activePlayers[i];
+                PlayerMovement player = _validPlayers[i];
 
-                if (player == null || !player.isActiveAndEnabled || !player.gameObject.activeInHierarchy)
+                if (player == null ||
+                    !player.isActiveAndEnabled ||
+                    !player.gameObject.activeInHierarchy)
+                {
                     continue;
+                }
 
-                if (!_insidePlayerIds.Contains(player.GetEntityId()))
+                if (!_insidePlayers.Contains(player))
                     continue;
 
                 // Un joueur libéré à l'arrivée précédente doit sortir du trigger
@@ -451,17 +692,23 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (failed)
             {
                 ReleaseAllCarriedPlayers();
+
                 _transportInProgress = false;
                 _hasPreviousCarryPosition = false;
 
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(AllPlayersTrigger)}] {name}: transport annulé, impossible de transporter tous les joueurs.", this);
+                    $"[{nameof(AllPlayersTrigger)}] {name}: transport annulé, impossible de transporter tous les joueurs.",
+                    this);
+
                 return;
             }
 
             if (showDebugLogs)
+            {
                 UnityEngine.Debug.Log(
-                    $"[{nameof(AllPlayersTrigger)}] {name}: transport démarré avec {attachedCount} joueur(s).", this);
+                    $"[{nameof(AllPlayersTrigger)}] {name}: transport démarré avec {attachedCount} joueur(s).",
+                    this);
+            }
         }
 
         /// <summary>
@@ -478,15 +725,20 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (!player.BeginElevatorTransport())
             {
                 UnityEngine.Debug.LogError(
-                    $"[{nameof(AllPlayersTrigger)}] {player.name}: impossible de démarrer le transport. CharacterController manquant ou désactivé.", player);
+                    $"[{nameof(AllPlayersTrigger)}] {player.name}: impossible de démarrer le transport. CharacterController manquant ou désactivé.",
+                    player);
+
                 return false;
             }
 
             _carriedPlayers.Add(player);
 
             if (showDebugLogs)
+            {
                 UnityEngine.Debug.Log(
-                    $"[{nameof(AllPlayersTrigger)}] {player.name} transporté avec la cabine via CharacterController.", player);
+                    $"[{nameof(AllPlayersTrigger)}] {player.name} transporté avec la cabine via CharacterController.",
+                    player);
+            }
 
             return true;
         }
@@ -509,8 +761,11 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
                 player.EndElevatorTransport();
 
             if (showDebugLogs && player != null)
+            {
                 UnityEngine.Debug.Log(
-                    $"[{nameof(AllPlayersTrigger)}] {player.name} libéré de la cabine.", this);
+                    $"[{nameof(AllPlayersTrigger)}] {player.name} libéré de la cabine.",
+                    this);
+            }
         }
 
         /// <summary>
@@ -521,7 +776,9 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (_carriedPlayers.Count == 0)
                 return;
 
-            List<PlayerMovement> players = new List<PlayerMovement>(_carriedPlayers);
+            List<PlayerMovement> players =
+                new List<PlayerMovement>(_carriedPlayers);
+
             _carriedPlayers.Clear();
 
             for (int i = 0; i < players.Count; i++)
@@ -546,12 +803,16 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             }
 
             ReleaseAllCarriedPlayers();
+
             _transportInProgress = false;
             _hasPreviousCarryPosition = false;
 
             if (showDebugLogs)
+            {
                 UnityEngine.Debug.Log(
-                    $"[{nameof(AllPlayersTrigger)}] {name}: arrivée, tous les joueurs ont été libérés.", this);
+                    $"[{nameof(AllPlayersTrigger)}] {name}: arrivée, tous les joueurs ont été libérés.",
+                    this);
+            }
         }
 
         // =========================================================
@@ -560,16 +821,25 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
         private void CacheAnimatorParameters()
         {
-            _hasTrigger = targetAnimator != null && !string.IsNullOrWhiteSpace(animatorTriggerName);
-            _hasBool = targetAnimator != null && !string.IsNullOrWhiteSpace(animatorBoolName);
+            _hasTrigger =
+                targetAnimator != null &&
+                !string.IsNullOrWhiteSpace(animatorTriggerName);
 
-            if (_hasTrigger) _triggerHash = Animator.StringToHash(animatorTriggerName);
-            if (_hasBool) _boolHash = Animator.StringToHash(animatorBoolName);
+            _hasBool =
+                targetAnimator != null &&
+                !string.IsNullOrWhiteSpace(animatorBoolName);
+
+            if (_hasTrigger)
+                _triggerHash = Animator.StringToHash(animatorTriggerName);
+
+            if (_hasBool)
+                _boolHash = Animator.StringToHash(animatorBoolName);
         }
 
         private void OnValidate()
         {
-            if (triggerVolume == null) triggerVolume = GetComponent<Collider>();
+            if (triggerVolume == null)
+                triggerVolume = GetComponent<Collider>();
 
             refreshInterval = Mathf.Max(0f, refreshInterval);
             boundsTolerance = Mathf.Max(0f, boundsTolerance);
@@ -581,10 +851,14 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
         private void OnDrawGizmos()
         {
-            if (!drawGizmos) return;
+            if (!drawGizmos)
+                return;
 
-            Collider volume = triggerVolume != null ? triggerVolume : GetComponent<Collider>();
-            if (volume == null) return;
+            Collider volume =
+                triggerVolume != null ? triggerVolume : GetComponent<Collider>();
+
+            if (volume == null)
+                return;
 
             Gizmos.color = _activationPending
                 ? gizmoPendingColor
@@ -593,15 +867,19 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             if (volume is BoxCollider box)
             {
                 Matrix4x4 previous = Gizmos.matrix;
+
                 Gizmos.matrix = box.transform.localToWorldMatrix;
                 Gizmos.DrawWireCube(box.center, box.size);
+
                 Gizmos.matrix = previous;
             }
             else if (volume is SphereCollider sphere)
             {
                 Matrix4x4 previous = Gizmos.matrix;
+
                 Gizmos.matrix = sphere.transform.localToWorldMatrix;
                 Gizmos.DrawWireSphere(sphere.center, sphere.radius);
+
                 Gizmos.matrix = previous;
             }
             else

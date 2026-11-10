@@ -1,3 +1,4 @@
+
 Shader "Custom/SOR/Outline"
 {
     Properties
@@ -7,6 +8,9 @@ Shader "Custom/SOR/Outline"
         _OutlineColor("Outline Color", Color) = (0, 0, 0, 1)
         _OutlineThickness("Base Outline Thickness Pixels", Range(0.5, 50)) = 7
         _OutlineOpacity("Outline Opacity", Range(0, 1)) = 1
+
+        [Header(Sprite 3D Occlusion)]
+        _SpriteOutlineOcclusionBias("Sprite Outline Occlusion Bias", Float) = 0.015
 
         [Header(Distance Thickness)]
         _NearThicknessMultiplier("Near Thickness Multiplier", Range(1, 6)) = 2.15
@@ -72,9 +76,7 @@ Shader "Custom/SOR/Outline"
         _DripTextureContrast("Drip Texture Contrast", Range(0.1, 8)) = 1
         _DripTextureThreshold("Drip Texture Threshold", Range(0, 1)) = 0.5
         _DripTextureSoftness("Drip Texture Softness", Range(0.001, 0.25)) = 0.035
-
         _DripTextureDilation("Drip Texture Dilation Texels", Range(0, 8)) = 2.5
-
         [Toggle] _DripTextureInvert("Invert Drip Texture", Float) = 0
 
         _DripLength("Drip Base Length Pixels", Range(2, 32)) = 12
@@ -139,17 +141,7 @@ Shader "Custom/SOR/Outline"
         Pass
         {
             Name "Combined Mesh Sprite Depth Outline"
-
-            Stencil
-            {
-                Ref 8
-                ReadMask 8
-                Comp NotEqual
-                Pass Keep
-                Fail Keep
-                ZFail Keep
-            }
-
+            
             HLSLPROGRAM
 
             #pragma target 4.5
@@ -175,9 +167,16 @@ Shader "Custom/SOR/Outline"
             Texture2D<float4> _Sprite3DDepthTexture;
             SamplerState sampler_Sprite3DDepthTexture;
 
+            // Nouvelle texture R32_SFloat produite par Sprite3DDepthFeature.
+            // Elle contient la profondeur linéaire des sprites autorisés
+            // à masquer les contours des autres objets.
+            Texture2D<float> _Sprite3DOutlineOccluderDepthTexture;
+            SamplerState sampler_Sprite3DOutlineOccluderDepthTexture;
+
             CBUFFER_START(UnityPerMaterial)
             float4 _OutlineColor;
             float _OutlineSprites3D, _OutlineThickness, _OutlineOpacity;
+            float _SpriteOutlineOcclusionBias;
 
             float _NearThicknessMultiplier, _DistanceNear, _DistanceFar;
             float _FarThicknessMultiplier, _DistanceFalloff;
@@ -297,6 +296,37 @@ Shader "Custom/SOR/Outline"
             float GetSpriteDepth01(float2 uv)
             {
                 return _Sprite3DDepthTexture.Sample(sampler_Sprite3DDepthTexture, ClampScreenUV(uv)).r;
+            }
+
+            // Renvoie true si un sprite configuré comme occludeur se trouve
+            // devant la surface qui essaie de produire un contour.
+            //
+            // La texture est en profondeur linéaire (R32_SFloat).
+            // Une valeur supérieure au far clip correspond à l'absence
+            // d'occludeur à cet endroit.
+            float IsSpriteOutlineOccluded(float2 screenUV, float surfaceEyeDepth)
+            {
+                float occluderDepth =
+                    _Sprite3DOutlineOccluderDepthTexture.Sample(
+                        sampler_Sprite3DOutlineOccluderDepthTexture,
+                        ClampScreenUV(screenUV)
+                    ).r;
+
+                float bias = max(_SpriteOutlineOcclusionBias, 0.0001);
+
+                // Aucun occludeur valide à cet endroit.
+                if (occluderDepth <= 0.0001 ||
+                    occluderDepth >= _ProjectionParams.z)
+                {
+                    return 0;
+                }
+
+                // Le sprite occludeur doit être suffisamment devant
+                // la surface qui génère le contour.
+                return step(
+                    occluderDepth + bias,
+                    surfaceEyeDepth
+                );
             }
 
             SurfaceData GetVisibleSurface(float2 uv)
@@ -1335,6 +1365,12 @@ Shader "Custom/SOR/Outline"
                                 return result;
                         }
 
+                        // Les coulures sont elles aussi masquées par
+                        // un sprite occludeur situé devant leur surface
+                        // d'ancrage.
+                        if (IsSpriteOutlineOccluded(uv, upperSurface.eyeDepth) > 0.5)
+                            return result;
+
                         float3 anchorPositionWS;
                         float3 anchorNormalWS;
 
@@ -1639,6 +1675,18 @@ Shader "Custom/SOR/Outline"
                 )
                     return zero;
 
+                // Test effectué à la position du pixel de sortie du contour.
+                // On compare la profondeur de la surface candidate (neighbor)
+                // à celle du sprite occludeur à l'écran (centerUV).
+                //
+                // Cela masque les contours Mesh3D et Sprite3D derrière le
+                // sprite, sans masquer ceux qui sont devant lui.
+                if (neighbor.valid > 0.5)
+                {
+                    if (IsSpriteOutlineOccluded(centerUV, neighbor.eyeDepth) > 0.5)
+                        return zero;
+                }
+
                 float2 directionPixels =
                     (neighborUV - centerUV) /
                     max(
@@ -1922,6 +1970,7 @@ Shader "Custom/SOR/Outline"
             ENDHLSL
         }
     }
+
     CustomEditor "SynthOfRage.Editor.SORShaderGUI"
 
     FallBack Off

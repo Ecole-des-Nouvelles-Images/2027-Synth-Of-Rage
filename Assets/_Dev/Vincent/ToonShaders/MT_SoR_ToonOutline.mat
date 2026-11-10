@@ -156,6 +156,7 @@ Material:
     - _SpikeDirectionality: 14.95
     - _SpikeLength: 11
     - _SpikeThreshold: 0.55
+    - _SpriteOutlineOcclusionBias: 0.015
     - _TestStrength: 1
     - _ThicknessJitter: 0.62
     - _UseDistanceDirtyFade: 1
