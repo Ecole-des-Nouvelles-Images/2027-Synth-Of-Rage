@@ -130,11 +130,28 @@ Shader "FX/Waterfall Interactive URP"
             #pragma multi_compile_instancing
             #pragma multi_compile_fog
 
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_CASCADE
-            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS_SCREEN
-            #pragma multi_compile _ _ADDITIONAL_LIGHTS
-            #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+            // ====================================================
+            // URP 17.7 - MAIN LIGHT SHADOWS
+            // Les variantes sont mutuellement exclusives.
+            // ====================================================
+
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+
+            // ====================================================
+            // URP 17.7 - ADDITIONAL LIGHTS
+            // ====================================================
+
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
+
+            // ====================================================
+            // URP 17.7 - CLUSTER LIGHT LOOP
+            // Compatible Forward+ / Deferred+
+            // ====================================================
+
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
