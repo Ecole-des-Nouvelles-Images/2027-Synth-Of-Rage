@@ -54,6 +54,7 @@ Shader "Custom/SOR/Sprite3D"
 
         _BreathingIntensity("Breathing Intensity", Range(0,0.2)) = 0.03
         _BreathingSpeed("Breathing Speed", Range(0,10)) = 2
+        _BreathingDirection("Breathing Direction (X, Y)", Vector) = (1, 1, 0, 0)
 
         // ============================================================
         // DEPTH OCCLUSION ALPHA
@@ -173,6 +174,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -186,9 +188,12 @@ Shader "Custom/SOR/Sprite3D"
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
 
-                    float scale = 1.0 + breathing * _BreathingIntensity;
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
 
-                    positionOS *= scale;
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -516,6 +521,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -524,7 +530,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -643,6 +655,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -651,7 +664,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -792,6 +811,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -800,7 +820,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -911,6 +937,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -919,7 +946,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -1029,6 +1062,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -1037,7 +1071,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;
@@ -1143,6 +1183,7 @@ Shader "Custom/SOR/Sprite3D"
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
+                float4 _BreathingDirection;
 
             CBUFFER_END
 
@@ -1151,7 +1192,13 @@ Shader "Custom/SOR/Sprite3D"
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-                    positionOS *= 1.0 + breathing * _BreathingIntensity;
+
+                    // Anisotropic breathing around the object pivot.
+                    // The local object origin (0,0) is the pivot.
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+
+                    positionOS.xy *= breathingScale;
                 }
 
                 return positionOS;

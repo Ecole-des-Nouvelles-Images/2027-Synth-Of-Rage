@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using SynthOfRage.Scripts.Gameplay.Unit.Player;
+using SynthOfRage.Scripts.Rendering;
 
 namespace SynthOfRage.Scripts.Gameplay.Interaction
 {
@@ -137,6 +138,8 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
 
         private bool _hasTrigger;
         private bool _hasBool;
+        
+        [SerializeField] private VolumeWeightInterpolator _volumeInterpolator;
 
         public bool AllPlayersInside => _allPlayersInside;
         public bool ActivationPending => _activationPending;
@@ -886,6 +889,11 @@ namespace SynthOfRage.Scripts.Gameplay.Interaction
             {
                 Gizmos.DrawWireCube(volume.bounds.center, volume.bounds.size);
             }
+        }
+
+        public void InterpolatePpVolumes()
+        {
+            _volumeInterpolator.TransitionToB();
         }
     }
 }

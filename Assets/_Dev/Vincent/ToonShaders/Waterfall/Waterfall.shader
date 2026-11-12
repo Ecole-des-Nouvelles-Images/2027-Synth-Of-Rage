@@ -130,36 +130,15 @@ Shader "FX/Waterfall Interactive URP"
             #pragma multi_compile_instancing
             #pragma multi_compile_fog
 
-            // ====================================================
-            // URP 17.7 - MAIN LIGHT SHADOWS
-            // Les variantes sont mutuellement exclusives.
-            // ====================================================
-
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
-
-            // ====================================================
-            // URP 17.7 - ADDITIONAL LIGHTS
-            // ====================================================
-
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
-
-            // ====================================================
-            // URP 17.7 - CLUSTER LIGHT LOOP
-            // Compatible Forward+ / Deferred+
-            // ====================================================
-
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
-
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
-
-            // ====================================================
-            // TEXTURES
-            // ====================================================
 
             TEXTURE2D(_SideNoiseTex);
             SAMPLER(sampler_SideNoiseTex);
@@ -172,10 +151,6 @@ Shader "FX/Waterfall Interactive URP"
 
             TEXTURE2D(_GlobalEffectRT);
             SAMPLER(sampler_GlobalEffectRT);
-
-            // ====================================================
-            // MATERIAL PARAMETERS
-            // ====================================================
 
             CBUFFER_START(UnityPerMaterial)
 
@@ -239,10 +214,6 @@ Shader "FX/Waterfall Interactive URP"
             float3 _Position;
             float _OrthographicCamSize;
 
-            // ====================================================
-            // STRUCTURES
-            // ====================================================
-
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -277,9 +248,7 @@ Shader "FX/Waterfall Interactive URP"
 
                 float denominator = levels - 1.0;
 
-                return floor(
-                    value * denominator + 0.5
-                ) / denominator;
+                return floor(value * denominator + 0.5) / denominator;
             }
 
             float2 RotateHalftone2D(float2 p, float angleRad)
@@ -295,15 +264,9 @@ Shader "FX/Waterfall Interactive URP"
 
             float HalftoneDotMask(float2 patternPosition, float darkness)
             {
-                darkness = QuantizeHalftone(
-                    darkness,
-                    _HalftoneLevels
-                );
+                darkness = QuantizeHalftone(darkness, _HalftoneLevels);
 
-                if (
-                    _HalftoneStrength <= 0.0001 ||
-                    darkness <= 0.0001
-                )
+                if (_HalftoneStrength <= 0.0001 || darkness <= 0.0001)
                     return 0.0;
 
                 float2 cell = frac(patternPosition) - 0.5;
@@ -315,10 +278,7 @@ Shader "FX/Waterfall Interactive URP"
                     darkness
                 );
 
-                float aa = max(
-                    fwidth(distToCenter),
-                    0.0001
-                );
+                float aa = max(fwidth(distToCenter), 0.0001);
 
                 return 1.0 - smoothstep(
                     radius - aa,
@@ -336,10 +296,7 @@ Shader "FX/Waterfall Interactive URP"
 
                 p /= max(_HalftoneSize, 1.0);
 
-                return HalftoneDotMask(
-                    p,
-                    darkness
-                ) * _HalftoneStrength;
+                return HalftoneDotMask(p, darkness) * _HalftoneStrength;
             }
 
             float HalftoneMaskWorld(
@@ -357,9 +314,7 @@ Shader "FX/Waterfall Interactive URP"
 
                 float angle = radians(_HalftoneAngle);
 
-                float3 weights = abs(
-                    normalize(geometricNormalWS)
-                );
+                float3 weights = abs(normalize(geometricNormalWS));
 
                 weights = pow(
                     max(weights, float3(0.0001, 0.0001, 0.0001)),
@@ -463,17 +418,9 @@ Shader "FX/Waterfall Interactive URP"
                 UNITY_SETUP_INSTANCE_ID(IN);
                 UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
 
-                float3 worldPos = TransformObjectToWorld(
-                    IN.positionOS.xyz
-                );
+                float3 worldPos = TransformObjectToWorld(IN.positionOS.xyz);
 
-                float3 worldNormal = TransformObjectToWorldNormal(
-                    IN.normalOS
-                );
-
-                // ------------------------------------------------
-                // ORIGINAL VERTEX MOVEMENT
-                // ------------------------------------------------
+                float3 worldNormal = TransformObjectToWorldNormal(IN.normalOS);
 
                 float3 tex = SAMPLE_TEXTURE2D_LOD(
                     _SideNoiseTex,
@@ -494,9 +441,7 @@ Shader "FX/Waterfall Interactive URP"
 
                 IN.positionOS.xyz += movement;
 
-                worldPos = TransformObjectToWorld(
-                    IN.positionOS.xyz
-                );
+                worldPos = TransformObjectToWorld(IN.positionOS.xyz);
 
                 // ------------------------------------------------
                 // SHARED WATER SURFACE DEFORMATION
@@ -527,10 +472,6 @@ Shader "FX/Waterfall Interactive URP"
 
                 worldPos.y += waveHeight * deformationMask;
 
-                // ------------------------------------------------
-                // OUTPUT
-                // ------------------------------------------------
-
                 OUT.positionCS = TransformWorldToHClip(worldPos);
 
                 OUT.positionWS = worldPos;
@@ -553,9 +494,7 @@ Shader "FX/Waterfall Interactive URP"
                 float3 worldPos = IN.positionWS;
                 float3 worldNormal = normalize(IN.normalWS);
 
-                float3 viewDir = GetWorldSpaceNormalizeViewDir(
-                    worldPos
-                );
+                float3 viewDir = GetWorldSpaceNormalizeViewDir(worldPos);
 
                 // ------------------------------------------------
                 // VERTEX COLORS
@@ -590,9 +529,7 @@ Shader "FX/Waterfall Interactive URP"
                 float timing = frac(_Time.y * 0.5 + 0.5);
                 float timing2 = frac(_Time.y * 0.5);
 
-                float timingLerp = abs(
-                    (0.5 - timing) / 0.5
-                );
+                float timingLerp = abs((0.5 - timing) / 0.5);
 
                 // ------------------------------------------------
                 // TOP WATER TEXTURES
@@ -601,15 +538,13 @@ Shader "FX/Waterfall Interactive URP"
                 half3 topTex1 = SAMPLE_TEXTURE2D(
                     _TopNoiseTex,
                     sampler_TopNoiseTex,
-                    worldPos.xz * _TopScale +
-                    flowDir.xz * timing
+                    worldPos.xz * _TopScale + flowDir.xz * timing
                 ).rgb;
 
                 half3 topTex2 = SAMPLE_TEXTURE2D(
                     _TopNoiseTex,
                     sampler_TopNoiseTex,
-                    worldPos.xz * _TopScale +
-                    flowDir.xz * timing2
+                    worldPos.xz * _TopScale + flowDir.xz * timing2
                 ).rgb;
 
                 float vertFlow = _Time.y * _VertSpeed;
@@ -620,11 +555,7 @@ Shader "FX/Waterfall Interactive URP"
 
                 float2 rippleUV = worldPos.xz - _Position.xz;
 
-                rippleUV /= max(
-                    _OrthographicCamSize * 2.0,
-                    0.001
-                );
-
+                rippleUV /= max(_OrthographicCamSize * 2.0, 0.001);
                 rippleUV += 0.5;
 
                 float ripples = SAMPLE_TEXTURE2D(
@@ -734,6 +665,18 @@ Shader "FX/Waterfall Interactive URP"
                 );
 
                 // ------------------------------------------------
+                // VERTICAL SURFACE DETECTION
+                // ------------------------------------------------
+
+                // Detection commune aux cascades verticales.
+                // On la reutilise pour le foam et le bottom foam.
+                float verticalSurfaceMask = 1.0 - smoothstep(
+                    0.55,
+                    0.9,
+                    abs(worldNormal.y)
+                );
+
+                // ------------------------------------------------
                 // SCENE DEPTH
                 // ------------------------------------------------
 
@@ -761,6 +704,8 @@ Shader "FX/Waterfall Interactive URP"
                 // EDGE FOAM
                 // ------------------------------------------------
 
+                // Le foam d'intersection conserve son comportement original.
+                // Il n'est plus utilise pour generer le foam des cascades.
                 float foamDepth = saturate(
                     _Foam *
                     noiseLuminance *
@@ -792,27 +737,40 @@ Shader "FX/Waterfall Interactive URP"
                 // SURFACE FOAM
                 // ------------------------------------------------
 
-                float foamS = smoothstep(
+                // Foam horizontal : calcul original conserve.
+                float horizontalFoamS = smoothstep(
                     worldNormalDotNoise,
                     worldNormalDotNoise + max(_Softness, 0.001),
                     _TopSpread + _EdgeWidth
                 );
 
-                foamS *= saturate(
+                horizontalFoamS *= saturate(
                     1.0 - worldNormal.y
                 );
 
-                foamS = saturate(foamS);
+                // Foam vertical :
+                // reutilise directement le bruit lateral deja calcule.
+                // SideNoise est deja etire et anime avec vertFlow.
+                // Aucun nouvel echantillonnage ni UV supplementaire.
+                float verticalFoamS = smoothstep(
+                    noiseLuminance,
+                    noiseLuminance + max(_Softness, 0.001),
+                    _TopSpread + _EdgeWidth
+                );
+
+                // Selection progressive entre le foam horizontal
+                // et le foam issu du bruit d'ecoulement vertical.
+                float foamS = saturate(
+                    lerp(
+                        horizontalFoamS,
+                        verticalFoamS,
+                        verticalSurfaceMask
+                    )
+                );
 
                 // ------------------------------------------------
                 // BOTTOM WATERFALL FOAM
                 // ------------------------------------------------
-
-                float verticalSurfaceMask = 1.0 - smoothstep(
-                    0.55,
-                    0.9,
-                    abs(worldNormal.y)
-                );
 
                 float bottomDistance = 1.0 - IN.uv.y;
 
@@ -822,8 +780,7 @@ Shader "FX/Waterfall Interactive URP"
                     bottomDistance
                 );
 
-                float2 bottomFoamUV =
-                    IN.uv * _BottomFoamScale;
+                float2 bottomFoamUV = IN.uv * _BottomFoamScale;
 
                 bottomFoamUV.y += _Time.y * _BottomFoamSpeed;
 

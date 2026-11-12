@@ -37,7 +37,7 @@ Material:
     - _BreathingEnabled: 1
     - _BreathingIntensity: 0.05
     - _BreathingPhase: 6.28
-    - _BreathingSpeed: 0.78
+    - _BreathingSpeed: 1.5
     - _CastShadows: 1
     - _DepthOcclusionAlphaCutoff: 0.9
     - _EdgeLightBoost: 1.5
@@ -50,6 +50,7 @@ Material:
     - _SpriteOutlineEnabled: 1
     - _SpriteOutlineOcclusionEnabled: 1
     m_Colors:
+    - _BreathingDirection: {r: 0, g: 1, b: 0, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
