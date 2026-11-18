@@ -220,6 +220,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: PlayerVisuals
       objectReference: {fileID: 0}
+    - target: {fileID: 8559520393410401308, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: -8806966778772363267, guid: 9e80242ee94cef74e88b091eecc6a165, type: 3}
+    - target: {fileID: 8559520393410401308, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 153aa4e5166d90d4bb1448a9bc5f66dc, type: 2}
     - target: {fileID: 8912525727711053810, guid: 16e67605b4ad9f045894f77852b1adc6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

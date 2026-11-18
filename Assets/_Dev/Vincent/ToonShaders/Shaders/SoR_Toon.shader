@@ -964,7 +964,7 @@ Shader "Custom/SOR/Toon" {
             ENDHLSL
         }
     }
-    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
+    CustomEditor "_Dev.Vincent.ToonShaders.Editor.SORShaderGUI"
 
     FallBack Off
 }

@@ -1971,7 +1971,7 @@ Shader "Custom/SOR/Outline"
         }
     }
 
-    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
+    CustomEditor "_Dev.Vincent.ToonShaders.Editor.SORShaderGUI"
 
     FallBack Off
 }
