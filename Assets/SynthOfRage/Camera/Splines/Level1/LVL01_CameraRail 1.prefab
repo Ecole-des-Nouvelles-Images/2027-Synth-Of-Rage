@@ -404,23 +404,23 @@ MonoBehaviour:
           z: 0
           w: -0.5372996
     - Position:
-        x: 158.04349
+        x: 157.04349
         y: 70
-        z: -152
+        z: -153.5
       TangentIn:
         x: 0
         y: 0
-        z: -3.9999971
+        z: -12.064929
       TangentOut:
         x: 0
         y: 0
-        z: 3.9999971
+        z: 12.064929
       Rotation:
         value:
           x: 0
-          y: 0.7071068
+          y: 0.74283445
           z: 0
-          w: -0.70710665
+          w: -0.6694751
     - Position:
         x: 65
         y: 70
