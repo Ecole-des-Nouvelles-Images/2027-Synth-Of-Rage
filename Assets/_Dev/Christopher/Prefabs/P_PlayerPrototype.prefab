@@ -523,7 +523,7 @@ MonoBehaviour:
   _movementSpaceRotationSmoothTime: 0.15
   _blendMaxProgressSpeed: 3
   _blendMissingSampleGraceTime: 0.08
-  _jumpHeight: 4.5
+  _jumpHeight: 5.5
   _gravity: -200
   _jumpCurve:
     serializedVersion: 2
