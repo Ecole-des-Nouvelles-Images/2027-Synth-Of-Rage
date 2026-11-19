@@ -20,6 +20,8 @@ namespace SynthOfRage.Scripts.CameraSystem
     {
         [Header("Cameras")]
         [SerializeField] private CinemachineCamera autoScrollCamera;
+        [Tooltip("Parent dédié à la rotation principale de CM_AutoScroll. Le Pan Tilt reste sur la caméra enfant et utilise Parent Object comme Reference Frame.")]
+        [SerializeField] private Transform autoScrollRotationRoot;
         [SerializeField] private CinemachineCamera combatCamera;
 
         [Header("Camera Rail - CS")]
@@ -171,6 +173,7 @@ namespace SynthOfRage.Scripts.CameraSystem
         private float splineVelocity;
 
         private float currentGameplaySplinePosition;
+        private PlayerMovement focusedTrackingPlayer;
         private bool gameplayProjectionInitialized;
         private bool splineCorrespondenceValid;
 
@@ -241,7 +244,6 @@ namespace SynthOfRage.Scripts.CameraSystem
         private bool combatMode;
         private int currentCombatStep;
         private int debugUpdateCounter;
-        private float lastPlayerDetectionDebugTime = -1f;
 
         private Coroutine pendingCombatShake;
         private Transform movementSpaceBeforeCombat;
@@ -251,15 +253,12 @@ namespace SynthOfRage.Scripts.CameraSystem
         // =========================================================
 
         private readonly List<PlayerMovement> cachedPlayerMovements = new();
-        private readonly List<PlayerMovement> cachedCameraMovements = new();
-        private readonly List<Transform> cachedCameraTargets = new();
 
         // Réutilisation des positions pour les calculs de groupe.
         // Évite de créer un tableau à chaque FixedUpdate.
         private readonly List<Vector3> cachedLeashPositions = new();
 
         private Vector3 cachedGroupCenter;
-        private int cachedGroupPlayerCount;
 
         // =========================================================
         // LEASH / CAMERA CONSTRAINT STATE
@@ -282,7 +281,6 @@ namespace SynthOfRage.Scripts.CameraSystem
         private PlayerMovement trackedPlayer1;
 
         private float frozenSplinePosition;
-        private float frozenGroupFov;
 
         private bool respawnRecoveryActive;
         private float respawnRecoveryVelocity;
@@ -408,27 +406,46 @@ namespace SynthOfRage.Scripts.CameraSystem
         /// Calcule le centre géométrique moyen de tous les joueurs actifs.
         /// Aucun joueur n'est utilisé comme ancre.
         /// </summary>
-        private bool TryGetGroupCenter(out Vector3 center, out int validCount)
+
+
+        /// <summary>
+        /// Applique le lissage commun aux corrections physiques des joueurs.
+        /// Chaque système conserve son propre cache de vélocité.
+        /// </summary>
+        private static Vector3 SmoothCorrection(
+            PlayerMovement movement,
+            Vector3 correction,
+            Dictionary<PlayerMovement, Vector3> velocities,
+            float smoothTime,
+            float maxCorrectionSpeed,
+            float deltaTime)
         {
-            center = Vector3.zero;
-            validCount = 0;
-
-            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            if (smoothTime <= 0f)
             {
-                PlayerMovement movement = cachedPlayerMovements[i];
-
-                if (movement == null)
-                    continue;
-
-                center += movement.transform.position;
-                validCount++;
+                velocities.Remove(movement);
+                return correction;
             }
 
-            if (validCount == 0)
-                return false;
+            Vector3 velocity = velocities.TryGetValue(
+                movement,
+                out Vector3 existingVelocity
+            )
+                ? existingVelocity
+                : Vector3.zero;
 
-            center /= validCount;
-            return true;
+            correction = Vector3.SmoothDamp(
+                Vector3.zero,
+                correction,
+                ref velocity,
+                smoothTime,
+                maxCorrectionSpeed > 0f
+                    ? maxCorrectionSpeed
+                    : Mathf.Infinity,
+                deltaTime
+            );
+
+            velocities[movement] = velocity;
+            return correction;
         }
 
         // =========================================================
@@ -489,7 +506,6 @@ namespace SynthOfRage.Scripts.CameraSystem
             groupCenter /= validPlayerCount;
 
             cachedGroupCenter = groupCenter;
-            cachedGroupPlayerCount = validPlayerCount;
 
             float maxDistanceSquared =
                 maximumPlayerSpacing * maximumPlayerSpacing;
@@ -529,32 +545,14 @@ namespace SynthOfRage.Scripts.CameraSystem
                 Vector3 correction =
                     targetPosition - playerPosition;
 
-                if (playerLeashSmoothTime > 0f)
-                {
-                    Vector3 velocity = leashVelocities.TryGetValue(
-                        movement,
-                        out Vector3 existingVelocity
-                    )
-                        ? existingVelocity
-                        : Vector3.zero;
-
-                    correction = Vector3.SmoothDamp(
-                        Vector3.zero,
-                        correction,
-                        ref velocity,
-                        playerLeashSmoothTime,
-                        playerLeashMaxCorrectionSpeed > 0f
-                            ? playerLeashMaxCorrectionSpeed
-                            : Mathf.Infinity,
-                        fixedDeltaTime
-                    );
-
-                    leashVelocities[movement] = velocity;
-                }
-                else
-                {
-                    leashVelocities.Remove(movement);
-                }
+                correction = SmoothCorrection(
+                    movement,
+                    correction,
+                    leashVelocities,
+                    playerLeashSmoothTime,
+                    playerLeashMaxCorrectionSpeed,
+                    fixedDeltaTime
+                );
 
                 if (correction.sqrMagnitude <= 0.000001f)
                     continue;
@@ -654,31 +652,17 @@ namespace SynthOfRage.Scripts.CameraSystem
                 : null;
         }
 
-        /// <summary>
-        /// En solo, le seul joueur actif est naturellement Player 1.
-        /// En multijoueur, tous les joueurs actifs participent au suivi.
-        /// </summary>
-        private void CollectCameraTargets()
-        {
-            cachedCameraTargets.Clear();
-            cachedCameraMovements.Clear();
-
-            CollectAllPlayers();
-
-            foreach (PlayerMovement movement in cachedPlayerMovements)
-            {
-                if (movement == null)
-                    continue;
-
-                cachedCameraMovements.Add(movement);
-                cachedCameraTargets.Add(movement.transform);
-            }
-        }
-
         private bool HasValidPlayerMovement()
         {
-            CollectCameraTargets();
-            return cachedCameraMovements.Count > 0;
+            CollectAllPlayers();
+
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                if (cachedPlayerMovements[i] != null)
+                    return true;
+            }
+
+            return false;
         }
 
         // =========================================================
@@ -780,7 +764,6 @@ namespace SynthOfRage.Scripts.CameraSystem
             player1FallPosition = fallPosition;
 
             frozenSplinePosition = currentSplinePosition;
-            frozenGroupFov = currentGroupFov;
 
             targetSplinePosition = currentSplinePosition;
             splineVelocity = 0f;
@@ -879,48 +862,21 @@ namespace SynthOfRage.Scripts.CameraSystem
         {
             blend = default;
 
-            CollectCameraTargets();
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            foreach (PlayerMovement movement in cachedCameraMovements)
-            {
-                if (movement != null &&
-                    movement.TryGetActiveMovementSpaceBlend(out blend))
-                    return true;
-            }
-
-            return false;
+            return focusedTrackingPlayer != null &&
+                   focusedTrackingPlayer.TryGetActiveMovementSpaceBlend(out blend);
         }
 
         private Quaternion GetCameraMovementSpaceRotation()
         {
-            CollectCameraTargets();
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            if (cachedCameraMovements.Count == 0)
-                return Quaternion.identity;
-
-            Quaternion averageRotation = Quaternion.identity;
-            int validCount = 0;
-
-            foreach (PlayerMovement movement in cachedCameraMovements)
-            {
-                if (movement == null)
-                    continue;
-
-                Quaternion playerRotation =
-                    movement.GetEffectiveMovementSpaceRotation();
-
-                validCount++;
-
-                averageRotation = validCount == 1
-                    ? playerRotation
-                    : Quaternion.Slerp(
-                        averageRotation,
-                        playerRotation,
-                        1f / validCount
-                    );
-            }
-
-            return averageRotation;
+            return focusedTrackingPlayer != null
+                ? focusedTrackingPlayer.GetEffectiveMovementSpaceRotation()
+                : Quaternion.identity;
         }
 
         private void ApplyMovementSpaceToAllPlayers(Transform movementSpace)
@@ -1125,29 +1081,16 @@ namespace SynthOfRage.Scripts.CameraSystem
                 return true;
             }
 
-            CollectCameraTargets();
+            // Le focus est mis à jour par GetTrackingSplinePosition().
+            // En l'absence de projection initialisée, on utilise Player 1
+            // comme référence temporaire.
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            if (cachedCameraMovements.Count == 0)
+            if (focusedTrackingPlayer == null)
                 return false;
 
-            Vector3 positionSum = Vector3.zero;
-            int validCount = 0;
-
-            for (int i = 0; i < cachedCameraMovements.Count; i++)
-            {
-                PlayerMovement movement = cachedCameraMovements[i];
-
-                if (movement == null)
-                    continue;
-
-                positionSum += movement.transform.position;
-                validCount++;
-            }
-
-            if (validCount == 0)
-                return false;
-
-            trackingPoint = positionSum / validCount;
+            trackingPoint = focusedTrackingPlayer.transform.position;
             return true;
         }
 
@@ -1285,18 +1228,22 @@ namespace SynthOfRage.Scripts.CameraSystem
                 !splineCorrespondenceValid)
                 return currentSplinePosition;
 
-            CollectCameraTargets();
+            CollectAllPlayers();
 
-            if (cachedCameraTargets.Count == 0)
+            if (cachedPlayerMovements.Count == 0)
                 return currentSplinePosition;
 
-            float totalKnot = 0f;
-            int validPlayers = 0;
+            PlayerMovement leadingPlayer = null;
+            float leadingKnot = float.MinValue;
+            float leadingDistance = 0f;
+            int leadingSampleIndex = -1;
 
-            // Chaque joueur possède son historique de projection.
-            // La progression finale correspond à la moyenne des projections.
-            foreach (PlayerMovement movement in cachedCameraMovements)
+            // Chaque joueur conserve son propre historique de projection.
+            // Le focus est attribué à celui dont le Knot est le plus élevé.
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
             {
+                PlayerMovement movement = cachedPlayerMovements[i];
+
                 if (movement == null)
                     continue;
 
@@ -1315,15 +1262,16 @@ namespace SynthOfRage.Scripts.CameraSystem
                         state,
                         state.Initialized,
                         gameplayProjectionSearchWindow,
-                        true,
                         out float gameplayKnot,
                         out float projectionDistance,
                         out int projectedSampleIndex))
                 {
-                    if (state.Initialized)
+                    if (state.Initialized && state.Knot > leadingKnot)
                     {
-                        totalKnot += state.Knot;
-                        validPlayers++;
+                        leadingPlayer = movement;
+                        leadingKnot = state.Knot;
+                        leadingDistance = float.MaxValue;
+                        leadingSampleIndex = state.SampleIndex;
                     }
 
                     continue;
@@ -1334,8 +1282,13 @@ namespace SynthOfRage.Scripts.CameraSystem
                 state.LastWorldPosition = worldPosition;
                 state.Initialized = true;
 
-                totalKnot += gameplayKnot;
-                validPlayers++;
+                if (gameplayKnot > leadingKnot)
+                {
+                    leadingPlayer = movement;
+                    leadingKnot = gameplayKnot;
+                    leadingDistance = projectionDistance;
+                    leadingSampleIndex = projectedSampleIndex;
+                }
 
                 if (debugGameplaySpline &&
                     projectionDistance > gameplayProjectionWarningDistance)
@@ -1354,11 +1307,24 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             RemoveInactiveProjectionStates();
 
-            if (validPlayers == 0)
+            if (leadingPlayer == null)
                 return currentSplinePosition;
 
-            currentGameplaySplinePosition = totalKnot / validPlayers;
+            focusedTrackingPlayer = leadingPlayer;
+            currentGameplaySplinePosition = leadingKnot;
             gameplayProjectionInitialized = true;
+
+            if (debugGameplaySpline)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Hard focus={leadingPlayer.name} | " +
+                    $"GS Knot={leadingKnot:F3} | " +
+                    $"Distance={leadingDistance:F2} | " +
+                    $"Sample={leadingSampleIndex}",
+                    leadingPlayer
+                );
+            }
 
             return MapGameplayKnotToCameraKnot(currentGameplaySplinePosition);
         }
@@ -1396,23 +1362,21 @@ namespace SynthOfRage.Scripts.CameraSystem
                 !splineCorrespondenceValid)
                 return currentSplinePosition;
 
+            // L'extrémité d'un Blend peut se trouver bien au-delà de la
+            // progression courante, notamment lors d'un virage serré entre
+            // deux Movement Spaces. Pendant le Blend, la progression normale
+            // est suspendue : une recherche locale centrée sur
+            // currentGameplaySplinePosition peut donc rester bloquée sur
+            // l'ancien segment de GS. On projette cette extrémité globalement.
             float centerKnot = gameplayProjectionInitialized
                 ? currentGameplaySplinePosition
                 : 0f;
 
-            PlayerProjectionState temporaryState = new PlayerProjectionState
-            {
-                Knot = centerKnot,
-                Initialized = gameplayProjectionInitialized,
-                SampleIndex = FindNearestProjectionSample(centerKnot)
-            };
-
             if (!TryProjectOntoGameplaySpline(
                     worldPosition,
-                    temporaryState,
-                    true,
-                    blendProjectionSearchWindow,
+                    null,
                     false,
+                    blendProjectionSearchWindow,
                     out float gameplayKnot,
                     out float projectionDistance,
                     out _))
@@ -1449,7 +1413,6 @@ namespace SynthOfRage.Scripts.CameraSystem
             PlayerProjectionState state,
             bool useContinuity,
             float searchWindowKnots,
-            bool adaptWindowToPlayerMovement,
             out float closestKnot,
             out float closestDistance,
             out int closestSampleIndex)
@@ -1458,7 +1421,12 @@ namespace SynthOfRage.Scripts.CameraSystem
             closestDistance = float.MaxValue;
             closestSampleIndex = -1;
 
-            if (!EnsureGameplayProjectionCache())
+            // Les deux appelants valident/reconstruisent le cache avant
+            // d'entrer ici. Ne pas répéter cette validation pour chaque joueur :
+            // elle vérifie notamment la matrice du Transform et la Spline.
+            if (cachedGameplaySpline == null ||
+                gameplayProjectionWorldSamples == null ||
+                gameplayProjectionKnotSamples == null)
                 return false;
 
             int sampleCount = gameplayProjectionSampleCount;
@@ -1486,23 +1454,11 @@ namespace SynthOfRage.Scripts.CameraSystem
 
                 searchRadius = Mathf.Max(2, searchRadius);
 
-                if (adaptWindowToPlayerMovement &&
-                    gameplayProjectionAverageSampleSpacing > 0.0001f)
-                {
-                    float movementDistance = Vector3.Distance(
-                        worldPosition,
-                        state.LastWorldPosition
-                    );
-
-                    int movementRadius = Mathf.CeilToInt(
-                        movementDistance /
-                        gameplayProjectionAverageSampleSpacing *
-                        2.5f
-                    ) + 4;
-
-                    movementRadius = Mathf.Max(4, movementRadius);
-                    searchRadius = Mathf.Min(searchRadius, movementRadius);
-                }
+                // Ne pas réduire la fenêtre à partir du déplacement monde :
+                // l'espacement des échantillons n'est pas uniforme en distance
+                // lorsque la spline comporte des courbes serrées ou des tangentes
+                // très différentes. Cette réduction pouvait exclure le bon point
+                // de projection et faire décrocher le suivi dans les virages.
 
                 searchRadius = Mathf.Min(
                     searchRadius,
@@ -1710,6 +1666,16 @@ namespace SynthOfRage.Scripts.CameraSystem
         // CAMERA ROTATION
         // =========================================================
 
+        private Transform GetAutoScrollRotationRoot()
+        {
+            if (autoScrollRotationRoot != null)
+                return autoScrollRotationRoot;
+
+            return autoScrollCamera != null
+                ? autoScrollCamera.transform
+                : null;
+        }
+
         private void InitializeCameraReference()
         {
             if (autoScrollCamera == null ||
@@ -1719,9 +1685,11 @@ namespace SynthOfRage.Scripts.CameraSystem
             Quaternion movementSpaceRotation =
                 GetCameraMovementSpaceRotation();
 
+            Transform rotationRoot = GetAutoScrollRotationRoot();
+
             cameraRotationOffsetFromMovementSpace =
                 Quaternion.Inverse(movementSpaceRotation) *
-                autoScrollCamera.transform.rotation;
+                rotationRoot.rotation;
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
@@ -1787,7 +1755,7 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             Vector3 rotationAxis = movementSpaceRotation * Vector3.up;
 
-            autoScrollCamera.transform.rotation =
+            GetAutoScrollRotationRoot().rotation =
                 Quaternion.AngleAxis(
                     currentHorizontalCorrection,
                     rotationAxis
@@ -1870,7 +1838,7 @@ namespace SynthOfRage.Scripts.CameraSystem
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
 
-            autoScrollCamera.transform.rotation =
+            GetAutoScrollRotationRoot().rotation =
                 GetCameraMovementSpaceRotation() *
                 cameraRotationOffsetFromMovementSpace;
         }
@@ -1966,32 +1934,14 @@ namespace SynthOfRage.Scripts.CameraSystem
                 Vector3 correction =
                     correctedWorldPosition - worldPosition;
 
-                if (cameraConstraintSmoothTime > 0f)
-                {
-                    Vector3 velocity = cameraConstraintVelocities.TryGetValue(
-                        movement,
-                        out Vector3 existingVelocity
-                    )
-                        ? existingVelocity
-                        : Vector3.zero;
-
-                    correction = Vector3.SmoothDamp(
-                        Vector3.zero,
-                        correction,
-                        ref velocity,
-                        cameraConstraintSmoothTime,
-                        cameraConstraintMaxCorrectionSpeed > 0f
-                            ? cameraConstraintMaxCorrectionSpeed
-                            : Mathf.Infinity,
-                        fixedDeltaTime
-                    );
-
-                    cameraConstraintVelocities[movement] = velocity;
-                }
-                else
-                {
-                    cameraConstraintVelocities.Remove(movement);
-                }
+                correction = SmoothCorrection(
+                    movement,
+                    correction,
+                    cameraConstraintVelocities,
+                    cameraConstraintSmoothTime,
+                    cameraConstraintMaxCorrectionSpeed,
+                    fixedDeltaTime
+                );
 
                 if (correction.sqrMagnitude <= 0.000001f)
                     continue;
@@ -2299,85 +2249,6 @@ namespace SynthOfRage.Scripts.CameraSystem
             Gizmos.DrawLine(bottomLeft, topLeft);
         }
 
-        private void DebugCameraPlayerDetection()
-        {
-            if (!debugCameraConstraint)
-                return;
-
-            if (Time.unscaledTime - lastPlayerDetectionDebugTime < 1f)
-                return;
-
-            lastPlayerDetectionDebugTime = Time.unscaledTime;
-
-            if (!debugEnabled)
-                return;
-
-            string cameraName =
-                outputCamera != null ? outputCamera.name : "NULL";
-
-            string managerName =
-                playerManager != null ? playerManager.name : "NULL";
-
-            UnityDebug.Log(
-                $"========== CAMERA PLAYER DETECTION ==========" +
-                $"\nCamera output: {cameraName}" +
-                $"\nPlayerManager: {managerName}" +
-                $"\nPlayerManager list count: {cachedPlayerMovements.Count}" +
-                $"\nConstraint enabled: {constrainAllPlayersToCamera}" +
-                $"\nPlayer leash enabled: {playerLeashEnabled}" +
-                $"\nCamera wall offsets:" +
-                $"\n  Left:   {cameraBoundaryOffsetLeft:+0.00;-0.00;0.00} ({cameraBoundaryOffsetLeft:P0})" +
-                $"\n  Right:  {cameraBoundaryOffsetRight:+0.00;-0.00;0.00} ({cameraBoundaryOffsetRight:P0})" +
-                $"\n  Bottom: {cameraBoundaryOffsetBottom:+0.00;-0.00;0.00} ({cameraBoundaryOffsetBottom:P0})" +
-                $"\n  Top:    {cameraBoundaryOffsetTop:+0.00;-0.00;0.00} ({cameraBoundaryOffsetTop:P0})" +
-                $"\nViewport limits: X=[{-cameraBoundaryOffsetLeft:F2}, {1f + cameraBoundaryOffsetRight:F2}] " +
-                $"Y=[{-cameraBoundaryOffsetBottom:F2}, {1f + cameraBoundaryOffsetTop:F2}]",
-                this
-            );
-
-            for (int i = 0; i < cachedPlayerMovements.Count; i++)
-            {
-                PlayerMovement player = cachedPlayerMovements[i];
-
-                if (player == null)
-                    continue;
-
-                Vector3 worldPosition = player.transform.position;
-
-                Vector3 viewportPosition = outputCamera != null
-                    ? outputCamera.WorldToViewportPoint(
-                        worldPosition + framingTargetOffset
-                    )
-                    : Vector3.zero;
-
-                bool inFrontOfCamera =
-                    outputCamera != null &&
-                    viewportPosition.z > outputCamera.nearClipPlane;
-
-                float minX = -cameraBoundaryOffsetLeft;
-                float maxX = 1f + cameraBoundaryOffsetRight;
-
-                float minY = -cameraBoundaryOffsetBottom;
-                float maxY = 1f + cameraBoundaryOffsetTop;
-
-                bool insideCameraBounds =
-                    inFrontOfCamera &&
-                    viewportPosition.x >= minX &&
-                    viewportPosition.x <= maxX &&
-                    viewportPosition.y >= minY &&
-                    viewportPosition.y <= maxY;
-
-                UnityDebug.Log(
-                    $"PLAYER [{i}] {player.name}" +
-                    $"\nPosition: {worldPosition}" +
-                    $"\nViewport: {viewportPosition}" +
-                    $"\nInside camera bounds: {insideCameraBounds}" +
-                    $"\nAllowed X: [{minX:F2}, {maxX:F2}]" +
-                    $"\nAllowed Y: [{minY:F2}, {maxY:F2}]",
-                    player
-                );
-            }
-        }
 
         // =========================================================
         // GROUP FRAMING / DYNAMIC FOV
@@ -2390,10 +2261,10 @@ namespace SynthOfRage.Scripts.CameraSystem
                 player1CameraFrozen)
                 return;
 
-            CollectCameraTargets();
+            CollectAllPlayers();
 
             // En solo, le FOV revient à sa valeur de base/minimale.
-            if (cachedCameraTargets.Count <= 1 ||
+            if (cachedPlayerMovements.Count <= 1 ||
                 !groupFramingEnabled)
             {
                 float soloFov = Mathf.Clamp(
@@ -2415,13 +2286,13 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             float requiredTangent = 0f;
 
-            foreach (Transform playerTarget in cachedCameraTargets)
+            foreach (PlayerMovement movement in cachedPlayerMovements)
             {
-                if (playerTarget == null)
+                if (movement == null)
                     continue;
 
                 Vector3 worldPosition =
-                    playerTarget.position + framingTargetOffset;
+                    movement.transform.position + framingTargetOffset;
 
                 Vector3 localPosition =
                     cameraTransform.InverseTransformPoint(worldPosition);
@@ -2542,10 +2413,7 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             ApplyCombatPreset(combatKnot);
 
-            autoScrollCamera.Priority.Value = 0;
-            combatCamera.Priority.Value = 10;
-
-            combatCamera.Prioritize();
+            ApplyCameraState();
 
             QueueCombatShake(
                 combatKnot.StartShakePreset,
@@ -2659,10 +2527,7 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             ClearBlendRailCache();
 
-            autoScrollCamera.Priority.Value = 10;
-            combatCamera.Priority.Value = 0;
-
-            autoScrollCamera.Prioritize();
+            ApplyCameraState();
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
