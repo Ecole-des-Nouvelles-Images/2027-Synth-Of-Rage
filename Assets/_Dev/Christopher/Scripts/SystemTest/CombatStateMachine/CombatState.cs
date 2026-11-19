@@ -1,5 +1,4 @@
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
-using SynthOfRage.Scripts.Utilities;
+using _Old.Gameplay.Unit.Player;
 
 namespace _Dev.Christopher.Scripts.SystemTest.CombatStateMachine
 {
@@ -13,7 +12,7 @@ namespace _Dev.Christopher.Scripts.SystemTest.CombatStateMachine
             _fsmCombat = fsmCombat;
             _avatar = avatar;
         }
-        
+
         public abstract void OnStart();
         public abstract void OnUpdate();
         public abstract void OnEnd();

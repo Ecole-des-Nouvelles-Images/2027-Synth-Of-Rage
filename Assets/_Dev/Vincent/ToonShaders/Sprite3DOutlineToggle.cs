@@ -1,115 +1,118 @@
 
 using UnityEngine;
 
-[DisallowMultipleComponent]
-[RequireComponent(typeof(Renderer))]
-public class Sprite3DOutlineToggle : MonoBehaviour
+namespace _Dev.Vincent.ToonShaders
 {
-    private static readonly int OutlineEnabledID =
-        Shader.PropertyToID("_SpriteOutlineEnabled");
-
-    private static readonly int OutlineOcclusionEnabledID =
-        Shader.PropertyToID("_SpriteOutlineOcclusionEnabled");
-
-    [Header("Outline")]
-    [SerializeField]
-    private bool useOutline = true;
-
-    [SerializeField]
-    private bool affectOtherOutlines = true;
-
-    [Header("Renderer")]
-    [SerializeField]
-    private Renderer targetRenderer;
-
-    private MaterialPropertyBlock propertyBlock;
-
-    public bool UseOutline => useOutline;
-    public bool AffectOtherOutlines => affectOtherOutlines;
-
-    private void Awake()
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(Renderer))]
+    public class Sprite3DOutlineToggle : MonoBehaviour
     {
-        Initialize();
-        RefreshOutline();
-    }
+        private static readonly int OutlineEnabledID =
+            Shader.PropertyToID("_SpriteOutlineEnabled");
 
-    private void OnEnable()
-    {
-        Initialize();
-        RefreshOutline();
-    }
+        private static readonly int OutlineOcclusionEnabledID =
+            Shader.PropertyToID("_SpriteOutlineOcclusionEnabled");
 
-    private void OnValidate()
-    {
-        if (targetRenderer == null)
-            targetRenderer = GetComponent<Renderer>();
+        [Header("Outline")]
+        [SerializeField]
+        private bool useOutline = true;
 
-        if (!Application.isPlaying)
+        [SerializeField]
+        private bool affectOtherOutlines = true;
+
+        [Header("Renderer")]
+        [SerializeField]
+        private Renderer targetRenderer;
+
+        private MaterialPropertyBlock propertyBlock;
+
+        public bool UseOutline => useOutline;
+        public bool AffectOtherOutlines => affectOtherOutlines;
+
+        private void Awake()
         {
             Initialize();
             RefreshOutline();
         }
-    }
 
-    private void Reset()
-    {
-        targetRenderer = GetComponent<Renderer>();
-    }
+        private void OnEnable()
+        {
+            Initialize();
+            RefreshOutline();
+        }
 
-    private void Initialize()
-    {
-        if (targetRenderer == null)
+        private void OnValidate()
+        {
+            if (targetRenderer == null)
+                targetRenderer = GetComponent<Renderer>();
+
+            if (!Application.isPlaying)
+            {
+                Initialize();
+                RefreshOutline();
+            }
+        }
+
+        private void Reset()
+        {
             targetRenderer = GetComponent<Renderer>();
+        }
 
-        if (propertyBlock == null)
-            propertyBlock = new MaterialPropertyBlock();
-    }
+        private void Initialize()
+        {
+            if (targetRenderer == null)
+                targetRenderer = GetComponent<Renderer>();
 
-    public void SetOutlineEnabled(bool enabled)
-    {
-        useOutline = enabled;
-        RefreshOutline();
-    }
+            if (propertyBlock == null)
+                propertyBlock = new MaterialPropertyBlock();
+        }
 
-    public void EnableOutline() => SetOutlineEnabled(true);
-    public void DisableOutline() => SetOutlineEnabled(false);
-    public void ToggleOutline() => SetOutlineEnabled(!useOutline);
+        public void SetOutlineEnabled(bool enabled)
+        {
+            useOutline = enabled;
+            RefreshOutline();
+        }
 
-    public void SetAffectOtherOutlines(bool enabled)
-    {
-        affectOtherOutlines = enabled;
-        RefreshOutline();
-    }
+        public void EnableOutline() => SetOutlineEnabled(true);
+        public void DisableOutline() => SetOutlineEnabled(false);
+        public void ToggleOutline() => SetOutlineEnabled(!useOutline);
 
-    public void EnableOtherOutlinesOcclusion() =>
-        SetAffectOtherOutlines(true);
+        public void SetAffectOtherOutlines(bool enabled)
+        {
+            affectOtherOutlines = enabled;
+            RefreshOutline();
+        }
 
-    public void DisableOtherOutlinesOcclusion() =>
-        SetAffectOtherOutlines(false);
+        public void EnableOtherOutlinesOcclusion() =>
+            SetAffectOtherOutlines(true);
 
-    public void ToggleOtherOutlinesOcclusion() =>
-        SetAffectOtherOutlines(!affectOtherOutlines);
+        public void DisableOtherOutlinesOcclusion() =>
+            SetAffectOtherOutlines(false);
 
-    public void RefreshOutline()
-    {
-        if (targetRenderer == null)
-            return;
+        public void ToggleOtherOutlinesOcclusion() =>
+            SetAffectOtherOutlines(!affectOtherOutlines);
 
-        Initialize();
+        public void RefreshOutline()
+        {
+            if (targetRenderer == null)
+                return;
 
-        // Preserve existing properties set by other systems.
-        targetRenderer.GetPropertyBlock(propertyBlock);
+            Initialize();
 
-        propertyBlock.SetFloat(
-            OutlineEnabledID,
-            useOutline ? 1f : 0f
-        );
+            // Preserve existing properties set by other systems.
+            targetRenderer.GetPropertyBlock(propertyBlock);
 
-        propertyBlock.SetFloat(
-            OutlineOcclusionEnabledID,
-            affectOtherOutlines ? 1f : 0f
-        );
+            propertyBlock.SetFloat(
+                OutlineEnabledID,
+                useOutline ? 1f : 0f
+            );
 
-        targetRenderer.SetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(
+                OutlineOcclusionEnabledID,
+                affectOtherOutlines ? 1f : 0f
+            );
+
+            targetRenderer.SetPropertyBlock(propertyBlock);
+        }
     }
 }

@@ -1,9 +1,8 @@
-
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace SynthOfRage.Scripts.Rendering
+namespace _Dev.Vincent
 {
     public class VolumeWeightInterpolator : MonoBehaviour
     {

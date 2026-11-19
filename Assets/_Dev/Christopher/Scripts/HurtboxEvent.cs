@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using SynthOfRage.Character.Enemies;
-using SynthOfRage.Scripts.Gameplay.Common.Modules;
-using SynthOfRage.Scripts.Gameplay.Core;
+using _Old;
+using _Old.BPM_System;
+using _Old.Gameplay.Common.Modules;
+using _Old.Gameplay.Unit.Player;
 using UnityEngine;
 
 namespace _Dev.Christopher.Scripts

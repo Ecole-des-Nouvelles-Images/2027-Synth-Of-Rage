@@ -1,4 +1,3 @@
-using System;
 using SynthOfRage.Scripts.Utilities;
 using UnityEngine;
 

@@ -1,11 +1,10 @@
-
 using System.Collections.Generic;
+using _Old.Gameplay;
+using _Old.Gameplay.Unit.Player;
 using UnityEngine;
 using UnityEngine.Events;
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
-using SynthOfRage.Scripts.Rendering;
 
-namespace SynthOfRage.Scripts.Gameplay.Interaction
+namespace _Dev.Vincent.LD_Wips.Lvl01
 {
     /// <summary>
     /// Trigger d'ascenseur :

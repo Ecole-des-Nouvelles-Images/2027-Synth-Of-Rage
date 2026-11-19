@@ -12,5 +12,6 @@ EditorBuildSettings:
     path: Assets/SynthOfRage/_Scenes/Level-Level1.unity
     guid: c44f22ab495e366418fd1043ddb6b80d
   m_configObjects:
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 99f9c9493070a9d4c979a8fec7c5a8d3, type: 2}
     com.unity.input.settings: {fileID: 11400000, guid: ee3ecf1474c67f74ebfc46847e97c8a9, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 458f7270ef121a1459907fce0fb844db, type: 3}

@@ -1,11 +1,10 @@
-
 using System.Collections;
 using System.Collections.Generic;
-using SynthOfRage.Scripts.Gameplay.Common.Modules;
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
+using _Old.Gameplay.Common.Modules;
+using _Old.Gameplay.Unit.Player;
 using UnityEngine;
 
-namespace SynthOfRage.Scripts.Gameplay.Interaction
+namespace _Dev.Vincent.LD_Wips.Lvl01
 {
     /// <summary>
     /// FallingPlayerTrigger

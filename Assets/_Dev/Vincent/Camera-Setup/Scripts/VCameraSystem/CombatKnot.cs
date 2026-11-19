@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
-using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
+using _Old.Gameplay.Unit.Player.Movement.Utils;
 using UnityEngine;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem

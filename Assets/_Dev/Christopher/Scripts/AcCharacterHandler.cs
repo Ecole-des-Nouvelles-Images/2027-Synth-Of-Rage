@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using _Old.BPM_System;
+using _Old.Gameplay.Common.Modules;
+using _Old.Gameplay.Unit.Player;
 using UnityEngine;
-using SynthOfRage.Scripts.Gameplay.Core;
-using SynthOfRage.Scripts.Gameplay.Common.Modules;
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
 
 namespace _Dev.Christopher.Scripts
 {

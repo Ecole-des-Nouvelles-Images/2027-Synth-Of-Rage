@@ -1,20 +1,20 @@
-
+#if UNITY_EDITOR
+#endif
 using System.Collections;
 using System.Collections.Generic;
-using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
+using _Old.BPM_System;
+using _Old.Gameplay;
+using _Old.Gameplay.Core;
+using _Old.Gameplay.Unit.Player;
+using _Old.Gameplay.Unit.Player.Movement.Utils;
 using Unity.Cinemachine;
-using UnityEngine;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
+using UnityEngine;
 using UnityEngine.Splines;
-using SynthOfRage.Scripts.Gameplay.Core;
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
-using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using UnityDebug = UnityEngine.Debug;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour

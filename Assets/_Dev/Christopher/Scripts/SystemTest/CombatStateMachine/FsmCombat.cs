@@ -1,8 +1,6 @@
-using System;
-using System.Runtime.CompilerServices;
 using _Dev.Christopher.Scripts.SystemTest.InputBlock;
 using UnityEngine;
-using Avatar = SynthOfRage.Scripts.Gameplay.Unit.Player.Avatar;
+using Avatar = _Old.Gameplay.Unit.Player.Avatar;
 
 namespace _Dev.Christopher.Scripts.SystemTest.CombatStateMachine
 {
