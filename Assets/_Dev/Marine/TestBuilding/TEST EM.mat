@@ -12,6 +12,7 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _HALFTONE_WORLD_SPACE
   - _TOON_STEP_PATTERN
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -122,10 +123,10 @@ Material:
     - _HalftoneMaxRadius: 0.46
     - _HalftoneMinRadius: 0.04
     - _HalftoneSize: 10
-    - _HalftoneStrength: 0
+    - _HalftoneStrength: 0.413
     - _HalftoneWorldProjectionBlend: 6
-    - _HalftoneWorldScale: 2
-    - _HalftoneWorldSpace: 0
+    - _HalftoneWorldScale: 0.8
+    - _HalftoneWorldSpace: 1
     - _LightBands: 32
     - _LightBias: 0
     - _Metallic: 0
@@ -167,10 +168,10 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor1: {r: 0, g: 0, b: 0, a: 1}
-    - _EmissionColor2: {r: 0.1490072, g: 1, b: 0, a: 1}
-    - _EmissionColor3: {r: 0, g: 0.41960788, b: 1, a: 1}
-    - _EmissionColor4: {r: 1, g: 0.37329304, b: 0, a: 1}
-    - _EmissionColor5: {r: 1, g: 0, b: 0, a: 1}
+    - _EmissionColor2: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionColor3: {r: 0.19335172, g: 0.32847163, b: 0.5188679, a: 1}
+    - _EmissionColor4: {r: 0.61181015, g: 0.2285066, b: 0.6132076, a: 1}
+    - _EmissionColor5: {r: 0.22327778, g: 0, b: 0.6792453, a: 1}
     - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
     - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}

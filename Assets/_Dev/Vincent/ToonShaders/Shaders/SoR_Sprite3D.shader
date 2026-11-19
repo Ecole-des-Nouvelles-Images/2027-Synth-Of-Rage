@@ -877,6 +877,109 @@ Shader "Custom/SOR/Sprite3D"
             ENDHLSL
         }
 
+
+        // ============================================================
+        // OBJECT-SPACE OUTLINE SURFACE DATA
+        // ============================================================
+
+        Pass
+        {
+            Name "OutlineSurfaceData"
+            Tags { "LightMode" = "OutlineSurfaceData" }
+
+            Cull Off
+            ZWrite On
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma vertex SurfaceDataVert
+            #pragma fragment SurfaceDataFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                half4 color : COLOR;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                float3 normalOS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float2 uv : TEXCOORD3;
+                half4 color : COLOR;
+                float eyeDepth : TEXCOORD4;
+            };
+
+            Texture2D<float4> _MainTex;
+            SamplerState sampler_MainTex;
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                half4 _Color;
+                float _DepthOcclusionAlphaCutoff;
+                float _BreathingEnabled;
+                float _BreathingIntensity;
+                float _BreathingSpeed;
+                float4 _BreathingDirection;
+            CBUFFER_END
+
+            float3 ApplyBreathing(float3 positionOS)
+            {
+                if (_BreathingEnabled > 0.5)
+                {
+                    float breathing = sin(_Time.y * _BreathingSpeed);
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+                    positionOS.xy *= breathingScale;
+                }
+                return positionOS;
+            }
+
+            struct SurfaceTargets
+            {
+                float4 localPosition : SV_Target0;
+                float4 localNormal : SV_Target1;
+                float4 worldNormal : SV_Target2;
+            };
+
+            Varyings SurfaceDataVert(Attributes input)
+            {
+                Varyings output;
+                float3 animatedPositionOS = ApplyBreathing(input.positionOS.xyz);
+                VertexPositionInputs positionInputs =
+                    GetVertexPositionInputs(animatedPositionOS);
+
+                output.positionCS = positionInputs.positionCS;
+                output.eyeDepth = max(-TransformWorldToView(positionInputs.positionWS).z, 0.0001);
+                // Keep the material pattern fixed to the original mesh coordinates.
+                output.positionOS = input.positionOS.xyz;
+                output.normalOS = float3(0, 0, -1);
+                output.normalWS = TransformObjectToWorldNormal(float3(0, 0, -1));
+                output.uv = input.uv * _MainTex_ST.xy + _MainTex_ST.zw;
+                output.color = input.color * _Color;
+                return output;
+            }
+
+            SurfaceTargets SurfaceDataFrag(Varyings input)
+            {
+                float alpha = _MainTex.Sample(sampler_MainTex, input.uv).a * input.color.a;
+                clip(alpha - 0.001);
+
+                SurfaceTargets output;
+                output.localPosition = float4(input.positionOS, input.eyeDepth);
+                output.localNormal = float4(normalize(input.normalOS), 1);
+                output.worldNormal = float4(normalize(input.normalWS), 1);
+                return output;
+            }
+            ENDHLSL
+        }
+
         // ============================================================
         // DEPTH NORMALS
         // ============================================================

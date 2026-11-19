@@ -42,6 +42,15 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
         private static readonly int Sprite3DOutlineOccluderDepthTextureID =
             Shader.PropertyToID("_Sprite3DOutlineOccluderDepthTexture");
 
+        private static readonly int OutlineSurfaceLocalPositionTextureID =
+            Shader.PropertyToID("_OutlineSurfaceLocalPositionTexture");
+
+        private static readonly int OutlineSurfaceLocalNormalTextureID =
+            Shader.PropertyToID("_OutlineSurfaceLocalNormalTexture");
+
+        private static readonly int OutlineSurfaceWorldNormalTextureID =
+            Shader.PropertyToID("_OutlineSurfaceWorldNormalTexture");
+
         // ================================================================
         // CREATE
         // ================================================================
@@ -252,6 +261,22 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
 
                     builder.UseGlobalTexture(
                         Sprite3DOutlineOccluderDepthTextureID,
+                        AccessFlags.Read
+                    );
+
+                    // Object-space surface buffers captured by Sprite3DDepthFeature.
+                    builder.UseGlobalTexture(
+                        OutlineSurfaceLocalPositionTextureID,
+                        AccessFlags.Read
+                    );
+
+                    builder.UseGlobalTexture(
+                        OutlineSurfaceLocalNormalTextureID,
+                        AccessFlags.Read
+                    );
+
+                    builder.UseGlobalTexture(
+                        OutlineSurfaceWorldNormalTextureID,
                         AccessFlags.Read
                     );
 

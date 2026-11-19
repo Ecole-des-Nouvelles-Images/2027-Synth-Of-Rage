@@ -948,6 +948,75 @@ Shader "Custom/SOR/Toon"
             ENDHLSL
         }
 
+
+        // ============================================================
+        // OBJECT-SPACE OUTLINE SURFACE DATA
+        // ============================================================
+
+        Pass
+        {
+            Name "OutlineSurfaceData"
+            Tags { "LightMode" = "OutlineSurfaceData" }
+
+            Cull Back
+            ZWrite On
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma vertex OutlineSurfaceDataVert
+            #pragma fragment OutlineSurfaceDataFrag
+
+            struct OutlineSurfaceDataAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct OutlineSurfaceDataVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                float3 normalOS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float eyeDepth : TEXCOORD3;
+            };
+
+            struct OutlineSurfaceDataTargets
+            {
+                float4 localPosition : SV_Target0;
+                float4 localNormal : SV_Target1;
+                float4 worldNormal : SV_Target2;
+            };
+
+            OutlineSurfaceDataVaryings OutlineSurfaceDataVert(
+                OutlineSurfaceDataAttributes IN)
+            {
+                OutlineSurfaceDataVaryings OUT =
+                    (OutlineSurfaceDataVaryings)0;
+
+                float3 positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.positionCS = TransformWorldToHClip(positionWS);
+                OUT.eyeDepth = max(-TransformWorldToView(positionWS).z, 0.0001);
+                OUT.positionOS = IN.positionOS.xyz;
+                OUT.normalOS = normalize(IN.normalOS);
+                OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+                return OUT;
+            }
+
+            OutlineSurfaceDataTargets OutlineSurfaceDataFrag(
+                OutlineSurfaceDataVaryings IN)
+            {
+                OutlineSurfaceDataTargets OUT;
+                OUT.localPosition = float4(IN.positionOS, IN.eyeDepth);
+                OUT.localNormal = float4(normalize(IN.normalOS), 1);
+                OUT.worldNormal = float4(normalize(IN.normalWS), 1);
+                return OUT;
+            }
+
+            ENDHLSL
+        }
+
         // ============================================================
         // SHADOW CASTER
         // ============================================================

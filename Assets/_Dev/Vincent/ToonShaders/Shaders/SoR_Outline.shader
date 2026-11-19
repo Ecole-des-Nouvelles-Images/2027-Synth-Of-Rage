@@ -45,8 +45,8 @@ Shader "Custom/SOR/Outline"
         [Toggle(_OUTLINE_IMPERFECTIONS)] _UseOutlineImperfections("Enable Shibuya Punk Style", Float) = 0
         _ImperfectionPattern("Brush / Graffiti Pattern", 2D) = "gray" {}
         [Toggle(_IMPERFECTION_FULL_TRIPLANAR)] _ImperfectionFullTriplanar("Full Triplanar Pattern Higher Cost", Float) = 0
-        _ImperfectionWorldScale("Brush World Scale", Range(0.01, 20)) = 0.95
-        _ImperfectionWorldOffset("Brush World Offset", Vector) = (0, 0, 0, 0)
+        _ImperfectionWorldScale("Brush Object Scale", Range(0.01, 20)) = 0.95
+        _ImperfectionWorldOffset("Brush Object Offset", Vector) = (0, 0, 0, 0)
         _ImperfectionSeed("Random Seed", Float) = 13
         _ImperfectionContrast("Brush Contrast", Range(0.1, 12)) = 2.6
         _ImperfectionProjectionBlend("Triplanar Sharpness", Range(1, 16)) = 2
@@ -70,7 +70,7 @@ Shader "Custom/SOR/Outline"
         _SpikeThreshold("Brush Flick Rarity", Range(0, 1)) = 0.58
         _SpikeDirectionality("Brush Flick Directionality", Range(1, 16)) = 6
 
-        [Header(World Anchored Textured Paint Drips)]
+        [Header(Object Anchored , Textured Paint Drips)]
         _DripTexture("Drip Shape / Atlas", 2D) = "black" {}
         _DripTextureColumns("Drip Atlas Columns", Range(1, 4)) = 1
         _DripTextureContrast("Drip Texture Contrast", Range(0.1, 8)) = 1
@@ -81,10 +81,10 @@ Shader "Custom/SOR/Outline"
 
         _DripLength("Drip Base Length Pixels", Range(2, 32)) = 12
         _DripMinLength("Drip Minimum Length Pixels", Range(2, 20)) = 9
-        _DripSearchHeight("Drip Search Height Pixels", Range(8, 48)) = 28
+        _DripSearchHeight("Drip Search Height Pixels", Range(8, 128)) = 28
 
-        _DripWorldSpacing("Drip World Spacing", Range(0.1, 4)) = 0.75
-        _DripWorldWidth("Drip World Anchor Width", Range(0.02, 1.5)) = 0.5
+        _DripWorldSpacing("Drip Object-Space Spacing", Range(0.1, 4)) = 0.75
+        _DripWorldWidth("Drip Object-Space Anchor Width", Range(0.02, 1.5)) = 0.5
         _DripWidth("Drip Texture Width Multiplier", Range(0.5, 10)) = 4
         _DripFarWidthBoost("Drip Far Width Boost", Range(1, 8)) = 4
 
@@ -153,7 +153,7 @@ Shader "Custom/SOR/Outline"
             #pragma shader_feature_local_fragment _IMPERFECTION_FULL_TRIPLANAR
 
             #define OUTLINE_RINGS 8
-            #define DRIP_SEARCH_STEPS 16
+            #define DRIP_SEARCH_STEPS 24
 
             Texture2D<float4> _OutlineMask;
             SamplerState sampler_OutlineMask;
@@ -172,6 +172,11 @@ Shader "Custom/SOR/Outline"
             // à masquer les contours des autres objets.
             Texture2D<float> _Sprite3DOutlineOccluderDepthTexture;
             SamplerState sampler_Sprite3DOutlineOccluderDepthTexture;
+
+            // Object-space surface data captured by Sprite3DDepthFeature.
+            Texture2D<float4> _OutlineSurfaceLocalPositionTexture;
+            Texture2D<float4> _OutlineSurfaceLocalNormalTexture;
+            Texture2D<float4> _OutlineSurfaceWorldNormalTexture;
 
             CBUFFER_START(UnityPerMaterial)
             float4 _OutlineColor;
@@ -426,17 +431,48 @@ Shader "Custom/SOR/Outline"
                 return n;
             }
 
-            void GetSurfaceWorldData(float2 uv, SurfaceData surface, out float3 worldPosition, out float3 geometricNormalWS)
+            void GetSurfaceWorldData(
+                float2 uv, SurfaceData surface,
+                out float3 worldPosition, out float3 geometricNormalWS,
+                out float3 localPosition, out float3 localNormal)
             {
                 if (surface.source < 1.5)
                 {
                     worldPosition = GetWorldPosition(uv, surface.rawDepth);
                     geometricNormalWS = GetMeshGeometricNormalWS(uv, worldPosition);
-                    return;
+                }
+                else
+                {
+                    worldPosition = GetWorldPositionFromEyeDepth(uv, surface.eyeDepth);
+                    geometricNormalWS = normalize(_WorldSpaceCameraPos - worldPosition);
                 }
 
-                worldPosition = GetWorldPositionFromEyeDepth(uv, surface.eyeDepth);
-                geometricNormalWS = normalize(_WorldSpaceCameraPos - worldPosition);
+                float4 localPositionData = _OutlineSurfaceLocalPositionTexture.Sample(sampler_PointClamp, ClampScreenUV(uv));
+                float4 localNormalData = _OutlineSurfaceLocalNormalTexture.Sample(sampler_PointClamp, ClampScreenUV(uv));
+                float4 worldNormalData = _OutlineSurfaceWorldNormalTexture.Sample(sampler_PointClamp, ClampScreenUV(uv));
+
+                // Alpha stores the captured linear eye depth. Validate it
+                // against the selected visible surface before trusting local
+                // coordinates; otherwise an unsupported foreground mesh could
+                // accidentally inherit the data of a supported object behind it.
+                float depthTolerance = max(surface.eyeDepth * 0.003, 0.015);
+                bool matchingSurface =
+                    localPositionData.a > 0.0001 &&
+                    abs(localPositionData.a - surface.eyeDepth) <= depthTolerance;
+
+                if (matchingSurface)
+                {
+                    localPosition = localPositionData.xyz;
+                    localNormal = normalize(localNormalData.xyz);
+                    if (worldNormalData.a > 0.5)
+                        geometricNormalWS = normalize(worldNormalData.xyz);
+                }
+                else
+                {
+                    // Depth alone cannot reconstruct object-space coordinates.
+                    localPosition = worldPosition;
+                    localNormal = geometricNormalWS;
+                }
             }
 
             float GetDistanceBlend01(float eyeDepth, float startDistance, float endDistance, float falloff)
@@ -554,7 +590,7 @@ Shader "Custom/SOR/Outline"
                 return x*w.x + y*w.y + z*w.z;
             }
 
-            float GetImperfectionPattern(float3 worldPosition, float3 normalWS)
+            float GetImperfectionPattern(float3 localPosition, float3 localNormal)
             {
                 #if !defined(_OUTLINE_IMPERFECTIONS)
 
@@ -564,14 +600,14 @@ Shader "Custom/SOR/Outline"
 
                 float seed = _ImperfectionSeed * 13.371;
                 float3 offset = float3(seed, seed*0.37, seed*0.73);
-                float3 p = (worldPosition + _ImperfectionWorldOffset.xyz + offset) * _ImperfectionWorldScale;
+                float3 p = (localPosition + _ImperfectionWorldOffset.xyz + offset) * _ImperfectionWorldScale;
 
                 float pattern;
 
                 #if defined(_IMPERFECTION_FULL_TRIPLANAR)
-                pattern = SampleImperfectionPatternTriplanar(p, normalWS);
+                pattern = SampleImperfectionPatternTriplanar(p, localNormal);
                 #else
-                pattern = SampleImperfectionPatternDominantAxis(p, normalWS);
+                pattern = SampleImperfectionPatternDominantAxis(p, localNormal);
                 #endif
 
                 return saturate((pattern-0.5) * _ImperfectionContrast + 0.5);
@@ -579,18 +615,18 @@ Shader "Custom/SOR/Outline"
                 #endif
             }
 
-            float GetMacroNoise(float3 worldPosition, float3 normalWS)
+            float GetMacroNoise(float3 localPosition, float3 localNormal)
             {
                 float seed = _ImperfectionSeed * 5.731;
 
                 float3 p =
-                    (worldPosition + _ImperfectionWorldOffset.xyz + float3(seed, seed*0.47, seed*0.81))
+                    (localPosition + _ImperfectionWorldOffset.xyz + float3(seed, seed*0.47, seed*0.81))
                     * max(_MacroScale, 0.001);
 
                 #if defined(_IMPERFECTION_FULL_TRIPLANAR)
-                return SampleImperfectionPatternTriplanar(p, normalWS);
+                return SampleImperfectionPatternTriplanar(p, localNormal);
                 #else
-                return SampleImperfectionPatternDominantAxis(p, normalWS);
+                return SampleImperfectionPatternDominantAxis(p, localNormal);
                 #endif
             }
 
@@ -647,8 +683,10 @@ Shader "Custom/SOR/Outline"
             {
                 float3 worldPosition;
                 float3 normalWS;
+                float3 localPosition;
+                float3 localNormal;
 
-                GetSurfaceWorldData(surfaceUV, surface, worldPosition, normalWS);
+                GetSurfaceWorldData(surfaceUV, surface, worldPosition, normalWS, localPosition, localNormal);
 
                 float microProximity;
                 float macroProximity;
@@ -744,13 +782,13 @@ Shader "Custom/SOR/Outline"
 
                 #else
 
-                float brush = GetImperfectionPattern(worldPosition, normalWS);
-                float macro = GetMacroNoise(worldPosition, normalWS);
+                float brush = GetImperfectionPattern(localPosition, localNormal);
+                float macro = GetMacroNoise(localPosition, localNormal);
 
                 float scale = max(_ImperfectionWorldScale * 3, 0.01);
 
                 float3 hp = floor(
-                    worldPosition * scale +
+                    localPosition * scale +
                     float3(
                         _ImperfectionSeed,
                         _ImperfectionSeed * 1.37,
@@ -1155,12 +1193,12 @@ Shader "Custom/SOR/Outline"
                 #endif
             }
 
-            float GetStableDripWorldCoordinate(float3 worldPosition)
+            float GetStableDripLocalCoordinate(float3 localPosition, float3 localNormal)
             {
-                return
-                    worldPosition.x * 0.754877666 +
-                    worldPosition.z * 0.655866146 +
-                    worldPosition.y * 0.173205081;
+                float3 n = abs(normalize(localNormal));
+                if (n.z >= n.x && n.z >= n.y) return localPosition.x;
+                if (n.x >= n.y) return localPosition.z;
+                return localPosition.x;
             }
 
             float GetDownwardBoundaryStrength(SurfaceData lowerSurface, SurfaceData upperSurface)
@@ -1195,7 +1233,16 @@ Shader "Custom/SOR/Outline"
 
             float SampleDripAtlasMask(float2 localUV, float variant, float columns)
             {
-                localUV = clamp(localUV, float2(0.001, 0.001), float2(0.999, 0.999));
+                uint texWidth, texHeight;
+                _DripTexture.GetDimensions(texWidth, texHeight);
+
+                float2 halfCellTexel =
+                    float2(
+                        max((float)texWidth / max(columns, 1.0), 1.0),
+                        max((float)texHeight, 1.0)
+                    );
+                halfCellTexel = 0.5 / halfCellTexel;
+                localUV = clamp(localUV, halfCellTexel, 1.0 - halfCellTexel);
 
                 float2 atlasUV =
                     float2(
@@ -1316,8 +1363,24 @@ Shader "Custom/SOR/Outline"
 
                 #else
 
-                float searchHeight = max(_DripSearchHeight, 1.0);
+                // Extend the search when aggressive length controls request a longer drip.
+                float maximumRequestedLength =
+                    max(_DripLength, _DripMinLength) *
+                    (1.0 + saturate(_DripLengthVariation)) *
+                    max(_DripLongMultiplier, 1.0) *
+                    1.10;
+
+                float searchHeight = clamp(
+                    max(_DripSearchHeight, maximumRequestedLength),
+                    1.0,
+                    128.0
+                );
                 float stepPixels = searchHeight / (float)DRIP_SEARCH_STEPS;
+
+                // Keep the original screen-vertical drip direction.
+                // Object-space data is used only to stabilize the anchor;
+                // it must not steer or rotate the drip itself.
+                const float2 screenDownDirection = float2(0, -1);
 
                 SurfaceData lowerSurface = currentSurface;
 
@@ -1331,11 +1394,7 @@ Shader "Custom/SOR/Outline"
                     float2 upperUV =
                         ClampScreenUV(
                             uv +
-                            float2(
-                                0,
-                                texelSize.y *
-                                verticalDistancePixels
-                            )
+                            texelSize * -screenDownDirection * verticalDistancePixels
                         );
 
                     SurfaceData upperSurface =
@@ -1371,18 +1430,51 @@ Shader "Custom/SOR/Outline"
                         if (IsSpriteOutlineOccluded(uv, upperSurface.eyeDepth) > 0.5)
                             return result;
 
-                        float3 anchorPositionWS;
-                        float3 anchorNormalWS;
+                        // Refine the coarse screen-space boundary for a stable drip root.
+                        float lowerDistance = max(verticalDistancePixels - stepPixels, 0.0);
+                        float upperDistance = verticalDistancePixels;
 
+                        [unroll]
+                        for (int refineIndex = 0; refineIndex < 3; refineIndex++)
+                        {
+                            float middleDistance = (lowerDistance + upperDistance) * 0.5;
+                            float2 middleUV = ClampScreenUV(
+                                uv + texelSize * -screenDownDirection * middleDistance
+                            );
+                            SurfaceData middleSurface = GetVisibleSurface(middleUV);
+                            float middleBoundary = GetDownwardBoundaryStrength(
+                                lowerSurface,
+                                middleSurface
+                            );
+
+                            if (middleBoundary > 0.0001)
+                            {
+                                upperDistance = middleDistance;
+                                upperSurface = middleSurface;
+                                boundaryStrength = middleBoundary;
+                            }
+                            else
+                            {
+                                lowerDistance = middleDistance;
+                                lowerSurface = middleSurface;
+                            }
+                        }
+
+                        verticalDistancePixels = upperDistance;
+                        upperUV = ClampScreenUV(
+                            uv + texelSize * -screenDownDirection * verticalDistancePixels
+                        );
+
+                        float3 anchorPositionWS, anchorNormalWS;
+                        float3 anchorLocalPosition, anchorLocalNormal;
                         GetSurfaceWorldData(
-                            upperUV,
-                            upperSurface,
-                            anchorPositionWS,
-                            anchorNormalWS
+                            upperUV, upperSurface,
+                            anchorPositionWS, anchorNormalWS,
+                            anchorLocalPosition, anchorLocalNormal
                         );
 
                         float stableCoordinate =
-                            GetStableDripWorldCoordinate(anchorPositionWS);
+                            GetStableDripLocalCoordinate(anchorLocalPosition, anchorLocalNormal);
 
                         float spacing =
                             max(_DripWorldSpacing, 0.01);
@@ -1542,20 +1634,23 @@ Shader "Custom/SOR/Outline"
                                 microProximity
                             );
 
-                        float halfWidth =
-                            _DripWorldWidth *
-                            _DripWidth *
+                        float rawHalfWidth =
+                            max(_DripWorldWidth, 0.001) *
+                            max(_DripWidth, 0.001) *
                             farWidthBoost *
                             aaWidthBoost;
 
-                        // Ancienne version : max ~0.48.
-                        // Cette limite annulait presque les sliders élevés.
-                        halfWidth =
-                            clamp(
-                                halfWidth,
-                                0.04,
-                                1.25
-                            );
+                        // Smooth saturation preserves aggressive control response
+                        // without allowing the UV domain to collapse at extreme values.
+                        // The anchor is distributed inside one object-space cell.
+                        // Keep the half-width below half a cell so adjacent drip
+                        // anchors cannot merge into continuous horizontal bands.
+                        // This is a smooth response, not a hard cutoff.
+                        const float maximumCellHalfWidth = 0.45;
+                        float halfWidth =
+                            maximumCellHalfWidth * rawHalfWidth /
+                            (rawHalfWidth + maximumCellHalfWidth);
+                        halfWidth = max(halfWidth, 0.04);
 
                         float textureU =
                             0.5 +

@@ -68,7 +68,7 @@ Material:
     - _DirectLightStrength: 1
     - _DirtyFadeEnd: 160
     - _DirtyFadeStart: 16
-    - _DistanceFalloff: 1.15
+    - _DistanceFalloff: 2.04
     - _DistanceFar: 110
     - _DistanceNear: 2
     - _DripBulbSize: 2.25
@@ -94,11 +94,11 @@ Material:
     - _DripWidth: 4
     - _DripWorldSpacing: 0.8
     - _DripWorldWidth: 0.5
-    - _FarDirtyMin: 0.82
+    - _FarDirtyMin: 1
     - _FarGraffitiShellStrength: 0.9
     - _FarGraffitiShellWidth: 2
-    - _FarMacroMinimum: 0.35
-    - _FarThicknessMultiplier: 0.52
+    - _FarMacroMinimum: 1
+    - _FarThicknessMultiplier: 0.4
     - _GrandBoostDistance: 18
     - _HalftoneAngle: 45
     - _HalftoneLevels: 4
