@@ -62,7 +62,7 @@
                     "id": "d37b6b87-cb24-4856-ad9e-02ba787ebcdf",
                     "expectedControlType": "",
                     "processors": "",
-                    "interactions": "Hold",
+                    "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
                 },
@@ -243,31 +243,9 @@
                 },
                 {
                     "name": "",
-                    "id": "49e15d48-f78f-4d30-b67f-11856d4ac58e",
-                    "path": "<Gamepad>/rightTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Gamepad (default)",
-                    "action": "Special",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "f07678d1-b20c-4d82-8268-09951c3e0a46",
-                    "path": "<Gamepad>/leftTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad (default)",
-                    "action": "Special",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "e83d7a41-e6c2-4dc5-ae59-bb2e2bb6c3ee",
                     "path": "<Keyboard>/a",
-                    "interactions": "",
+                    "interactions": "Hold",
                     "processors": "",
                     "groups": "Keyboard&Mouse;PC (default)",
                     "action": "Special",
@@ -321,21 +299,10 @@
                 {
                     "name": "",
                     "id": "dbea98c1-333b-4d6c-810c-7853f376a00e",
-                    "path": "<Gamepad>/rightShoulder",
+                    "path": "<Gamepad>/leftTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad (default)",
-                    "action": "Guard",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "e619df8c-62c9-4c4e-9ab5-47ab041b67d8",
-                    "path": "<Gamepad>/leftShoulder",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad (default)",
                     "action": "Guard",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -409,7 +376,7 @@
                 {
                     "name": "",
                     "id": "87b50722-9a70-4548-8aa9-680914acf3f6",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad (default)",

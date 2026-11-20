@@ -104,16 +104,6 @@ namespace _Old.Gameplay.Unit.Player
             if (!_inputActionAsset)
                 _inputActionAsset = InputSystem.actions;
 
-            if (!_inputActionAsset)
-            {
-                if (!_warnedMissingAsset)
-                {
-                    UnityEngine.Debug.LogError("[AvatarController] No InputActionAsset available. Assign Input Action Asset on Avatar (same asset as PlayerCore) in the Inspector.");
-                    _warnedMissingAsset = true;
-                }
-                return;
-            }
-
             _mapGameplay = _inputActionAsset.FindActionMap("Gameplay", false);
             _mapUI = _inputActionAsset.FindActionMap("UI", false);
             if (_mapGameplay == null)
