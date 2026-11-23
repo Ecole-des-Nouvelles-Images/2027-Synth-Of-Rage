@@ -13,6 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _HALFTONE_WORLD_SPACE
+  - _TOON_STEP_PATTERN
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -95,7 +96,7 @@ Material:
     - _AdditionalLightStrength: 0.05
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _AmbientStrength: 0.25
+    - _AmbientStrength: 2
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
     - _BumpScale: 1
@@ -105,7 +106,7 @@ Material:
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
-    - _DirectLightStrength: 1
+    - _DirectLightStrength: 3
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
@@ -122,7 +123,7 @@ Material:
     - _HalftoneWorldScale: 2
     - _HalftoneWorldSpace: 1
     - _LightBands: 32
-    - _LightBias: 0
+    - _LightBias: 0.015
     - _Metallic: 0
     - _NormalStrength: 2
     - _OcclusionStrength: 1
@@ -133,7 +134,7 @@ Material:
     - _ReceiveFog: 1
     - _ReceiveShadowStrength: 1
     - _ReceiveShadows: 1
-    - _RimPatternStrength: 0.25
+    - _RimPatternStrength: 0.15
     - _RimPower: 4
     - _RimStrength: 0.15
     - _RimThreshold: 0.3
@@ -147,13 +148,13 @@ Material:
     - _SpecularThreshold: 0.1
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
-    - _StepPatternContrast: 0.89
+    - _StepPatternContrast: 1
     - _StepPatternInvert: 0
     - _StepPatternProjectionBlend: 1
-    - _StepPatternStrength: 0.25
-    - _StepPatternWorldScale: 1
+    - _StepPatternStrength: 0.0002
+    - _StepPatternWorldScale: 0.1
     - _Surface: 0
-    - _UseStepPattern: 0
+    - _UseStepPattern: 1
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
@@ -164,7 +165,7 @@ Material:
     - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
     - _HalftoneWorldOffset: {r: 0, g: 0, b: 0, a: 0}
     - _RimColor: {r: 0.012960444, g: 0.4433962, b: 0, a: 1}
-    - _ShadowColor: {r: 0.3301887, g: 0.3301887, b: 0.3301887, a: 1}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _SpecularColor: {r: 0.4251236, g: 1, b: 0, a: 1}
     - _StepPatternWorldOffset: {r: 0, g: 0, b: 0, a: 0}

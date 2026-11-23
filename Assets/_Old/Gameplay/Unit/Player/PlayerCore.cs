@@ -27,7 +27,7 @@ namespace _Old.Gameplay.Unit.Player
 
         [Header("Local Multiplayer")]
         [Tooltip("0 = Player 1 / First Gamepad. 1 = Player 2 / Second Gamepad.")]
-        [SerializeField, Range(0, 1)] private int playerIndex = 0;
+        [SerializeField, Range(0, 4)] private int playerIndex = 0;
 
         public int PlayerIndex => playerIndex;
         public Gamepad AssignedGamepad { get; private set; }

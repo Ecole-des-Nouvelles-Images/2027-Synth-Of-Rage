@@ -1,34 +1,53 @@
-#if UNITY_EDITOR
-#endif
 using System.Collections;
 using System.Collections.Generic;
+using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
-using _Old.BPM_System;
-using _Old.Gameplay;
-using _Old.Gameplay.Core;
-using _Old.Gameplay.Unit.Player;
-using _Old.Gameplay.Unit.Player.Movement.Utils;
 using Unity.Cinemachine;
-using UnityEditor;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using UnityEngine.Splines;
+using SynthOfRage.Scripts.Gameplay.Core;
+using SynthOfRage.Scripts.Gameplay.Unit.Player;
+using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using UnityDebug = UnityEngine.Debug;
 
-namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
+namespace SynthOfRage.Scripts.CameraSystem
 {
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour
     {
-        
-        
         [Header("Cameras")]
         [SerializeField] private CinemachineCamera autoScrollCamera;
+        [Tooltip("Parent dédié à la rotation principale de CM_AutoScroll. Le Pan Tilt reste sur la caméra enfant et utilise Parent Object comme Reference Frame.")]
+        [SerializeField] private Transform autoScrollRotationRoot;
         [SerializeField] private CinemachineCamera combatCamera;
 
-        [Header("Rail")]
+        [Header("Camera Rail - CS")]
+        [Tooltip("Spline physique suivie par la caméra.")]
         [SerializeField] private CinemachineSplineDolly autoScrollDolly;
-        [SerializeField] private CinemachineSplineDolly combatDolly;
-        [SerializeField, Range(50, 1000)] private int splineProjectionSamples = 500;
+
+        [Header("Gameplay Rail - GS")]
+        [Tooltip("Spline représentant le véritable parcours de gameplay des joueurs.")]
+        [SerializeField] private SplineContainer gameplaySplineContainer;
+
+        [Tooltip("Nombre d'échantillons précalculés pour la projection des joueurs.")]
+        [SerializeField, Range(50, 2000)] private int gameplayProjectionSamples = 750;
+
+        [Tooltip("Fenêtre de recherche autour de la progression précédente, en Knots.")]
+        [SerializeField, Min(0.1f)] private float gameplayProjectionSearchWindow = 3f;
+
+        [Tooltip("Fenêtre de recherche pour les extrémités des transitions MovementSpace.")]
+        [SerializeField, Min(0.1f)] private float blendProjectionSearchWindow = 12f;
+
+        [Tooltip("Distance maximale entre le joueur et la GameplaySpline avant avertissement.")]
+        [SerializeField, Min(0f)] private float gameplayProjectionWarningDistance = 5f;
+
+        [Tooltip("Poids de continuité de projection.")]
+        [SerializeField, Min(0f)] private float projectionContinuityWeight = 0.2f;
+
+        [SerializeField] private bool debugGameplaySpline;
 
         [Header("Player Manager")]
         [SerializeField] private PlayerManager playerManager;
@@ -36,40 +55,67 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         [Header("Initial Movement Space")]
         [SerializeField] private MovementSpace initialMovementSpace;
 
-        [Header("Player 1 Camera Lock")]
-        [Tooltip("La caméra utilise uniquement le premier joueur actif comme référence.")]
-        [SerializeField] private bool lockCameraToPlayer1 = true;
+        [Header("Player Group Leash")]
+        [Tooltip("Active la limitation de distance des joueurs par rapport au centre moyen du groupe.")]
+        [SerializeField] private bool playerLeashEnabled = true;
 
-        [Header("Other Players Camera Constraint")]
-        [Tooltip("Empêche les joueurs secondaires de dépasser la limite extérieure de la caméra.")]
-        [SerializeField] private bool constrainOtherPlayersToCamera = true;
+        [Tooltip("Rayon maximal autorisé autour du centre moyen de tous les joueurs actifs.")]
+        [SerializeField, Min(0.1f)] private float maximumPlayerSpacing = 10f;
 
-        [Tooltip("Distance maximale autorisée au-delà du cadre visible, en unités monde.")]
-        [SerializeField, Min(0f)] private float cameraConstraintWorldTolerance = 2f;
+        [Tooltip("Temps de lissage de la correction du leash. 0 applique la correction immédiatement.")]
+        [SerializeField, Min(0f)] private float playerLeashSmoothTime = 0.08f;
 
-        [Tooltip("Affiche les informations de détection et les corrections dans la Console.")]
+        [Tooltip("Vitesse maximale de correction du leash. 0 signifie illimitée.")]
+        [SerializeField, Min(0f)] private float playerLeashMaxCorrectionSpeed = 30f;
+
+        [SerializeField] private bool debugPlayerLeash;
+
+        [Header("Player 1 Respawn Protection")]
+        [SerializeField] private bool protectCameraDuringPlayer1Respawn = true;
+        [SerializeField] private float player1FallDetectionHeight = -10f;
+        [SerializeField, Min(0f)] private float player1RespawnRecoveryDelay = 0.5f;
+        [SerializeField, Min(0f)] private float player1RespawnDetectionDistance = 5f;
+        [SerializeField, Min(0f)] private float player1RespawnRecoverySmoothTime = 1f;
+        [SerializeField] private bool debugPlayer1Respawn;
+
+        [Header("Multiplayer Camera Constraint")]
+        [Tooltip("Maintient tous les joueurs dans les limites relatives à la caméra.")]
+        [SerializeField] private bool constrainAllPlayersToCamera = true;
+
+        [Header("Camera Boundary Offsets")]
+        [Tooltip("Décalage du mur gauche. Positif = autorise le joueur à sortir de l'écran.")]
+        [SerializeField, Range(-1f, 2f)]
+        private float cameraBoundaryOffsetLeft = 0.10f;
+
+        [Tooltip("Décalage du mur droit. Positif = autorise le joueur à sortir de l'écran.")]
+        [SerializeField, Range(-1f, 2f)]
+        private float cameraBoundaryOffsetRight = 0.10f;
+
+        [Tooltip("Décalage du mur inférieur. Positif = autorise le joueur à sortir de l'écran.")]
+        [SerializeField, Range(-1f, 2f)]
+        private float cameraBoundaryOffsetBottom = 0.10f;
+
+        [Tooltip("Décalage du mur supérieur. Positif = autorise le joueur à sortir de l'écran.")]
+        [SerializeField, Range(-1f, 2f)]
+        private float cameraBoundaryOffsetTop = 0.10f;
+
+        [Tooltip("Temps de lissage de la correction. 0 applique la correction immédiatement.")]
+        [SerializeField, Min(0f)]
+        private float cameraConstraintSmoothTime = 0.05f;
+
+        [Tooltip("Vitesse maximale de correction. 0 signifie illimitée.")]
+        [SerializeField, Min(0f)]
+        private float cameraConstraintMaxCorrectionSpeed = 40f;
+
         [SerializeField] private bool debugCameraConstraint = true;
 
-        [Tooltip("Dessine dans la Scene View les limites visibles et la zone de tolérance de chaque joueur secondaire.")]
+        [Header("Camera Constraint Gizmos")]
         [SerializeField] private bool drawCameraConstraintGizmos = true;
-
-        [Tooltip("Dessine aussi les limites lorsque le composant n'est pas sélectionné.")]
         [SerializeField] private bool drawCameraConstraintGizmosAlways = true;
-
-        [Header("Camera Constraint Bounds - Debug Definition")]
-        [Tooltip("Distance fixe depuis la caméra à laquelle dessiner le rectangle de référence. Cette profondeur sert uniquement au DebugDraw.")]
         [SerializeField, Min(0.1f)] private float debugBoundsReferenceDepth = 10f;
-
-        [Tooltip("Échelle visuelle appliquée aux rectangles du DebugDraw. 1 = dimensions réelles calculées depuis la caméra.")]
         [SerializeField, Min(0.01f)] private float debugBoundsVisualScale = 1f;
-
-        [Tooltip("Dessine également les limites à la profondeur réelle de chaque joueur secondaire.")]
         [SerializeField] private bool drawBoundsAtEachPlayerDepth = true;
-
-        [Tooltip("Dessine les coins et les centres des rectangles pour les rendre plus faciles à repérer.")]
         [SerializeField] private bool drawDebugBoundsMarkers = true;
-
-        [Tooltip("Affiche les dimensions et la profondeur des limites dans la Scene View.")]
         [SerializeField] private bool drawDebugBoundsLabels = true;
 
         [Header("Position Follow")]
@@ -85,32 +131,82 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         [SerializeField, Range(0f, 20f)] private float maxHorizontalCorrectionAngle = 4f;
         [SerializeField, Min(0f)] private float horizontalCorrectionSmoothTime = 0.18f;
         [SerializeField, Range(0f, 1f)] private float framingMultiplierDuringBlend;
+
         [SerializeField] private Camera outputCamera;
 
         [Header("Group Camera Framing")]
+        [Tooltip("Active le FOV dynamique uniquement lorsque plusieurs joueurs sont actifs.")]
         [SerializeField] private bool groupFramingEnabled = true;
+
+        [Tooltip("Marge supplémentaire appliquée au calcul du FOV nécessaire.")]
         [SerializeField, Min(1f)] private float groupFramingMargin = 1.2f;
-        [SerializeField, Range(30f, 100f)] private float maxGroupFieldOfView = 75f;
+
+        [Tooltip("FOV minimal en multijoueur. Il correspond au cadrage le plus rapproché.")]
+        [SerializeField, Range(30f, 100f)] private float minGroupFieldOfView = 45f;
+
+        [Tooltip("FOV maximal en multijoueur. Il définit la limite de recul de la caméra.")]
+        [SerializeField, Range(30f, 120f)] private float maxGroupFieldOfView = 75f;
+
+        [Tooltip("Temps de transition entre les valeurs de FOV.")]
         [SerializeField, Min(0f)] private float groupFovSmoothTime = 0.25f;
 
         [Header("Combat Knots")]
         [SerializeField] private bool combatEnabled;
         [SerializeField] private List<CombatKnot> combatKnots = new();
         [SerializeField] private float combatTolerance = 0.01f;
-        
+
         [Header("Audio - Combat Stem")]
         [SerializeField] private bool useCombatStem = true;
         [SerializeField] private string combatStemId = "Drums_C";
 
         [Header("Debug")]
         [SerializeField] private bool debugEnabled;
-        
-        
+
+        // =========================================================
+        // SPLINES
+        // =========================================================
+
+        private SplineContainer cameraSplineContainer;
 
         private float currentSplinePosition;
         private float targetSplinePosition;
         private float splineVelocity;
-        private SplineContainer splineContainer;
+
+        private float currentGameplaySplinePosition;
+        private PlayerMovement focusedTrackingPlayer;
+        private bool gameplayProjectionInitialized;
+        private bool splineCorrespondenceValid;
+
+        // =========================================================
+        // INDIVIDUAL PLAYER PROJECTION
+        // =========================================================
+
+        private sealed class PlayerProjectionState
+        {
+            public float Knot;
+            public int SampleIndex = -1;
+            public Vector3 LastWorldPosition;
+            public bool Initialized;
+        }
+
+        private readonly Dictionary<PlayerMovement, PlayerProjectionState>
+            playerProjectionStates = new();
+
+        private readonly List<PlayerMovement> playersToRemove = new();
+
+        private Vector3[] gameplayProjectionWorldSamples;
+        private float[] gameplayProjectionKnotSamples;
+
+        private int gameplayProjectionSampleCount;
+        private float gameplayProjectionAverageSampleSpacing;
+
+        private Spline cachedGameplaySpline;
+        private int cachedGameplayKnotCount;
+        private Matrix4x4 cachedGameplayLocalToWorldMatrix;
+
+        // =========================================================
+        // FOLLOW / BLEND
+        // =========================================================
 
         private bool previousFrameWasBlend;
         private bool currentBlendActive;
@@ -124,45 +220,95 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         private float cachedBlendStartSplinePosition;
         private float cachedBlendEndSplinePosition;
 
+        // =========================================================
+        // CAMERA ROTATION
+        // =========================================================
+
         private Quaternion cameraRotationOffsetFromMovementSpace = Quaternion.identity;
         private float currentHorizontalCorrection;
         private float horizontalCorrectionVelocity;
         private bool cameraReferenceInitialized;
 
+        // =========================================================
+        // GROUP FOV
+        // =========================================================
+
         private float baseAutoScrollFov;
         private float currentGroupFov;
         private float groupFovVelocity;
 
+        // =========================================================
+        // COMBAT
+        // =========================================================
+
         private bool combatMode;
         private int currentCombatStep;
         private int debugUpdateCounter;
-        private float lastPlayerDetectionDebugTime = -1f;
-
-        private bool previousCameraLockState;
 
         private Coroutine pendingCombatShake;
-
-        // Movement Space de Player 1 sauvegardé avant le combat.
         private Transform movementSpaceBeforeCombat;
 
-        // Tous les joueurs actifs.
+        // =========================================================
+        // PLAYER COLLECTIONS
+        // =========================================================
+
         private readonly List<PlayerMovement> cachedPlayerMovements = new();
 
-        // Joueurs pris en compte par le calcul de la caméra.
-        private readonly List<PlayerMovement> cachedCameraMovements = new();
-        private readonly List<Transform> cachedCameraTargets = new();
+        // Réutilisation des positions pour les calculs de groupe.
+        // Évite de créer un tableau à chaque FixedUpdate.
+        private readonly List<Vector3> cachedLeashPositions = new();
+
+        private Vector3 cachedGroupCenter;
+
+        // =========================================================
+        // LEASH / CAMERA CONSTRAINT STATE
+        // =========================================================
+
+        private readonly Dictionary<PlayerMovement, Vector3> leashVelocities = new();
+        private readonly Dictionary<PlayerMovement, Vector3> cameraConstraintVelocities = new();
+
+        // =========================================================
+        // PLAYER 1 RESPAWN STATE
+        // =========================================================
+
+        private bool player1CameraFrozen;
+        private bool player1RespawnPositionDetected;
+        private float player1RespawnRecoveryTimer;
+
+        private Vector3 player1LastValidPosition;
+        private Vector3 player1FallPosition;
+
+        private PlayerMovement trackedPlayer1;
+
+        private float frozenSplinePosition;
+
+        private bool respawnRecoveryActive;
+        private float respawnRecoveryVelocity;
+
+        // =========================================================
+        // INITIALIZATION
+        // =========================================================
 
         private void Start()
         {
             if (!ValidateReferences())
                 return;
 
-            splineContainer = autoScrollDolly.Spline;
+            cameraSplineContainer = autoScrollDolly.Spline;
 
-            if (splineContainer == null)
+            if (cameraSplineContainer == null)
             {
-                if(debugEnabled)UnityDebug.LogError(
-                    $"[{nameof(VCameraSetup_Follow)}] Aucun Spline Container assigné.",
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] Aucun CameraSpline Container assigné.",
+                    this
+                );
+                return;
+            }
+
+            if (gameplaySplineContainer == null)
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] GameplaySpline non assignée.",
                     this
                 );
                 return;
@@ -170,13 +316,22 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             autoScrollDolly.PositionUnits = PathIndexUnit.Knot;
 
-            if (combatDolly != null)
-                combatDolly.enabled = false;
-
             outputCamera ??= Camera.main;
 
             baseAutoScrollFov = autoScrollCamera.Lens.FieldOfView;
-            currentGroupFov = baseAutoScrollFov;
+
+            minGroupFieldOfView = Mathf.Clamp(minGroupFieldOfView, 30f, 100f);
+            maxGroupFieldOfView = Mathf.Clamp(
+                maxGroupFieldOfView,
+                minGroupFieldOfView,
+                120f
+            );
+
+            currentGroupFov = Mathf.Clamp(
+                baseAutoScrollFov,
+                minGroupFieldOfView,
+                maxGroupFieldOfView
+            );
 
             currentSplinePosition = autoScrollDolly.CameraPosition;
             targetSplinePosition = currentSplinePosition;
@@ -184,54 +339,244 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             autoScrollCamera.gameObject.SetActive(true);
             combatCamera.gameObject.SetActive(true);
 
+            BuildGameplayProjectionCache();
+            ValidateSplineCorrespondence();
+
+            if (!splineCorrespondenceValid)
+                return;
+
             ApplyCameraState();
             ApplyInitialMovementSpace();
 
-            previousCameraLockState = lockCameraToPlayer1;
-
             InitializeCameraReference();
             ApplyMovementSpaceCameraRotationImmediate();
-            ValidateCombatKnots();
-        }
 
-        private Coroutine cameraConstraintRoutine;
+            ValidateCombatKnots();
+            InitializePlayer1RespawnTracking();
+        }
 
         private void OnEnable()
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.OnArenaExit += DisableCombat;
-
-            cameraConstraintRoutine = StartCoroutine(
-                CameraConstraintRoutine()
-            );
         }
 
         private void OnDisable()
         {
             SetCombatStem(false);
-            
+
             if (GameManager.Instance != null)
                 GameManager.Instance.OnArenaExit -= DisableCombat;
-
-            if (cameraConstraintRoutine != null)
-            {
-                StopCoroutine(cameraConstraintRoutine);
-                cameraConstraintRoutine = null;
-            }
         }
 
-        private IEnumerator CameraConstraintRoutine()
+        // =========================================================
+        // FIXED UPDATE - PHYSICS AND PLAYER CONSTRAINTS
+        // =========================================================
+
+        private void FixedUpdate()
         {
-            WaitForEndOfFrame wait = new WaitForEndOfFrame();
+            if (!Application.isPlaying || combatMode)
+                return;
 
-            while (true)
+            CollectAllPlayers();
+
+            if (cachedPlayerMovements.Count <= 1)
             {
-                yield return wait;
+                leashVelocities.Clear();
+                cameraConstraintVelocities.Clear();
+                cachedLeashPositions.Clear();
+                return;
+            }
 
-                if (!combatMode)
-                    ConstrainOtherPlayersToCamera();
+            // La leash collective est appliquée en premier.
+            // Elle utilise le centre moyen du groupe, et non Player 1.
+            ApplyPlayerSpacingLeash();
+
+            // Les murs caméra restent une contrainte indépendante.
+            // Ils s'appliquent à tous les joueurs, y compris Player 1.
+            if (constrainAllPlayersToCamera)
+                ConstrainAllPlayersToCamera();
+        }
+
+        // =========================================================
+        // GROUP CENTER
+        // =========================================================
+
+        /// <summary>
+        /// Calcule le centre géométrique moyen de tous les joueurs actifs.
+        /// Aucun joueur n'est utilisé comme ancre.
+        /// </summary>
+
+
+        /// <summary>
+        /// Applique le lissage commun aux corrections physiques des joueurs.
+        /// Chaque système conserve son propre cache de vélocité.
+        /// </summary>
+        private static Vector3 SmoothCorrection(
+            PlayerMovement movement,
+            Vector3 correction,
+            Dictionary<PlayerMovement, Vector3> velocities,
+            float smoothTime,
+            float maxCorrectionSpeed,
+            float deltaTime)
+        {
+            if (smoothTime <= 0f)
+            {
+                velocities.Remove(movement);
+                return correction;
+            }
+
+            Vector3 velocity = velocities.TryGetValue(
+                movement,
+                out Vector3 existingVelocity
+            )
+                ? existingVelocity
+                : Vector3.zero;
+
+            correction = Vector3.SmoothDamp(
+                Vector3.zero,
+                correction,
+                ref velocity,
+                smoothTime,
+                maxCorrectionSpeed > 0f
+                    ? maxCorrectionSpeed
+                    : Mathf.Infinity,
+                deltaTime
+            );
+
+            velocities[movement] = velocity;
+            return correction;
+        }
+
+        // =========================================================
+        // COLLECTIVE PLAYER LEASH
+        // =========================================================
+
+        /// <summary>
+        /// Maintient chaque joueur dans un rayon maximal autour du centre
+        /// moyen de tous les joueurs actifs.
+        ///
+        /// Contrairement à l'ancienne version, aucun joueur n'est une ancre.
+        /// Les corrections sont calculées à partir d'un même instantané
+        /// des positions afin d'éviter les dépendances à l'ordre de la liste.
+        /// </summary>
+        private void ApplyPlayerSpacingLeash()
+        {
+            if (!playerLeashEnabled ||
+                maximumPlayerSpacing <= 0f ||
+                cachedPlayerMovements.Count <= 1)
+            {
+                leashVelocities.Clear();
+                return;
+            }
+
+            // -----------------------------------------------------
+            // 1. Snapshot des positions et calcul du centre moyen.
+            // -----------------------------------------------------
+
+            cachedLeashPositions.Clear();
+
+            Vector3 groupCenter = Vector3.zero;
+            int validPlayerCount = 0;
+
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement movement = cachedPlayerMovements[i];
+
+                if (movement == null)
+                {
+                    cachedLeashPositions.Add(Vector3.zero);
+                    continue;
+                }
+
+                Vector3 position = movement.transform.position;
+
+                cachedLeashPositions.Add(position);
+
+                groupCenter += position;
+                validPlayerCount++;
+            }
+
+            if (validPlayerCount <= 1)
+            {
+                leashVelocities.Clear();
+                return;
+            }
+
+            groupCenter /= validPlayerCount;
+
+            cachedGroupCenter = groupCenter;
+
+            float maxDistanceSquared =
+                maximumPlayerSpacing * maximumPlayerSpacing;
+
+            float fixedDeltaTime = Time.fixedDeltaTime;
+
+            // -----------------------------------------------------
+            // 2. Correction individuelle autour du centre commun.
+            // -----------------------------------------------------
+
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement movement = cachedPlayerMovements[i];
+
+                if (movement == null)
+                    continue;
+
+                Vector3 playerPosition = cachedLeashPositions[i];
+
+                Vector3 offset = playerPosition - groupCenter;
+                float distanceSquared = offset.sqrMagnitude;
+
+                if (distanceSquared <= maxDistanceSquared ||
+                    distanceSquared <= 0.0001f)
+                {
+                    leashVelocities.Remove(movement);
+                    continue;
+                }
+
+                float distance = Mathf.Sqrt(distanceSquared);
+
+                // Position maximale autorisée autour du centre moyen.
+                Vector3 targetPosition =
+                    groupCenter +
+                    offset * (maximumPlayerSpacing / distance);
+
+                Vector3 correction =
+                    targetPosition - playerPosition;
+
+                correction = SmoothCorrection(
+                    movement,
+                    correction,
+                    leashVelocities,
+                    playerLeashSmoothTime,
+                    playerLeashMaxCorrectionSpeed,
+                    fixedDeltaTime
+                );
+
+                if (correction.sqrMagnitude <= 0.000001f)
+                    continue;
+
+                movement.ApplyExternalMovement(correction);
+
+                if (debugPlayerLeash && debugEnabled)
+                {
+                    UnityDebug.Log(
+                        $"[{nameof(VCameraSetup_Follow)}] COLLECTIVE LEASH | " +
+                        $"Player={movement.name} | " +
+                        $"GroupCenter={groupCenter} | " +
+                        $"Distance={distance:F2} | " +
+                        $"MaximumRadius={maximumPlayerSpacing:F2} | " +
+                        $"Correction={correction}",
+                        movement
+                    );
+                }
             }
         }
+
+        // =========================================================
+        // UPDATE
+        // =========================================================
 
         private void Update()
         {
@@ -239,11 +584,22 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             {
                 debugUpdateCounter = 0;
 
-                if(debugEnabled)UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Camera={currentSplinePosition:F3} Target={targetSplinePosition:F3} Blend={currentBlendActive} LockP1={lockCameraToPlayer1}",
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"CS={currentSplinePosition:F3} | " +
+                    $"GS={currentGameplaySplinePosition:F3} | " +
+                    $"Target={targetSplinePosition:F3} | " +
+                    $"Blend={currentBlendActive} | " +
+                    $"Players={cachedPlayerMovements.Count} | " +
+                    $"GroupCenter={cachedGroupCenter} | " +
+                    $"RespawnFrozen={player1CameraFrozen} | " +
+                    $"ProjectionStates={playerProjectionStates.Count}",
                     this
                 );
             }
+
+            if (!splineCorrespondenceValid)
+                return;
 
             if (combatMode)
             {
@@ -253,21 +609,24 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 return;
             }
 
-            UpdateFollow();
-
-            if (currentCombatStep < combatKnots.Count)
-                CheckCombatKnot();
+            UpdatePlayer1RespawnProtection();
         }
+
+        // =========================================================
+        // LATE UPDATE - CAMERA
+        // =========================================================
 
         private void LateUpdate()
         {
-            if (combatMode)
+            if (combatMode || !splineCorrespondenceValid)
                 return;
 
-            HandleCameraLockModeChange();
-
+            UpdateFollow();
             UpdateAutoScrollCameraRotation();
             UpdateGroupFraming();
+
+            if (currentCombatStep < combatKnots.Count)
+                CheckCombatKnot();
         }
 
         // =========================================================
@@ -293,43 +652,206 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 : null;
         }
 
-        private void CollectCameraTargets()
+        private bool HasValidPlayerMovement()
         {
-            cachedCameraTargets.Clear();
-            cachedCameraMovements.Clear();
-
             CollectAllPlayers();
 
-            if (cachedPlayerMovements.Count == 0)
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                if (cachedPlayerMovements[i] != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // =========================================================
+        // PLAYER 1 RESPAWN PROTECTION
+        // =========================================================
+
+        private void InitializePlayer1RespawnTracking()
+        {
+            if (!protectCameraDuringPlayer1Respawn)
                 return;
 
-            if (lockCameraToPlayer1)
+            trackedPlayer1 = GetPlayer1();
+
+            if (trackedPlayer1 != null)
+                player1LastValidPosition = trackedPlayer1.transform.position;
+        }
+
+        private void UpdatePlayer1RespawnProtection()
+        {
+            if (!protectCameraDuringPlayer1Respawn)
+                return;
+
+            PlayerMovement player1 = GetPlayer1();
+
+            if (player1 == null)
+                return;
+
+            if (trackedPlayer1 != player1)
             {
-                PlayerMovement player1 = cachedPlayerMovements[0];
+                trackedPlayer1 = player1;
 
-                if (player1 != null)
-                {
-                    cachedCameraMovements.Add(player1);
-                    cachedCameraTargets.Add(player1.transform);
-                }
+                if (!player1CameraFrozen)
+                    player1LastValidPosition = player1.transform.position;
 
+                ResetGameplayProjection();
                 return;
             }
 
-            foreach (PlayerMovement movement in cachedPlayerMovements)
-            {
-                if (movement == null)
-                    continue;
+            Vector3 playerPosition = player1.transform.position;
 
-                cachedCameraMovements.Add(movement);
-                cachedCameraTargets.Add(movement.transform);
+            if (!player1CameraFrozen &&
+                playerPosition.y <= player1FallDetectionHeight)
+            {
+                FreezePlayer1Camera(playerPosition);
+                return;
+            }
+
+            if (!player1CameraFrozen)
+            {
+                player1LastValidPosition = playerPosition;
+                return;
+            }
+
+            if (!player1RespawnPositionDetected)
+            {
+                float respawnDistance = Vector3.Distance(
+                    playerPosition,
+                    player1FallPosition
+                );
+
+                bool returnedAboveFallHeight =
+                    playerPosition.y > player1FallDetectionHeight;
+
+                if (returnedAboveFallHeight &&
+                    respawnDistance >= player1RespawnDetectionDistance)
+                {
+                    player1RespawnPositionDetected = true;
+                    player1RespawnRecoveryTimer = player1RespawnRecoveryDelay;
+
+                    if (debugPlayer1Respawn)
+                    {
+                        UnityDebug.Log(
+                            $"[{nameof(VCameraSetup_Follow)}] " +
+                            $"Player 1 respawn détecté. " +
+                            $"Attente de {player1RespawnRecoveryDelay:F2}s.",
+                            player1
+                        );
+                    }
+                }
+            }
+            else
+            {
+                player1RespawnRecoveryTimer -= Time.deltaTime;
+
+                if (player1RespawnRecoveryTimer <= 0f)
+                    BeginPlayer1CameraRecovery(player1);
             }
         }
 
-        private bool HasValidPlayerMovement()
+        private void FreezePlayer1Camera(Vector3 fallPosition)
         {
-            CollectCameraTargets();
-            return cachedCameraMovements.Count > 0;
+            player1CameraFrozen = true;
+            player1RespawnPositionDetected = false;
+            player1RespawnRecoveryTimer = 0f;
+
+            respawnRecoveryActive = false;
+            respawnRecoveryVelocity = 0f;
+
+            player1FallPosition = fallPosition;
+
+            frozenSplinePosition = currentSplinePosition;
+
+            targetSplinePosition = currentSplinePosition;
+            splineVelocity = 0f;
+
+            previousFrameWasBlend = false;
+            currentBlendActive = false;
+
+            ClearBlendRailCache();
+
+            if (debugPlayer1Respawn)
+            {
+                UnityDebug.LogWarning(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    "Caméra verrouillée : Player 1 est tombé dans le vide. " +
+                    $"Position={fallPosition}",
+                    this
+                );
+            }
+        }
+
+        private void BeginPlayer1CameraRecovery(PlayerMovement player1)
+        {
+            player1CameraFrozen = false;
+            player1RespawnPositionDetected = false;
+
+            player1LastValidPosition = player1.transform.position;
+
+            splineVelocity = 0f;
+            targetSplinePosition = currentSplinePosition;
+
+            previousFrameWasBlend = false;
+            currentBlendActive = false;
+
+            ClearBlendRailCache();
+            ResetGameplayProjection();
+
+            respawnRecoveryActive = true;
+            respawnRecoveryVelocity = 0f;
+
+            if (debugPlayer1Respawn)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    "Reprise progressive du suivi après le respawn de Player 1.",
+                    player1
+                );
+            }
+        }
+
+        private void UpdateRespawnRecovery()
+        {
+            if (!respawnRecoveryActive)
+                return;
+
+            if (!TryGetTrackingPoint(out _))
+                return;
+
+            float desiredPosition = GetTrackingSplinePosition();
+
+            float smoothTime = player1RespawnRecoverySmoothTime > 0f
+                ? player1RespawnRecoverySmoothTime
+                : followSmoothTime;
+
+            if (smoothTime <= 0f)
+            {
+                currentSplinePosition = desiredPosition;
+                targetSplinePosition = desiredPosition;
+                splineVelocity = 0f;
+                respawnRecoveryActive = false;
+                return;
+            }
+
+            currentSplinePosition = Mathf.SmoothDamp(
+                currentSplinePosition,
+                desiredPosition,
+                ref respawnRecoveryVelocity,
+                smoothTime
+            );
+
+            targetSplinePosition = desiredPosition;
+
+            if (Mathf.Abs(currentSplinePosition - desiredPosition) <= 0.01f)
+            {
+                currentSplinePosition = desiredPosition;
+                targetSplinePosition = desiredPosition;
+                respawnRecoveryActive = false;
+                splineVelocity = 0f;
+            }
         }
 
         // =========================================================
@@ -340,51 +862,21 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         {
             blend = default;
 
-            CollectCameraTargets();
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            foreach (PlayerMovement movement in cachedCameraMovements)
-            {
-                if (movement != null &&
-                    movement.TryGetActiveMovementSpaceBlend(out blend))
-                    return true;
-            }
-
-            return false;
+            return focusedTrackingPlayer != null &&
+                   focusedTrackingPlayer.TryGetActiveMovementSpaceBlend(out blend);
         }
 
         private Quaternion GetCameraMovementSpaceRotation()
         {
-            CollectCameraTargets();
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            if (cachedCameraMovements.Count == 0)
-                return Quaternion.identity;
-
-            if (lockCameraToPlayer1)
-                return cachedCameraMovements[0].GetEffectiveMovementSpaceRotation();
-
-            Quaternion averageRotation = Quaternion.identity;
-            int validCount = 0;
-
-            foreach (PlayerMovement movement in cachedCameraMovements)
-            {
-                if (movement == null)
-                    continue;
-
-                Quaternion playerRotation =
-                    movement.GetEffectiveMovementSpaceRotation();
-
-                validCount++;
-
-                averageRotation = validCount == 1
-                    ? playerRotation
-                    : Quaternion.Slerp(
-                        averageRotation,
-                        playerRotation,
-                        1f / validCount
-                    );
-            }
-
-            return averageRotation;
+            return focusedTrackingPlayer != null
+                ? focusedTrackingPlayer.GetEffectiveMovementSpaceRotation()
+                : Quaternion.identity;
         }
 
         private void ApplyMovementSpaceToAllPlayers(Transform movementSpace)
@@ -407,10 +899,29 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void UpdateFollow()
         {
+            if (player1CameraFrozen)
+            {
+                currentSplinePosition = frozenSplinePosition;
+                targetSplinePosition = frozenSplinePosition;
+                splineVelocity = 0f;
+
+                autoScrollDolly.CameraPosition = frozenSplinePosition;
+                return;
+            }
+
+            if (respawnRecoveryActive)
+            {
+                UpdateRespawnRecovery();
+                autoScrollDolly.CameraPosition = currentSplinePosition;
+                return;
+            }
+
             if (!TryGetTrackingPoint(out _))
                 return;
 
-            bool hasBlend = TryGetCameraBlend(out MovementSpace.BlendResult blend);
+            bool hasBlend = TryGetCameraBlend(
+                out MovementSpace.BlendResult blend
+            );
 
             if (hasBlend && !previousFrameWasBlend)
                 BeginBlendRail(blend);
@@ -426,15 +937,13 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 ClearBlendRailCache();
 
             previousFrameWasBlend = hasBlend;
+
             autoScrollDolly.CameraPosition = currentSplinePosition;
         }
 
         private void UpdateNormalFollow()
         {
-            if (!TryGetTrackingPoint(out Vector3 trackingPoint))
-                return;
-
-            targetSplinePosition = GetSplinePosition(trackingPoint);
+            targetSplinePosition = GetTrackingSplinePosition();
 
             if (followSmoothTime <= 0f)
             {
@@ -447,7 +956,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 currentSplinePosition,
                 targetSplinePosition,
                 ref splineVelocity,
-                followSmoothTime
+                followSmoothTime,
+                Mathf.Infinity,
+                Time.deltaTime
             );
         }
 
@@ -460,15 +971,21 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             cachedBlendWorldEnd = blend.WorldEnd;
 
             cachedBlendStartSplinePosition = currentSplinePosition;
-            cachedBlendEndSplinePosition = GetSplinePosition(blend.WorldEnd);
-            blendRailCacheValid = true;
 
+            cachedBlendEndSplinePosition = GetBlendSplinePosition(
+                blend.WorldEnd
+            );
+
+            blendRailCacheValid = true;
             targetSplinePosition = currentSplinePosition;
 
             if (debugEnabled)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Blend Rail | Start={cachedBlendStartSplinePosition:F3} End={cachedBlendEndSplinePosition:F3} T={blend.T:F3}",
+                    $"[{nameof(VCameraSetup_Follow)}] Blend Rail | " +
+                    $"Start={cachedBlendStartSplinePosition:F3} | " +
+                    $"End={cachedBlendEndSplinePosition:F3} | " +
+                    $"T={blend.T:F3}",
                     this
                 );
             }
@@ -509,11 +1026,14 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 currentSplinePosition,
                 targetSplinePosition,
                 ref splineVelocity,
-                blendFollowSmoothTime
+                blendFollowSmoothTime,
+                Mathf.Infinity,
+                Time.deltaTime
             );
         }
 
-        private void RefreshBlendRailCacheIfNeeded(MovementSpace.BlendResult blend)
+        private void RefreshBlendRailCacheIfNeeded(
+            MovementSpace.BlendResult blend)
         {
             bool newBlend =
                 !blendRailCacheValid ||
@@ -528,11 +1048,11 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 return;
             }
 
-            if (Vector3.SqrMagnitude(cachedBlendWorldEnd - blend.WorldEnd) <= 0.0001f)
+            if ((cachedBlendWorldEnd - blend.WorldEnd).sqrMagnitude <= 0.0001f)
                 return;
 
             cachedBlendWorldEnd = blend.WorldEnd;
-            cachedBlendEndSplinePosition = GetSplinePosition(blend.WorldEnd);
+            cachedBlendEndSplinePosition = GetBlendSplinePosition(blend.WorldEnd);
         }
 
         private void ClearBlendRailCache()
@@ -542,112 +1062,670 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             cachedBlendTarget = null;
         }
 
+        // =========================================================
+        // TRACKING POINT - COLLECTIVE CENTER
+        // =========================================================
+
+        /// <summary>
+        /// Retourne la moyenne des positions de tous les joueurs actifs.
+        /// Le centre de la caméra ne dépend donc plus de Player 1,
+        /// ni des extrémités d'une boîte englobante.
+        /// </summary>
         private bool TryGetTrackingPoint(out Vector3 trackingPoint)
         {
             trackingPoint = Vector3.zero;
 
-            CollectCameraTargets();
-
-            if (cachedCameraTargets.Count == 0)
-                return false;
-
-            if (lockCameraToPlayer1)
+            if (player1CameraFrozen)
             {
-                trackingPoint = cachedCameraTargets[0].position;
+                trackingPoint = player1LastValidPosition;
                 return true;
             }
 
-            Vector3 minimum = cachedCameraTargets[0].position;
-            Vector3 maximum = minimum;
+            // Le focus est mis à jour par GetTrackingSplinePosition().
+            // En l'absence de projection initialisée, on utilise Player 1
+            // comme référence temporaire.
+            if (focusedTrackingPlayer == null)
+                focusedTrackingPlayer = GetPlayer1();
 
-            for (int i = 1; i < cachedCameraTargets.Count; i++)
+            if (focusedTrackingPlayer == null)
+                return false;
+
+            trackingPoint = focusedTrackingPlayer.transform.position;
+            return true;
+        }
+
+        // =========================================================
+        // GAMEPLAY SPLINE PROJECTION CACHE
+        // =========================================================
+
+        private void BuildGameplayProjectionCache()
+        {
+            if (gameplaySplineContainer == null ||
+                gameplaySplineContainer.Spline == null)
             {
-                Vector3 position = cachedCameraTargets[i].position;
-
-                minimum = Vector3.Min(minimum, position);
-                maximum = Vector3.Max(maximum, position);
+                ClearGameplayProjectionCache();
+                return;
             }
 
-            trackingPoint = (minimum + maximum) * 0.5f;
+            Spline spline = gameplaySplineContainer.Spline;
+
+            gameplayProjectionSampleCount = Mathf.Max(
+                50,
+                gameplayProjectionSamples
+            );
+
+            int arrayLength = gameplayProjectionSampleCount + 1;
+
+            gameplayProjectionWorldSamples = new Vector3[arrayLength];
+            gameplayProjectionKnotSamples = new float[arrayLength];
+
+            float totalSampleDistance = 0f;
+
+            for (int i = 0; i <= gameplayProjectionSampleCount; i++)
+            {
+                float t = i / (float)gameplayProjectionSampleCount;
+
+                Vector3 localPosition = spline.EvaluatePosition(t);
+
+                Vector3 worldPosition =
+                    gameplaySplineContainer.transform.TransformPoint(localPosition);
+
+                float knot = SplineUtility.ConvertIndexUnit(
+                    spline,
+                    t,
+                    PathIndexUnit.Normalized,
+                    PathIndexUnit.Knot
+                );
+
+                gameplayProjectionWorldSamples[i] = worldPosition;
+                gameplayProjectionKnotSamples[i] = knot;
+
+                if (i > 0)
+                {
+                    totalSampleDistance += Vector3.Distance(
+                        gameplayProjectionWorldSamples[i - 1],
+                        worldPosition
+                    );
+                }
+            }
+
+            gameplayProjectionAverageSampleSpacing =
+                totalSampleDistance / Mathf.Max(1, gameplayProjectionSampleCount);
+
+            cachedGameplaySpline = spline;
+            cachedGameplayKnotCount = spline.Count;
+            cachedGameplayLocalToWorldMatrix =
+                gameplaySplineContainer.transform.localToWorldMatrix;
+
+            if (debugGameplaySpline)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"GameplaySpline cache construit | " +
+                    $"Samples={gameplayProjectionSampleCount} | " +
+                    $"Knots={cachedGameplayKnotCount} | " +
+                    $"AverageSpacing={gameplayProjectionAverageSampleSpacing:F4}",
+                    this
+                );
+            }
+        }
+
+        private void ClearGameplayProjectionCache()
+        {
+            gameplayProjectionWorldSamples = null;
+            gameplayProjectionKnotSamples = null;
+
+            gameplayProjectionSampleCount = 0;
+            gameplayProjectionAverageSampleSpacing = 0f;
+
+            cachedGameplaySpline = null;
+            cachedGameplayKnotCount = 0;
+        }
+
+        private bool EnsureGameplayProjectionCache()
+        {
+            if (gameplaySplineContainer == null ||
+                gameplaySplineContainer.Spline == null)
+                return false;
+
+            Spline currentSpline = gameplaySplineContainer.Spline;
+
+            bool cacheInvalid =
+                gameplayProjectionWorldSamples == null ||
+                gameplayProjectionKnotSamples == null ||
+                cachedGameplaySpline != currentSpline ||
+                cachedGameplayKnotCount != currentSpline.Count ||
+                gameplayProjectionSampleCount != Mathf.Max(50, gameplayProjectionSamples);
+
+            if (!cacheInvalid)
+            {
+                Matrix4x4 currentMatrix =
+                    gameplaySplineContainer.transform.localToWorldMatrix;
+
+                if (currentMatrix != cachedGameplayLocalToWorldMatrix)
+                    cacheInvalid = true;
+            }
+
+            if (cacheInvalid)
+            {
+                BuildGameplayProjectionCache();
+                ValidateSplineCorrespondence();
+                ResetGameplayProjection();
+            }
+
+            return gameplayProjectionWorldSamples != null &&
+                   gameplayProjectionKnotSamples != null &&
+                   gameplayProjectionSampleCount > 0;
+        }
+
+        // =========================================================
+        // INDIVIDUAL GAMEPLAY SPLINE PROJECTION
+        // =========================================================
+
+        private float GetTrackingSplinePosition()
+        {
+            if (!EnsureGameplayProjectionCache() ||
+                !splineCorrespondenceValid)
+                return currentSplinePosition;
+
+            CollectAllPlayers();
+
+            if (cachedPlayerMovements.Count == 0)
+                return currentSplinePosition;
+
+            PlayerMovement leadingPlayer = null;
+            float leadingKnot = float.MinValue;
+            float leadingDistance = 0f;
+            int leadingSampleIndex = -1;
+
+            // Chaque joueur conserve son propre historique de projection.
+            // Le focus est attribué à celui dont le Knot est le plus élevé.
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
+            {
+                PlayerMovement movement = cachedPlayerMovements[i];
+
+                if (movement == null)
+                    continue;
+
+                if (!playerProjectionStates.TryGetValue(
+                        movement,
+                        out PlayerProjectionState state))
+                {
+                    state = new PlayerProjectionState();
+                    playerProjectionStates.Add(movement, state);
+                }
+
+                Vector3 worldPosition = movement.transform.position;
+
+                if (!TryProjectOntoGameplaySpline(
+                        worldPosition,
+                        state,
+                        state.Initialized,
+                        gameplayProjectionSearchWindow,
+                        out float gameplayKnot,
+                        out float projectionDistance,
+                        out int projectedSampleIndex))
+                {
+                    if (state.Initialized && state.Knot > leadingKnot)
+                    {
+                        leadingPlayer = movement;
+                        leadingKnot = state.Knot;
+                        leadingDistance = float.MaxValue;
+                        leadingSampleIndex = state.SampleIndex;
+                    }
+
+                    continue;
+                }
+
+                state.Knot = gameplayKnot;
+                state.SampleIndex = projectedSampleIndex;
+                state.LastWorldPosition = worldPosition;
+                state.Initialized = true;
+
+                if (gameplayKnot > leadingKnot)
+                {
+                    leadingPlayer = movement;
+                    leadingKnot = gameplayKnot;
+                    leadingDistance = projectionDistance;
+                    leadingSampleIndex = projectedSampleIndex;
+                }
+
+                if (debugGameplaySpline &&
+                    projectionDistance > gameplayProjectionWarningDistance)
+                {
+                    UnityDebug.LogWarning(
+                        $"[{nameof(VCameraSetup_Follow)}] " +
+                        $"Joueur éloigné de la GameplaySpline. " +
+                        $"Player={movement.name} | " +
+                        $"Distance={projectionDistance:F2} | " +
+                        $"GS Knot={gameplayKnot:F3} | " +
+                        $"Sample={projectedSampleIndex}",
+                        movement
+                    );
+                }
+            }
+
+            RemoveInactiveProjectionStates();
+
+            if (leadingPlayer == null)
+                return currentSplinePosition;
+
+            focusedTrackingPlayer = leadingPlayer;
+            currentGameplaySplinePosition = leadingKnot;
+            gameplayProjectionInitialized = true;
+
+            if (debugGameplaySpline)
+            {
+                UnityDebug.Log(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Hard focus={leadingPlayer.name} | " +
+                    $"GS Knot={leadingKnot:F3} | " +
+                    $"Distance={leadingDistance:F2} | " +
+                    $"Sample={leadingSampleIndex}",
+                    leadingPlayer
+                );
+            }
+
+            return MapGameplayKnotToCameraKnot(currentGameplaySplinePosition);
+        }
+
+        private void RemoveInactiveProjectionStates()
+        {
+            if (playerProjectionStates.Count == 0)
+                return;
+
+            playersToRemove.Clear();
+
+            foreach (KeyValuePair<PlayerMovement, PlayerProjectionState> pair
+                     in playerProjectionStates)
+            {
+                if (pair.Key == null ||
+                    !cachedPlayerMovements.Contains(pair.Key))
+                {
+                    playersToRemove.Add(pair.Key);
+                }
+            }
+
+            for (int i = 0; i < playersToRemove.Count; i++)
+            {
+                PlayerMovement player = playersToRemove[i];
+
+                playerProjectionStates.Remove(player);
+                leashVelocities.Remove(player);
+                cameraConstraintVelocities.Remove(player);
+            }
+        }
+
+        private float GetBlendSplinePosition(Vector3 worldPosition)
+        {
+            if (!EnsureGameplayProjectionCache() ||
+                !splineCorrespondenceValid)
+                return currentSplinePosition;
+
+            // L'extrémité d'un Blend peut se trouver bien au-delà de la
+            // progression courante, notamment lors d'un virage serré entre
+            // deux Movement Spaces. Pendant le Blend, la progression normale
+            // est suspendue : une recherche locale centrée sur
+            // currentGameplaySplinePosition peut donc rester bloquée sur
+            // l'ancien segment de GS. On projette cette extrémité globalement.
+            float centerKnot = gameplayProjectionInitialized
+                ? currentGameplaySplinePosition
+                : 0f;
+
+            if (!TryProjectOntoGameplaySpline(
+                    worldPosition,
+                    null,
+                    false,
+                    blendProjectionSearchWindow,
+                    out float gameplayKnot,
+                    out float projectionDistance,
+                    out _))
+            {
+                if (debugGameplaySpline)
+                {
+                    UnityDebug.LogWarning(
+                        $"[{nameof(VCameraSetup_Follow)}] " +
+                        "Blend endpoint introuvable dans la fenêtre locale. " +
+                        $"GS={centerKnot:F3} | WorldEnd={worldPosition}",
+                        this
+                    );
+                }
+
+                return MapGameplayKnotToCameraKnot(centerKnot);
+            }
+
+            if (debugGameplaySpline &&
+                projectionDistance > gameplayProjectionWarningDistance)
+            {
+                UnityDebug.LogWarning(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Blend endpoint éloigné de la GameplaySpline. " +
+                    $"Distance={projectionDistance:F2} | GS Knot={gameplayKnot:F3}",
+                    this
+                );
+            }
+
+            return MapGameplayKnotToCameraKnot(gameplayKnot);
+        }
+
+        private bool TryProjectOntoGameplaySpline(
+            Vector3 worldPosition,
+            PlayerProjectionState state,
+            bool useContinuity,
+            float searchWindowKnots,
+            out float closestKnot,
+            out float closestDistance,
+            out int closestSampleIndex)
+        {
+            closestKnot = 0f;
+            closestDistance = float.MaxValue;
+            closestSampleIndex = -1;
+
+            // Les deux appelants valident/reconstruisent le cache avant
+            // d'entrer ici. Ne pas répéter cette validation pour chaque joueur :
+            // elle vérifie notamment la matrice du Transform et la Spline.
+            if (cachedGameplaySpline == null ||
+                gameplayProjectionWorldSamples == null ||
+                gameplayProjectionKnotSamples == null)
+                return false;
+
+            int sampleCount = gameplayProjectionSampleCount;
+
+            if (sampleCount <= 0)
+                return false;
+
+            Spline spline = cachedGameplaySpline;
+
+            int centerIndex = 0;
+            int searchRadius = sampleCount;
+
+            if (useContinuity && state != null && state.Initialized)
+            {
+                centerIndex = state.SampleIndex >= 0
+                    ? state.SampleIndex
+                    : FindNearestProjectionSample(state.Knot);
+
+                float knotRange = Mathf.Max(0.1f, searchWindowKnots);
+                float knotCount = Mathf.Max(1, cachedGameplayKnotCount - 1);
+
+                searchRadius = Mathf.CeilToInt(
+                    knotRange / knotCount * sampleCount
+                );
+
+                searchRadius = Mathf.Max(2, searchRadius);
+
+                // Ne pas réduire la fenêtre à partir du déplacement monde :
+                // l'espacement des échantillons n'est pas uniforme en distance
+                // lorsque la spline comporte des courbes serrées ou des tangentes
+                // très différentes. Cette réduction pouvait exclure le bon point
+                // de projection et faire décrocher le suivi dans les virages.
+
+                searchRadius = Mathf.Min(
+                    searchRadius,
+                    spline.Closed
+                        ? Mathf.Max(2, sampleCount / 2)
+                        : sampleCount
+                );
+            }
+
+            float bestScore = float.MaxValue;
+            float bestDistanceSquared = float.MaxValue;
+
+            int firstOffset = useContinuity ? -searchRadius : 0;
+            int lastOffset = useContinuity ? searchRadius : sampleCount;
+
+            for (int offset = firstOffset; offset <= lastOffset; offset++)
+            {
+                int sampleIndex;
+
+                if (useContinuity)
+                {
+                    sampleIndex = centerIndex + offset;
+
+                    if (spline.Closed)
+                    {
+                        sampleIndex %= sampleCount;
+
+                        if (sampleIndex < 0)
+                            sampleIndex += sampleCount;
+                    }
+                    else if (sampleIndex < 0 || sampleIndex > sampleCount)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    sampleIndex = offset;
+                }
+
+                Vector3 samplePosition =
+                    gameplayProjectionWorldSamples[sampleIndex];
+
+                float distanceSquared = GetHorizontalDistanceSquared(
+                    worldPosition,
+                    samplePosition
+                );
+
+                float progressionPenalty = 0f;
+
+                if (useContinuity)
+                {
+                    float progressionDistance =
+                        Mathf.Abs(offset) *
+                        gameplayProjectionAverageSampleSpacing;
+
+                    progressionPenalty =
+                        progressionDistance * projectionContinuityWeight;
+
+                    progressionPenalty *= progressionPenalty;
+                }
+
+                float score = distanceSquared + progressionPenalty;
+
+                if (score >= bestScore)
+                    continue;
+
+                bestScore = score;
+                bestDistanceSquared = distanceSquared;
+
+                closestKnot = gameplayProjectionKnotSamples[sampleIndex];
+                closestSampleIndex = sampleIndex;
+            }
+
+            if (closestSampleIndex < 0)
+                return false;
+
+            closestDistance = Mathf.Sqrt(bestDistanceSquared);
             return true;
+        }
+
+        private int FindNearestProjectionSample(float knot)
+        {
+            int sampleCount = gameplayProjectionSampleCount;
+
+            if (sampleCount <= 0 ||
+                gameplayProjectionKnotSamples == null)
+                return 0;
+
+            int low = 0;
+            int high = sampleCount;
+
+            while (low < high)
+            {
+                int middle = (low + high) / 2;
+
+                if (gameplayProjectionKnotSamples[middle] < knot)
+                    low = middle + 1;
+                else
+                    high = middle;
+            }
+
+            if (low <= 0)
+                return 0;
+
+            if (low >= sampleCount)
+                return sampleCount;
+
+            float lowerDifference = Mathf.Abs(
+                gameplayProjectionKnotSamples[low - 1] - knot
+            );
+
+            float upperDifference = Mathf.Abs(
+                gameplayProjectionKnotSamples[low] - knot
+            );
+
+            return lowerDifference <= upperDifference
+                ? low - 1
+                : low;
+        }
+
+        private static float GetHorizontalDistanceSquared(
+            Vector3 first,
+            Vector3 second)
+        {
+            float dx = first.x - second.x;
+            float dz = first.z - second.z;
+
+            return dx * dx + dz * dz;
+        }
+
+        // =========================================================
+        // GAMEPLAY KNOT -> CAMERA KNOT
+        // =========================================================
+
+        private float MapGameplayKnotToCameraKnot(float gameplayKnot)
+        {
+            if (!splineCorrespondenceValid ||
+                cameraSplineContainer == null)
+                return currentSplinePosition;
+
+            int cameraKnotCount = cameraSplineContainer.Spline.Count;
+
+            if (cameraKnotCount <= 1)
+                return 0f;
+
+            return Mathf.Clamp(
+                gameplayKnot,
+                0f,
+                cameraKnotCount - 1f
+            );
+        }
+
+        private void ResetGameplayProjection()
+        {
+            gameplayProjectionInitialized = false;
+            currentGameplaySplinePosition = 0f;
+
+            foreach (PlayerProjectionState state in playerProjectionStates.Values)
+            {
+                state.Knot = 0f;
+                state.SampleIndex = -1;
+                state.LastWorldPosition = Vector3.zero;
+                state.Initialized = false;
+            }
+        }
+
+        private void ValidateSplineCorrespondence()
+        {
+            if (gameplaySplineContainer == null ||
+                cameraSplineContainer == null)
+            {
+                splineCorrespondenceValid = false;
+                return;
+            }
+
+            int gameplayCount = gameplaySplineContainer.Spline.Count;
+            int cameraCount = cameraSplineContainer.Spline.Count;
+
+            if (gameplayCount != cameraCount)
+            {
+                splineCorrespondenceValid = false;
+
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    "Correspondance GS / CS impossible : " +
+                    "les Splines doivent avoir exactement le même nombre de Knots. " +
+                    $"GS={gameplayCount} | CS={cameraCount}.",
+                    this
+                );
+
+                return;
+            }
+
+            splineCorrespondenceValid = true;
+
+            UnityDebug.Log(
+                $"[{nameof(VCameraSetup_Follow)}] " +
+                $"Correspondance GS / CS validée : {gameplayCount} Knots.",
+                this
+            );
         }
 
         // =========================================================
         // CAMERA ROTATION
         // =========================================================
 
-        private void HandleCameraLockModeChange()
+        private Transform GetAutoScrollRotationRoot()
         {
-            if (previousCameraLockState == lockCameraToPlayer1)
-                return;
+            if (autoScrollRotationRoot != null)
+                return autoScrollRotationRoot;
 
-            // Conserve l'orientation actuelle de la caméra au changement de mode.
-            Quaternion currentCameraRotation = autoScrollCamera.transform.rotation;
-            Quaternion newMovementRotation = GetCameraMovementSpaceRotation();
-
-            cameraRotationOffsetFromMovementSpace =
-                Quaternion.Inverse(newMovementRotation) *
-                currentCameraRotation;
-
-            cameraReferenceInitialized = true;
-            currentHorizontalCorrection = 0f;
-            horizontalCorrectionVelocity = 0f;
-
-            previousCameraLockState = lockCameraToPlayer1;
-
-            previousFrameWasBlend = false;
-            currentBlendActive = false;
-            ClearBlendRailCache();
-
-            if (debugEnabled)
-            {
-                UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Camera lock changé : {lockCameraToPlayer1}",
-                    this
-                );
-            }
+            return autoScrollCamera != null
+                ? autoScrollCamera.transform
+                : null;
         }
 
         private void InitializeCameraReference()
         {
-            if (autoScrollCamera == null || !HasValidPlayerMovement())
+            if (autoScrollCamera == null ||
+                !HasValidPlayerMovement())
                 return;
 
-            Quaternion movementSpaceRotation = GetCameraMovementSpaceRotation();
+            Quaternion movementSpaceRotation =
+                GetCameraMovementSpaceRotation();
+
+            Transform rotationRoot = GetAutoScrollRotationRoot();
 
             cameraRotationOffsetFromMovementSpace =
                 Quaternion.Inverse(movementSpaceRotation) *
-                autoScrollCamera.transform.rotation;
+                rotationRoot.rotation;
 
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
+
             cameraReferenceInitialized = true;
         }
 
         private void UpdateAutoScrollCameraRotation()
         {
-            if (autoScrollCamera == null || !HasValidPlayerMovement())
+            if (autoScrollCamera == null ||
+                player1CameraFrozen ||
+                !HasValidPlayerMovement())
                 return;
 
             if (!cameraReferenceInitialized)
                 InitializeCameraReference();
 
-            Quaternion movementSpaceRotation = GetCameraMovementSpaceRotation();
+            Quaternion movementSpaceRotation =
+                GetCameraMovementSpaceRotation();
 
             Quaternion baseRotation =
-                movementSpaceRotation * cameraRotationOffsetFromMovementSpace;
+                movementSpaceRotation *
+                cameraRotationOffsetFromMovementSpace;
 
             float targetCorrection = 0f;
 
             if (framingCorrectionEnabled &&
                 TryGetTrackingPoint(out Vector3 trackingPoint))
             {
-                Vector3 framingPoint = trackingPoint + framingTargetOffset;
+                Vector3 framingPoint =
+                    trackingPoint + framingTargetOffset;
 
                 if (TryGetHorizontalViewportPosition(
-                    baseRotation,
-                    framingPoint,
-                    out float viewportX))
+                        baseRotation,
+                        framingPoint,
+                        out float viewportX))
                 {
                     targetCorrection =
                         GetHorizontalScreenError(viewportX) *
@@ -669,15 +1747,19 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                     currentHorizontalCorrection,
                     targetCorrection,
                     ref horizontalCorrectionVelocity,
-                    horizontalCorrectionSmoothTime
+                    horizontalCorrectionSmoothTime,
+                    Mathf.Infinity,
+                    Time.deltaTime
                 );
             }
 
             Vector3 rotationAxis = movementSpaceRotation * Vector3.up;
 
-            autoScrollCamera.transform.rotation =
-                Quaternion.AngleAxis(currentHorizontalCorrection, rotationAxis) *
-                baseRotation;
+            GetAutoScrollRotationRoot().rotation =
+                Quaternion.AngleAxis(
+                    currentHorizontalCorrection,
+                    rotationAxis
+                ) * baseRotation;
         }
 
         private bool TryGetHorizontalViewportPosition(
@@ -694,13 +1776,17 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (localDirection.z <= 0.001f)
                 return false;
 
-            float aspect = outputCamera != null && outputCamera.aspect > 0f
-                ? outputCamera.aspect
-                : 16f / 9f;
+            float aspect =
+                outputCamera != null && outputCamera.aspect > 0f
+                    ? outputCamera.aspect
+                    : 16f / 9f;
 
             float verticalFov =
-                Mathf.Clamp(autoScrollCamera.Lens.FieldOfView, 1f, 179f) *
-                Mathf.Deg2Rad;
+                Mathf.Clamp(
+                    autoScrollCamera.Lens.FieldOfView,
+                    1f,
+                    179f
+                ) * Mathf.Deg2Rad;
 
             float tanHalfHorizontalFov =
                 Mathf.Tan(verticalFov * 0.5f) * aspect;
@@ -728,18 +1814,22 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (viewportX > right)
             {
                 return Mathf.Clamp01(
-                    (viewportX - right) / Mathf.Max(0.001f, 1f - right)
+                    (viewportX - right) /
+                    Mathf.Max(0.001f, 1f - right)
                 );
             }
 
             return -Mathf.Clamp01(
-                (left - viewportX) / Mathf.Max(0.001f, left)
+                (left - viewportX) /
+                Mathf.Max(0.001f, left)
             );
         }
 
         private void ApplyMovementSpaceCameraRotationImmediate()
         {
-            if (autoScrollCamera == null || !HasValidPlayerMovement())
+            if (autoScrollCamera == null ||
+                player1CameraFrozen ||
+                !HasValidPlayerMovement())
                 return;
 
             if (!cameraReferenceInitialized)
@@ -748,183 +1838,137 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
 
-            autoScrollCamera.transform.rotation =
+            GetAutoScrollRotationRoot().rotation =
                 GetCameraMovementSpaceRotation() *
                 cameraRotationOffsetFromMovementSpace;
         }
 
         // =========================================================
-        // OTHER PLAYERS CAMERA CONSTRAINT
+        // MULTIPLAYER CAMERA CONSTRAINT
         // =========================================================
 
-        private void ConstrainOtherPlayersToCamera()
+        /// <summary>
+        /// Contraint tous les joueurs dans les limites relatives à la caméra.
+        /// La correction est calculée en viewport et conserve la profondeur
+        /// caméra du personnage.
+        ///
+        /// Cette méthode est utilisée uniquement en multijoueur.
+        /// </summary>
+        private void ConstrainAllPlayersToCamera()
         {
-            if (!lockCameraToPlayer1 ||
-                !constrainOtherPlayersToCamera ||
-                combatMode)
-            {
+            if (!constrainAllPlayersToCamera ||
+                combatMode ||
+                cachedPlayerMovements.Count <= 1)
                 return;
-            }
 
-            // Always refresh the PlayerManager list before checking its contents.
-            CollectAllPlayers();
-
-            // Diagnostic runs BEFORE the player-count and camera checks so we can
-            // determine whether Player 2 is actually being returned by PlayerManager.
-            DebugCameraPlayerDetection();
-
-            // Resolve the real render camera at runtime as well as in the gizmo path.
-            // CinemachineCamera is a virtual camera; constraints must use the Unity Camera
-            // that actually renders its output.
             if (outputCamera == null)
                 outputCamera = Camera.main;
 
-            if (outputCamera == null)
-            {
-                if (debugCameraConstraint)
-                    if(debugEnabled)UnityDebug.LogError(
-                        $"[{nameof(VCameraSetup_Follow)}] CONSTRAINT ABORTED: outputCamera is NULL. " +
-                        "Assign the real Unity Camera (Cinemachine Brain output) to Output Camera.",
-                        this
-                    );
-                return;
-            }
-
-            if (cachedPlayerMovements.Count <= 1)
+            if (outputCamera == null || !outputCamera.isActiveAndEnabled)
                 return;
 
-            PlayerMovement player1 = cachedPlayerMovements[0];
+            float minX = -cameraBoundaryOffsetLeft;
+            float maxX = 1f + cameraBoundaryOffsetRight;
 
-            if (player1 == null)
-                return;
+            float minY = -cameraBoundaryOffsetBottom;
+            float maxY = 1f + cameraBoundaryOffsetTop;
 
-            Transform cameraTransform = outputCamera.transform;
+            float fixedDeltaTime = Time.fixedDeltaTime;
 
-            // Camera-relative axes: these automatically account for camera rotation.
-            Vector3 cameraPosition = cameraTransform.position;
-            Vector3 cameraRight = cameraTransform.right;
-            Vector3 cameraUp = cameraTransform.up;
-            Vector3 cameraForward = cameraTransform.forward;
-
-            float halfHeight;
-            float halfWidth;
-
-            for (int i = 1; i < cachedPlayerMovements.Count; i++)
+            // Tous les joueurs sont traités, y compris Player 1.
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
             {
                 PlayerMovement movement = cachedPlayerMovements[i];
 
-                if (movement == null || movement == player1)
+                if (movement == null)
                     continue;
 
                 Vector3 worldPosition = movement.transform.position;
                 Vector3 targetPosition = worldPosition + framingTargetOffset;
-                Vector3 relativePosition = targetPosition - cameraPosition;
 
-                float depth = Vector3.Dot(relativePosition, cameraForward);
-                bool isBehindOrTooClose = depth <= outputCamera.nearClipPlane;
+                Vector3 viewportPosition =
+                    outputCamera.WorldToViewportPoint(targetPosition);
 
-                // A player behind the camera must NOT be skipped. ViewportPoint
-                // returns (0,0,0) for this case, but that does not mean the player
-                // should be ignored by the leash. Project the correction onto a
-                // small plane in front of the camera and place the player on the
-                // nearest horizontal edge of the expanded bounds.
-                if (isBehindOrTooClose)
+                if (viewportPosition.z <= outputCamera.nearClipPlane + 0.05f)
                 {
-                    depth = Mathf.Max(outputCamera.nearClipPlane + 1f, 1.5f);
-                }
-
-                if (outputCamera.orthographic)
-                {
-                    halfHeight = outputCamera.orthographicSize;
-                    halfWidth = halfHeight * outputCamera.aspect;
-                }
-                else
-                {
-                    halfHeight = depth *
-                        Mathf.Tan(outputCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
-                    halfWidth = halfHeight * outputCamera.aspect;
-                }
-
-                float cameraX = Vector3.Dot(relativePosition, cameraRight);
-                float cameraY = Vector3.Dot(relativePosition, cameraUp);
-
-                if (isBehindOrTooClose)
-                {
-                    // Preserve a rough left/right preference, but force the
-                    // target outside the visible frame so the normal leash
-                    // correction moves it onto the tolerance boundary.
-                    float side = Mathf.Abs(cameraX) > 0.01f
-                        ? Mathf.Sign(cameraX)
-                        : (Mathf.Abs(cameraY) > 0.01f ? Mathf.Sign(cameraY) : 1f);
-
-                    cameraX = side * (halfWidth + cameraConstraintWorldTolerance + 0.25f);
-                    cameraY = 0f;
-                }
-
-                float outsideX = Mathf.Max(Mathf.Abs(cameraX) - halfWidth, 0f);
-                float outsideY = Mathf.Max(Mathf.Abs(cameraY) - halfHeight, 0f);
-                float outsideDistance = new Vector2(outsideX, outsideY).magnitude;
-
-                if (outsideDistance <= cameraConstraintWorldTolerance)
+                    cameraConstraintVelocities.Remove(movement);
                     continue;
-
-                float correctionRatio = cameraConstraintWorldTolerance / outsideDistance;
-
-                float correctedX = cameraX;
-                float correctedY = cameraY;
-
-                if (outsideX > 0f)
-                {
-                    correctedX = Mathf.Sign(cameraX) *
-                        (halfWidth + outsideX * correctionRatio);
                 }
 
-                if (outsideY > 0f)
+                float correctedX = Mathf.Clamp(
+                    viewportPosition.x,
+                    minX,
+                    maxX
+                );
+
+                float correctedY = Mathf.Clamp(
+                    viewportPosition.y,
+                    minY,
+                    maxY
+                );
+
+                bool outsideHorizontal =
+                    !Mathf.Approximately(correctedX, viewportPosition.x);
+
+                bool outsideVertical =
+                    !Mathf.Approximately(correctedY, viewportPosition.y);
+
+                if (!outsideHorizontal && !outsideVertical)
                 {
-                    correctedY = Mathf.Sign(cameraY) *
-                        (halfHeight + outsideY * correctionRatio);
+                    cameraConstraintVelocities.Remove(movement);
+                    continue;
                 }
+
+                Vector3 correctedViewportPosition = new Vector3(
+                    correctedX,
+                    correctedY,
+                    viewportPosition.z
+                );
 
                 Vector3 correctedTargetPosition =
-                    cameraPosition +
-                    cameraForward * depth +
-                    cameraRight * correctedX +
-                    cameraUp * correctedY;
+                    outputCamera.ViewportToWorldPoint(correctedViewportPosition);
 
-                Vector3 correctedWorldPosition = correctedTargetPosition - framingTargetOffset;
+                Vector3 correctedWorldPosition =
+                    correctedTargetPosition - framingTargetOffset;
 
-                // Route the correction through PlayerMovement instead of writing directly
-                // to Transform. Direct Transform writes can be overwritten by the next
-                // CharacterController / MovementSpace update.
-                Vector3 correctionDelta = correctedWorldPosition - worldPosition;
-                movement.ApplyExternalMovement(correctionDelta);
+                Vector3 correction =
+                    correctedWorldPosition - worldPosition;
 
-                Vector3 actualAfterPosition = movement.transform.position;
+                correction = SmoothCorrection(
+                    movement,
+                    correction,
+                    cameraConstraintVelocities,
+                    cameraConstraintSmoothTime,
+                    cameraConstraintMaxCorrectionSpeed,
+                    fixedDeltaTime
+                );
 
-                if (debugCameraConstraint)
+                if (correction.sqrMagnitude <= 0.000001f)
+                    continue;
+
+                movement.ApplyExternalMovement(correction);
+
+                if (debugCameraConstraint && debugEnabled)
                 {
-                    if(debugEnabled)UnityDebug.LogWarning(
-                        $"[{nameof(VCameraSetup_Follow)}] PLAYER {i} CONSTRAINT APPLIED | " +
-                        $"Name={movement.name} | Outside={outsideDistance:F2} | " +
-                        $"Tolerance={cameraConstraintWorldTolerance:F2} | " +
-                        $"BehindOrTooClose={isBehindOrTooClose} | ProjectedDepth={depth:F2} | " +
-                        $"RequestedDelta={correctionDelta} | Before={worldPosition} | " +
-                        $"RequestedAfter={correctedWorldPosition} | ActualAfter={actualAfterPosition}",
+                    UnityDebug.Log(
+                        $"[{nameof(VCameraSetup_Follow)}] SCREEN WALL | " +
+                        $"Player={movement.name} | " +
+                        $"Index={i} | " +
+                        $"Viewport={viewportPosition} | " +
+                        $"Limits=({minX:F2},{maxX:F2},{minY:F2},{maxY:F2}) | " +
+                        $"Correction={correction}",
                         movement
                     );
-
-                    UnityDebug.DrawLine(worldPosition, correctedWorldPosition, Color.red, 0.2f);
-                    UnityDebug.DrawLine(correctedWorldPosition, actualAfterPosition, Color.magenta, 0.2f);
-                    UnityDebug.DrawRay(actualAfterPosition, cameraRight * 0.5f, Color.green, 0.2f);
                 }
             }
         }
 
+        // =========================================================
+        // GIZMOS
+        // =========================================================
+
         private void OnDrawGizmos()
         {
-            // Intentionally independent from lockCameraToPlayer1 and
-            // constrainOtherPlayersToCamera: the debug geometry must remain
-            // visible even while the constraint itself is disabled.
             if (!drawCameraConstraintGizmos)
                 return;
 
@@ -933,9 +1977,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void OnDrawGizmosSelected()
         {
-            // OnDrawGizmos already handles the always-on case. This callback
-            // is retained as a fallback when Always is disabled.
-            if (!drawCameraConstraintGizmos || drawCameraConstraintGizmosAlways)
+            if (!drawCameraConstraintGizmos ||
+                drawCameraConstraintGizmosAlways)
                 return;
 
             DrawCameraConstraintGizmos();
@@ -949,16 +1992,16 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (Camera.main != null)
                 return Camera.main;
 
-            // Camera.main only finds cameras tagged MainCamera. Cinemachine
-            // output cameras are not guaranteed to carry that tag.
             Camera[] cameras = Camera.allCameras;
+
             for (int i = 0; i < cameras.Length; i++)
             {
-                if (cameras[i] != null && cameras[i].enabled && cameras[i].gameObject.activeInHierarchy)
+                if (cameras[i] != null &&
+                    cameras[i].enabled &&
+                    cameras[i].gameObject.activeInHierarchy)
                     return cameras[i];
             }
 
-            // Useful when this component is placed on the actual camera rig.
             return GetComponentInChildren<Camera>(true);
         }
 
@@ -970,81 +2013,102 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             {
 #if UNITY_EDITOR
                 Handles.color = Color.red;
-                Handles.Label(transform.position,
-                    "VCameraSetup_Follow: NO OUTPUT CAMERA FOUND\nAssign Output Camera in the Inspector.");
+                Handles.Label(
+                    transform.position,
+                    "VCameraSetup_Follow: NO OUTPUT CAMERA FOUND"
+                );
 #endif
-                // Make the missing-camera state impossible to overlook.
                 Gizmos.color = Color.red;
                 Gizmos.DrawWireSphere(transform.position, 0.75f);
-                Gizmos.DrawLine(transform.position - Vector3.right, transform.position + Vector3.right);
-                Gizmos.DrawLine(transform.position - Vector3.up, transform.position + Vector3.up);
                 return;
             }
 
             Transform cameraTransform = cameraToDraw.transform;
+
             Vector3 cameraPosition = cameraTransform.position;
             Vector3 cameraRight = cameraTransform.right;
             Vector3 cameraUp = cameraTransform.up;
             Vector3 cameraForward = cameraTransform.forward;
 
-            // Reference bounds: fixed world depth, always drawn when gizmos are enabled.
-            float referenceDepth = Mathf.Max(cameraToDraw.nearClipPlane + 0.1f, debugBoundsReferenceDepth);
-            DrawBoundsAtDepth(
-                cameraToDraw, cameraPosition, cameraRight, cameraUp, cameraForward,
-                referenceDepth, "CAMERA REFERENCE", Mathf.Max(0.01f, debugBoundsVisualScale)
+            float referenceDepth = Mathf.Max(
+                cameraToDraw.nearClipPlane + 0.1f,
+                debugBoundsReferenceDepth
             );
 
-            // Draw a visible axis marker at the actual output camera position.
+            DrawBoundsAtDepth(
+                cameraToDraw,
+                cameraPosition,
+                cameraRight,
+                cameraUp,
+                cameraForward,
+                referenceDepth,
+                "CAMERA REFERENCE",
+                Mathf.Max(0.01f, debugBoundsVisualScale)
+            );
+
             float markerSize = Mathf.Max(0.2f, referenceDepth * 0.025f);
+
             Gizmos.color = Color.white;
             Gizmos.DrawWireSphere(cameraPosition, markerSize);
-            Gizmos.DrawLine(cameraPosition, cameraPosition + cameraForward * referenceDepth);
+
+            Gizmos.DrawLine(
+                cameraPosition,
+                cameraPosition + cameraForward * referenceDepth
+            );
 
 #if UNITY_EDITOR
             if (drawDebugBoundsLabels)
             {
                 Handles.color = Color.white;
-                Handles.Label(cameraPosition + cameraUp * markerSize * 2f,
-                    $"OUTPUT CAMERA: {cameraToDraw.name}\nDepth: {referenceDepth:F1} | FOV: {cameraToDraw.fieldOfView:F1} | Aspect: {cameraToDraw.aspect:F2}");
+                Handles.Label(
+                    cameraPosition + cameraUp * markerSize * 2f,
+                    $"OUTPUT CAMERA: {cameraToDraw.name}\nDepth: {referenceDepth:F1}"
+                );
             }
 #endif
 
-            // Player-dependent bounds are supplementary; the camera reference
-            // rectangle above does not depend on PlayerManager or Play Mode.
-            if (!Application.isPlaying || !drawBoundsAtEachPlayerDepth || playerManager == null)
+            if (!Application.isPlaying ||
+                !drawBoundsAtEachPlayerDepth ||
+                playerManager == null)
                 return;
 
             CollectAllPlayers();
-            if (cachedPlayerMovements.Count <= 1 || cachedPlayerMovements[0] == null)
-                return;
 
-            for (int i = 1; i < cachedPlayerMovements.Count; i++)
+            for (int i = 0; i < cachedPlayerMovements.Count; i++)
             {
                 PlayerMovement movement = cachedPlayerMovements[i];
-                if (movement == null || movement == cachedPlayerMovements[0])
+
+                if (movement == null)
                     continue;
 
-                Vector3 targetPosition = movement.transform.position + framingTargetOffset;
-                float playerDepth = Vector3.Dot(targetPosition - cameraPosition, cameraForward);
+                Vector3 targetPosition =
+                    movement.transform.position + framingTargetOffset;
 
-                Gizmos.color = playerDepth <= cameraToDraw.nearClipPlane ? Color.red : Color.magenta;
+                float playerDepth = Vector3.Dot(
+                    targetPosition - cameraPosition,
+                    cameraForward
+                );
+
+                Gizmos.color =
+                    playerDepth <= cameraToDraw.nearClipPlane
+                        ? Color.red
+                        : Color.magenta;
+
                 Gizmos.DrawWireSphere(targetPosition, markerSize * 0.75f);
-                Gizmos.DrawLine(targetPosition, cameraPosition + cameraForward * Mathf.Max(0f, playerDepth));
 
                 if (playerDepth > cameraToDraw.nearClipPlane)
                 {
                     DrawBoundsAtDepth(
-                        cameraToDraw, cameraPosition, cameraRight, cameraUp, cameraForward,
-                        playerDepth, $"PLAYER {i} DEPTH", Mathf.Max(0.01f, debugBoundsVisualScale)
+                        cameraToDraw,
+                        cameraPosition,
+                        cameraRight,
+                        cameraUp,
+                        cameraForward,
+                        playerDepth,
+                        $"PLAYER {i} DEPTH",
+                        Mathf.Max(0.01f, debugBoundsVisualScale)
                     );
                 }
-#if UNITY_EDITOR
-                else if (drawDebugBoundsLabels)
-                {
-                    Handles.color = Color.red;
-                    Handles.Label(targetPosition, $"PLAYER {i}: BEHIND / BEFORE NEAR CLIP");
-                }
-#endif
             }
         }
 
@@ -1068,48 +2132,91 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             }
             else
             {
-                halfHeight = depth * Mathf.Tan(cameraToDraw.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                halfHeight = depth *
+                    Mathf.Tan(
+                        cameraToDraw.fieldOfView *
+                        0.5f * Mathf.Deg2Rad
+                    );
+
                 halfWidth = halfHeight * cameraToDraw.aspect;
             }
 
             halfHeight *= visualScale;
             halfWidth *= visualScale;
-            Vector3 planeCenter = cameraPosition + cameraForward * depth;
-            float tolerance = cameraConstraintWorldTolerance * visualScale;
 
-            // Actual visible frame (cyan) and tolerance envelope (yellow).
+            Vector3 planeCenter =
+                cameraPosition + cameraForward * depth;
+
             DrawCameraConstraintRectangle(
-                planeCenter, cameraRight, cameraUp, halfWidth, halfHeight, Color.cyan
+                planeCenter,
+                cameraRight,
+                cameraUp,
+                halfWidth,
+                halfHeight,
+                Color.cyan
             );
+
+            float left = -cameraBoundaryOffsetLeft;
+            float right = 1f + cameraBoundaryOffsetRight;
+            float bottom = -cameraBoundaryOffsetBottom;
+            float top = 1f + cameraBoundaryOffsetTop;
+
+            float safeHalfWidth =
+                halfWidth * (right - left);
+
+            float safeHalfHeight =
+                halfHeight * (top - bottom);
+
+            Vector3 boundaryCenter =
+                planeCenter +
+                cameraRight * (halfWidth * (left + right - 1f)) +
+                cameraUp * (halfHeight * (bottom + top - 1f));
+
             DrawCameraConstraintRectangle(
-                planeCenter, cameraRight, cameraUp,
-                halfWidth + tolerance, halfHeight + tolerance, Color.yellow
+                boundaryCenter,
+                cameraRight,
+                cameraUp,
+                safeHalfWidth * 0.5f,
+                safeHalfHeight * 0.5f,
+                Color.green
             );
 
             if (drawDebugBoundsMarkers)
             {
                 float marker = Mathf.Max(0.08f, depth * 0.008f);
+
                 Gizmos.color = Color.cyan;
                 Gizmos.DrawWireSphere(planeCenter, marker);
-                Gizmos.DrawWireSphere(planeCenter - cameraRight * halfWidth - cameraUp * halfHeight, marker);
-                Gizmos.DrawWireSphere(planeCenter + cameraRight * halfWidth + cameraUp * halfHeight, marker);
-                Gizmos.DrawWireSphere(planeCenter - cameraRight * halfWidth + cameraUp * halfHeight, marker);
-                Gizmos.DrawWireSphere(planeCenter + cameraRight * halfWidth - cameraUp * halfHeight, marker);
 
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawWireSphere(planeCenter - cameraRight * (halfWidth + tolerance) - cameraUp * (halfHeight + tolerance), marker);
-                Gizmos.DrawWireSphere(planeCenter + cameraRight * (halfWidth + tolerance) + cameraUp * (halfHeight + tolerance), marker);
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireSphere(
+                    planeCenter +
+                    cameraRight * safeHalfWidth +
+                    cameraUp * safeHalfHeight,
+                    marker
+                );
             }
 
 #if UNITY_EDITOR
             if (drawDebugBoundsLabels)
             {
                 Handles.color = Color.cyan;
-                Handles.Label(planeCenter,
-                    $"{label} - VISIBLE\nDepth: {depth:F1} | Half: {halfWidth:F1} x {halfHeight:F1}");
-                Handles.color = Color.yellow;
-                Handles.Label(planeCenter + cameraUp * (halfHeight + tolerance),
-                    $"OUTER LIMIT: +{cameraConstraintWorldTolerance:F1} units");
+                Handles.Label(
+                    planeCenter,
+                    $"{label} - VISIBLE\n" +
+                    $"Depth: {depth:F1} | " +
+                    $"Half: {halfWidth:F1} x {halfHeight:F1}"
+                );
+
+                Handles.color = Color.green;
+                Handles.Label(
+                    boundaryCenter + cameraUp * safeHalfHeight * 0.5f,
+                    $"CAMERA WALLS\n" +
+                    $"L: {cameraBoundaryOffsetLeft:+0.00;-0.00;0.00} | " +
+                    $"R: {cameraBoundaryOffsetRight:+0.00;-0.00;0.00}\n" +
+                    $"B: {cameraBoundaryOffsetBottom:+0.00;-0.00;0.00} | " +
+                    $"T: {cameraBoundaryOffsetTop:+0.00;-0.00;0.00}"
+                );
             }
 #endif
         }
@@ -1122,101 +2229,26 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             float halfHeight,
             Color color)
         {
-            Vector3 topLeft = center - right * halfWidth + up * halfHeight;
-            Vector3 topRight = center + right * halfWidth + up * halfHeight;
-            Vector3 bottomRight = center + right * halfWidth - up * halfHeight;
-            Vector3 bottomLeft = center - right * halfWidth - up * halfHeight;
+            Vector3 topLeft =
+                center - right * halfWidth + up * halfHeight;
+
+            Vector3 topRight =
+                center + right * halfWidth + up * halfHeight;
+
+            Vector3 bottomRight =
+                center + right * halfWidth - up * halfHeight;
+
+            Vector3 bottomLeft =
+                center - right * halfWidth - up * halfHeight;
 
             Gizmos.color = color;
+
             Gizmos.DrawLine(topLeft, topRight);
             Gizmos.DrawLine(topRight, bottomRight);
             Gizmos.DrawLine(bottomRight, bottomLeft);
             Gizmos.DrawLine(bottomLeft, topLeft);
         }
 
-        private void DebugCameraPlayerDetection()
-        {
-            if (!debugCameraConstraint)
-                return;
-
-            // One diagnostic report per second to avoid flooding the Console.
-            if (Time.unscaledTime - lastPlayerDetectionDebugTime < 1f)
-                return;
-
-            lastPlayerDetectionDebugTime = Time.unscaledTime;
-
-            string cameraName = outputCamera != null ? outputCamera.name : "NULL";
-            string managerName = playerManager != null ? playerManager.name : "NULL";
-
-            if(debugEnabled)UnityDebug.Log(
-                $"========== CAMERA PLAYER DETECTION ==========" +
-                $"\nCamera output: {cameraName}" +
-                $"\nPlayerManager: {managerName}" +
-                $"\nPlayerManager list count: {cachedPlayerMovements.Count}" +
-                $"\nLock camera to Player 1: {lockCameraToPlayer1}" +
-                $"\nConstraint enabled: {constrainOtherPlayersToCamera}",
-                this
-            );
-
-            if (playerManager == null)
-            {
-                if(debugEnabled)UnityDebug.LogError(
-                    $"[{nameof(VCameraSetup_Follow)}] PlayerManager is NULL. No players can be collected.",
-                    this
-                );
-                return;
-            }
-
-            for (int i = 0; i < cachedPlayerMovements.Count; i++)
-            {
-                PlayerMovement player = cachedPlayerMovements[i];
-
-                if (player == null)
-                {
-                    UnityDebug.LogWarning(
-                        $"[{nameof(VCameraSetup_Follow)}] PlayerManager entry [{i}] is NULL.",
-                        this
-                    );
-                    continue;
-                }
-
-                Vector3 worldPosition = player.transform.position;
-                Vector3 viewportPosition = outputCamera != null
-                    ? outputCamera.WorldToViewportPoint(worldPosition + framingTargetOffset)
-                    : Vector3.zero;
-
-                bool inFrontOfCamera = outputCamera != null &&
-                    viewportPosition.z > outputCamera.nearClipPlane;
-
-                bool insideViewport = inFrontOfCamera &&
-                    viewportPosition.x >= 0f && viewportPosition.x <= 1f &&
-                    viewportPosition.y >= 0f && viewportPosition.y <= 1f;
-
-                if(debugEnabled)UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] PLAYER [{i}] " +
-                    $"{(i == 0 ? "(CAMERA TARGET / PLAYER 1)" : "(SECONDARY PLAYER)")}" +
-                    $"\nName: {player.name}" +
-                    $"\nInstance ID: {player.GetEntityId()}" +
-                    $"\nGameObject active: {player.gameObject.activeInHierarchy}" +
-                    $"\nPlayerMovement enabled: {player.enabled}" +
-                    $"\nWorld position: {worldPosition}" +
-                    $"\nViewport position: {viewportPosition}" +
-                    $"\nIn front of camera: {inFrontOfCamera}" +
-                    $"\nInside visible viewport: {insideViewport}",
-                    player
-                );
-            }
-
-            if (cachedPlayerMovements.Count <= 1)
-            {
-                UnityDebug.LogWarning(
-                    $"[{nameof(VCameraSetup_Follow)}] PlayerManager currently returns " +
-                    $"{cachedPlayerMovements.Count} active PlayerMovement component(s). " +
-                    "Player 2 is therefore NOT available to the camera constraint.",
-                    this
-                );
-            }
-        }
 
         // =========================================================
         // GROUP FRAMING / DYNAMIC FOV
@@ -1224,73 +2256,88 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void UpdateGroupFraming()
         {
-            if (!groupFramingEnabled || autoScrollCamera == null)
+            if (autoScrollCamera == null ||
+                combatMode ||
+                player1CameraFrozen)
                 return;
 
-            if (combatMode)
-                return;
+            CollectAllPlayers();
 
-            CollectCameraTargets();
-
-            float requiredFov = baseAutoScrollFov;
-
-            if (cachedCameraTargets.Count > 0)
+            // En solo, le FOV revient à sa valeur de base/minimale.
+            if (cachedPlayerMovements.Count <= 1 ||
+                !groupFramingEnabled)
             {
-                Transform cameraTransform = autoScrollCamera.transform;
+                float soloFov = Mathf.Clamp(
+                    baseAutoScrollFov,
+                    minGroupFieldOfView,
+                    maxGroupFieldOfView
+                );
 
-                float aspect = outputCamera != null && outputCamera.aspect > 0f
+                SmoothGroupFov(soloFov);
+                return;
+            }
+
+            float aspect =
+                outputCamera != null && outputCamera.aspect > 0f
                     ? outputCamera.aspect
                     : 16f / 9f;
 
-                float requiredTangent = 0f;
+            Transform cameraTransform = autoScrollCamera.transform;
 
-                foreach (Transform playerTarget in cachedCameraTargets)
-                {
-                    if (playerTarget == null)
-                        continue;
+            float requiredTangent = 0f;
 
-                    Vector3 worldPosition =
-                        playerTarget.position + framingTargetOffset;
+            foreach (PlayerMovement movement in cachedPlayerMovements)
+            {
+                if (movement == null)
+                    continue;
 
-                    Vector3 localPosition =
-                        cameraTransform.InverseTransformPoint(worldPosition);
+                Vector3 worldPosition =
+                    movement.transform.position + framingTargetOffset;
 
-                    if (localPosition.z <= 0.01f)
-                        continue;
+                Vector3 localPosition =
+                    cameraTransform.InverseTransformPoint(worldPosition);
 
-                    float verticalTangent =
-                        Mathf.Abs(localPosition.y) / localPosition.z;
+                if (localPosition.z <= 0.01f)
+                    continue;
 
-                    float horizontalTangent =
-                        Mathf.Abs(localPosition.x) /
-                        (localPosition.z * aspect);
+                float verticalTangent =
+                    Mathf.Abs(localPosition.y) / localPosition.z;
 
-                    requiredTangent = Mathf.Max(
-                        requiredTangent,
-                        verticalTangent,
-                        horizontalTangent
-                    );
-                }
+                float horizontalTangent =
+                    Mathf.Abs(localPosition.x) /
+                    (localPosition.z * aspect);
 
-                if (requiredTangent > 0f)
-                {
-                    float requiredHalfFov = Mathf.Atan(
-                        requiredTangent * groupFramingMargin
-                    );
+                requiredTangent = Mathf.Max(
+                    requiredTangent,
+                    verticalTangent,
+                    horizontalTangent
+                );
+            }
 
-                    requiredFov = Mathf.Max(
-                        baseAutoScrollFov,
-                        requiredHalfFov * 2f * Mathf.Rad2Deg
-                    );
-                }
+            float requiredFov = minGroupFieldOfView;
+
+            if (requiredTangent > 0f)
+            {
+                float requiredHalfFov =
+                    Mathf.Atan(requiredTangent * groupFramingMargin);
+
+                requiredFov = Mathf.Max(
+                    minGroupFieldOfView,
+                    requiredHalfFov * 2f * Mathf.Rad2Deg
+                );
             }
 
             requiredFov = Mathf.Clamp(
                 requiredFov,
-                baseAutoScrollFov,
+                minGroupFieldOfView,
                 maxGroupFieldOfView
             );
 
+            SmoothGroupFov(requiredFov);
+        }
+
+        private void SmoothGroupFov(float requiredFov)
+        {
             if (groupFovSmoothTime <= 0f)
             {
                 currentGroupFov = requiredFov;
@@ -1302,55 +2349,13 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                     currentGroupFov,
                     requiredFov,
                     ref groupFovVelocity,
-                    groupFovSmoothTime
+                    groupFovSmoothTime,
+                    Mathf.Infinity,
+                    Time.deltaTime
                 );
             }
 
             autoScrollCamera.Lens.FieldOfView = currentGroupFov;
-        }
-
-        // =========================================================
-        // SPLINE
-        // =========================================================
-
-        private float GetSplinePosition(Vector3 worldPosition)
-        {
-            if (splineContainer == null)
-                return 0f;
-
-            int samples = Mathf.Max(50, splineProjectionSamples);
-            float closestT = 0f;
-            float closestDistance = float.MaxValue;
-
-            for (int i = 0; i <= samples; i++)
-            {
-                float t = i / (float)samples;
-
-                Vector3 splinePosition =
-                    splineContainer.transform.TransformPoint(
-                        splineContainer.Spline.EvaluatePosition(t)
-                    );
-
-                Vector2 difference = new(
-                    worldPosition.x - splinePosition.x,
-                    worldPosition.z - splinePosition.z
-                );
-
-                float distance = difference.sqrMagnitude;
-
-                if (distance >= closestDistance)
-                    continue;
-
-                closestDistance = distance;
-                closestT = t;
-            }
-
-            return SplineUtility.ConvertIndexUnit(
-                splineContainer.Spline,
-                closestT,
-                PathIndexUnit.Normalized,
-                PathIndexUnit.Knot
-            );
         }
 
         // =========================================================
@@ -1382,31 +2387,23 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (combatKnot == null)
                 return;
 
-            // Sauvegarde le Movement Space de Player 1 avant
-            // toute modification effectuée par le preset de combat.
             PlayerMovement player1 = GetPlayer1();
 
             movementSpaceBeforeCombat = player1 != null
                 ? player1.GetMovementSpace()
                 : null;
 
-            if (debugEnabled)
-            {
-                UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Movement Space sauvegardé avant combat : {movementSpaceBeforeCombat?.name ?? "Aucun"}",
-                    this
-                );
-            }
-
             combatMode = true;
             combatEnabled = true;
+
             SetCombatStem(true);
-            
+
             GameManager.Instance.OnArenaEnter.Invoke();
 
             currentSplinePosition = combatKnot.KnotIndex;
             targetSplinePosition = currentSplinePosition;
             splineVelocity = 0f;
+
             previousFrameWasBlend = false;
             currentBlendActive = false;
 
@@ -1416,9 +2413,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             ApplyCombatPreset(combatKnot);
 
-            autoScrollCamera.Priority.Value = 0;
-            combatCamera.Priority.Value = 10;
-            combatCamera.Prioritize();
+            ApplyCameraState();
 
             QueueCombatShake(
                 combatKnot.StartShakePreset,
@@ -1430,7 +2425,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (debugEnabled)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Combat commencé : {combatKnot.name}.",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Combat commencé : {combatKnot.name}.",
                     combatKnot
                 );
             }
@@ -1463,9 +2459,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 combatKnot.MovementSpace.localRotation =
                     Quaternion.Euler(preset.MovementSpaceRotation);
 
-                ApplyMovementSpaceToAllPlayers(
-                    combatKnot.MovementSpace
-                );
+                ApplyMovementSpaceToAllPlayers(combatKnot.MovementSpace);
             }
 
             combatCamera.Lens.FieldOfView = preset.FieldOfView;
@@ -1484,7 +2478,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         private void EndCombat()
         {
             SetCombatStem(false);
-            
+
             CombatKnot completedCombatKnot =
                 currentCombatStep >= 0 &&
                 currentCombatStep < combatKnots.Count
@@ -1495,7 +2489,6 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             Transform nextMovementSpace = null;
 
-            // Priorité au Movement Space explicitement défini sur le Combat Knot.
             if (completedCombatKnot?.NextMovementSpace != null)
             {
                 nextMovementSpace =
@@ -1503,16 +2496,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             }
             else
             {
-                // Restauration du Movement Space sauvegardé avant le combat.
                 nextMovementSpace = movementSpaceBeforeCombat;
-
-                if (debugEnabled && nextMovementSpace != null)
-                {
-                    UnityDebug.Log(
-                        $"[{nameof(VCameraSetup_Follow)}] Next Movement Space absent : restauration de {nextMovementSpace.name}.",
-                        this
-                    );
-                }
             }
 
             if (nextMovementSpace != null)
@@ -1522,7 +2506,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             else
             {
                 UnityDebug.LogWarning(
-                    $"[{nameof(VCameraSetup_Follow)}] Aucun Movement Space disponible à la sortie du combat.",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    "Aucun Movement Space disponible à la sortie du combat.",
                     this
                 );
             }
@@ -1534,6 +2519,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             currentSplinePosition = autoScrollDolly.CameraPosition;
             targetSplinePosition = currentSplinePosition;
+
             splineVelocity = 0f;
 
             previousFrameWasBlend = false;
@@ -1541,14 +2527,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             ClearBlendRailCache();
 
-            // Réactivation de la caméra de déplacement.
-            autoScrollCamera.Priority.Value = 10;
-            combatCamera.Priority.Value = 0;
-            autoScrollCamera.Prioritize();
+            ApplyCameraState();
 
-            // Conserve le décalage de rotation initial.
-            // Ne pas réinitialiser cameraReferenceInitialized ici :
-            // cela ferait mémoriser l'ancienne rotation de combat.
             currentHorizontalCorrection = 0f;
             horizontalCorrectionVelocity = 0f;
 
@@ -1565,8 +2545,8 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (debugEnabled && completedCombatKnot != null)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Combat terminé : {completedCombatKnot.name} | " +
-                    $"Movement Space restauré : {nextMovementSpace?.name ?? "Aucun"}",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Combat terminé : {completedCombatKnot.name}.",
                     completedCombatKnot
                 );
             }
@@ -1576,7 +2556,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         // CAMERA SHAKE
         // =========================================================
 
-        private void QueueCombatShake(CameraShakePreset preset, float delay)
+        private void QueueCombatShake(
+            CameraShakePreset preset,
+            float delay)
         {
             if (preset == null)
                 return;
@@ -1589,7 +2571,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             );
         }
 
-        private IEnumerator PlayCombatShake(CameraShakePreset preset, float delay)
+        private IEnumerator PlayCombatShake(
+            CameraShakePreset preset,
+            float delay)
         {
             yield return null;
 
@@ -1604,9 +2588,12 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (!CameraShakeManager.HasInstance)
             {
                 UnityDebug.LogError(
-                    $"[{nameof(VCameraSetup_Follow)}] Impossible de jouer '{preset.name}' : aucun CameraShakeManager actif.",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Impossible de jouer '{preset.name}' : " +
+                    "aucun CameraShakeManager actif.",
                     this
                 );
+
                 yield break;
             }
 
@@ -1615,7 +2602,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (debugEnabled)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Combat Shake joué : {preset.name} | Delay={delay:F2}s",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Combat Shake joué : {preset.name} | " +
+                    $"Delay={delay:F2}s",
                     this
                 );
             }
@@ -1656,6 +2645,15 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
                 valid = false;
             }
 
+            if (gameplaySplineContainer == null)
+            {
+                UnityDebug.LogError(
+                    $"[{nameof(VCameraSetup_Follow)}] GameplaySpline non assignée.",
+                    this
+                );
+                valid = false;
+            }
+
             if (playerManager == null)
             {
                 UnityDebug.LogError(
@@ -1674,7 +2672,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
             return valid;
         }
-        
+
         // =========================================================
         // COMBAT AUDIO STEM
         // =========================================================
@@ -1689,24 +2687,29 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             if (rhythm == null ||
                 !rhythm.IsReady ||
                 rhythm.CurrentAudioMode != RhythmManager.AudioMode.StemSystem)
-            {
                 return;
-            }
 
             rhythm.SetStem(combatStemId, enabled);
 
             if (debugEnabled)
             {
                 UnityDebug.Log(
-                    $"[{nameof(VCameraSetup_Follow)}] Combat stem '{combatStemId}' : {(enabled ? "ON" : "OFF")}.",
+                    $"[{nameof(VCameraSetup_Follow)}] " +
+                    $"Combat stem '{combatStemId}' : " +
+                    $"{(enabled ? "ON" : "OFF")}.",
                     this
                 );
             }
         }
 
+        // =========================================================
+        // COMBAT KNOT VALIDATION
+        // =========================================================
+
         private void ValidateCombatKnots()
         {
-            if (combatKnots == null || splineContainer == null)
+            if (combatKnots == null ||
+                cameraSplineContainer == null)
                 return;
 
             for (int i = 0; i < combatKnots.Count; i++)
@@ -1715,15 +2718,21 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
                 if (knot != null &&
                     (knot.KnotIndex < 0 ||
-                     knot.KnotIndex >= splineContainer.Spline.Count))
+                     knot.KnotIndex >= cameraSplineContainer.Spline.Count))
                 {
                     UnityDebug.LogError(
-                        $"[{nameof(VCameraSetup_Follow)}] Combat Knot '{knot.name}' : Knot Index {knot.KnotIndex} invalide.",
+                        $"[{nameof(VCameraSetup_Follow)}] " +
+                        $"Combat Knot '{knot.name}' : " +
+                        $"Knot Index {knot.KnotIndex} invalide.",
                         knot
                     );
                 }
             }
         }
+
+        // =========================================================
+        // CAMERA STATE
+        // =========================================================
 
         private void ApplyCameraState()
         {

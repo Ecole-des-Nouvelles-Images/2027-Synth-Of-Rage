@@ -531,7 +531,7 @@ MonoBehaviour:
       type: {class: URPExposureSettings, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         version: 1
-        m_UseExposure: 0
+        m_UseExposure: 1
     - rid: 7235807097812418564
       type: {class: SurfaceCacheRenderPipelineResourceSet, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:

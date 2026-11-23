@@ -877,6 +877,109 @@ Shader "Custom/SOR/Sprite3D"
             ENDHLSL
         }
 
+
+        // ============================================================
+        // OBJECT-SPACE OUTLINE SURFACE DATA
+        // ============================================================
+
+        Pass
+        {
+            Name "OutlineSurfaceData"
+            Tags { "LightMode" = "OutlineSurfaceData" }
+
+            Cull Off
+            ZWrite On
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma vertex SurfaceDataVert
+            #pragma fragment SurfaceDataFrag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+                half4 color : COLOR;
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                float3 normalOS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float2 uv : TEXCOORD3;
+                half4 color : COLOR;
+                float eyeDepth : TEXCOORD4;
+            };
+
+            Texture2D<float4> _MainTex;
+            SamplerState sampler_MainTex;
+
+            CBUFFER_START(UnityPerMaterial)
+                float4 _MainTex_ST;
+                half4 _Color;
+                float _DepthOcclusionAlphaCutoff;
+                float _BreathingEnabled;
+                float _BreathingIntensity;
+                float _BreathingSpeed;
+                float4 _BreathingDirection;
+            CBUFFER_END
+
+            float3 ApplyBreathing(float3 positionOS)
+            {
+                if (_BreathingEnabled > 0.5)
+                {
+                    float breathing = sin(_Time.y * _BreathingSpeed);
+                    float2 breathingScale =
+                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
+                    positionOS.xy *= breathingScale;
+                }
+                return positionOS;
+            }
+
+            struct SurfaceTargets
+            {
+                float4 localPosition : SV_Target0;
+                float4 localNormal : SV_Target1;
+                float4 worldNormal : SV_Target2;
+            };
+
+            Varyings SurfaceDataVert(Attributes input)
+            {
+                Varyings output;
+                float3 animatedPositionOS = ApplyBreathing(input.positionOS.xyz);
+                VertexPositionInputs positionInputs =
+                    GetVertexPositionInputs(animatedPositionOS);
+
+                output.positionCS = positionInputs.positionCS;
+                output.eyeDepth = max(-TransformWorldToView(positionInputs.positionWS).z, 0.0001);
+                // Keep the material pattern fixed to the original mesh coordinates.
+                output.positionOS = input.positionOS.xyz;
+                output.normalOS = float3(0, 0, -1);
+                output.normalWS = TransformObjectToWorldNormal(float3(0, 0, -1));
+                output.uv = input.uv * _MainTex_ST.xy + _MainTex_ST.zw;
+                output.color = input.color * _Color;
+                return output;
+            }
+
+            SurfaceTargets SurfaceDataFrag(Varyings input)
+            {
+                float alpha = _MainTex.Sample(sampler_MainTex, input.uv).a * input.color.a;
+                clip(alpha - 0.001);
+
+                SurfaceTargets output;
+                output.localPosition = float4(input.positionOS, input.eyeDepth);
+                output.localNormal = float4(normalize(input.normalOS), 1);
+                output.worldNormal = float4(normalize(input.normalWS), 1);
+                return output;
+            }
+            ENDHLSL
+        }
+
         // ============================================================
         // DEPTH NORMALS
         // ============================================================
@@ -1004,123 +1107,194 @@ Shader "Custom/SOR/Sprite3D"
         // SHADOW CASTER
         // ============================================================
 
+        
+        // ============================================================
+        // SHADOW CASTER
+        // ============================================================
+        
         Pass
         {
             Name "ShadowCaster"
-
+        
             Tags
             {
                 "LightMode" = "ShadowCaster"
             }
-
+        
             Cull Off
             ZWrite On
             ZTest LEqual
             ColorMask 0
-
+        
             HLSLPROGRAM
-
+        
             #pragma target 4.5
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
-
+        
+            // Support des ombres directionnelles et ponctuelles.
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+        
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+        
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
             };
-
+        
+        
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
             };
-
+        
             Texture2D<float4> _MainTex;
             SamplerState sampler_MainTex;
-
+        
             CBUFFER_START(UnityPerMaterial)
-
+        
                 float4 _MainTex_ST;
                 half4 _Color;
-
+        
                 half _ReceiveShadows;
                 half _CastShadows;
                 half _ShadowAlphaClip;
                 half _AmbientStrength;
-
+        
                 half _SpriteLightBoost;
                 half _EdgeWidth;
                 half _EdgeSensitivity;
                 half _EdgeLightBoost;
-
+        
                 float _SpriteDepthSortEpsilon;
                 float _DepthOcclusionAlphaCutoff;
-
+        
                 float _BreathingEnabled;
                 float _BreathingIntensity;
                 float _BreathingSpeed;
                 float4 _BreathingDirection;
-
+            
+                float3 _LightDirection;
+                float3 _LightPosition;
+        
             CBUFFER_END
-
+        
+            // ========================================================
+            // BREATHING
+            // ========================================================
+        
             float3 ApplyBreathing(float3 positionOS)
             {
                 if (_BreathingEnabled > 0.5)
                 {
                     float breathing = sin(_Time.y * _BreathingSpeed);
-
-                    // Anisotropic breathing around the object pivot.
-                    // The local object origin (0,0) is the pivot.
+        
                     float2 breathingScale =
-                        1.0 + (breathing * _BreathingIntensity) * _BreathingDirection.xy;
-
+                        1.0 + (breathing * _BreathingIntensity)
+                        * _BreathingDirection.xy;
+        
                     positionOS.xy *= breathingScale;
                 }
-
+        
                 return positionOS;
             }
-
+        
             float2 TransformMainUV(float2 uv)
             {
                 return uv * _MainTex_ST.xy + _MainTex_ST.zw;
             }
-
+        
+            // ========================================================
+            // VERTEX
+            // ========================================================
+        
             Varyings ShadowVert(Attributes input)
             {
                 Varyings output;
-
-                float3 animatedPositionOS =
+        
+                float3 positionOS =
                     ApplyBreathing(input.positionOS.xyz);
-
-                output.positionCS = TransformObjectToHClip(
-                    animatedPositionOS
+        
+                float3 positionWS =
+                    TransformObjectToWorld(positionOS);
+        
+                float3 normalWS =
+                    TransformObjectToWorldNormal(input.normalOS);
+        
+                float3 lightDirectionWS;
+        
+                // Point Light / Spot Light
+                #if defined(_CASTING_PUNCTUAL_LIGHT_SHADOW)
+        
+                    lightDirectionWS =
+                        normalize(_LightPosition - positionWS);
+        
+                // Directional Light
+                #else
+        
+                    lightDirectionWS = _LightDirection;
+        
+                #endif
+        
+                // Apply shadow bias.
+                float4 positionCS = TransformWorldToHClip(
+                    ApplyShadowBias(
+                        positionWS,
+                        normalWS,
+                        lightDirectionWS
+                    )
                 );
-
+        
+                // Near plane clipping.
+                #if UNITY_REVERSED_Z
+        
+                    positionCS.z = min(
+                        positionCS.z,
+                        positionCS.w * UNITY_NEAR_CLIP_VALUE
+                    );
+        
+                #else
+        
+                    positionCS.z = max(
+                        positionCS.z,
+                        positionCS.w * UNITY_NEAR_CLIP_VALUE
+                    );
+        
+                #endif
+        
+                output.positionCS = positionCS;
                 output.uv = TransformMainUV(input.uv);
-
+        
                 return output;
             }
-
+        
+            // ========================================================
+            // FRAGMENT
+            // ========================================================
+        
             half4 ShadowFrag(Varyings input) : SV_Target
             {
-                if (_CastShadows < 0.5h)
-                    discard;
-
+                // Shadow casting toggle.
+                clip(_CastShadows - 0.5h);
+        
                 float alpha = _MainTex.Sample(
                     sampler_MainTex,
                     input.uv
                 ).a;
-
+        
+                // Preserve sprite transparency.
                 clip(alpha - _ShadowAlphaClip);
-
+        
                 return 0;
             }
-
+        
             ENDHLSL
         }
+
 
         // ============================================================
         // DEPTH ONLY

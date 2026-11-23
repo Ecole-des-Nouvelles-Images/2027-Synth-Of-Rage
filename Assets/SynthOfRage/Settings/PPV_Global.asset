@@ -258,6 +258,31 @@ MonoBehaviour:
   intensity:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-1718878867851586323
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f02d82527904e014b90391278392b148, type: 3}
+  m_Name: SOROutlineVolume
+  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Vincent.ToonShaders.Rendering.SOROutlineVolume
+  active: 1
+  overrideOutlineColor:
+    m_OverrideState: 1
+    m_Value: 0
+  outlineColor:
+    m_OverrideState: 1
+    m_Value: {r: 0, g: 0, b: 0, a: 1}
+  overrideAccentColor:
+    m_OverrideState: 1
+    m_Value: 0
+  accentColor:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 0.02, b: 0.38, a: 1}
 --- !u!114 &-1539754142393673161
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -599,6 +624,7 @@ MonoBehaviour:
   - {fileID: -58242957796544256}
   - {fileID: 3031831508434603254}
   - {fileID: 3981509954031603448}
+  - {fileID: -1718878867851586323}
 --- !u!114 &671497398415392303
 MonoBehaviour:
   m_ObjectHideFlags: 3

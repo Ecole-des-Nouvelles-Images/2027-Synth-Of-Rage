@@ -1,5 +1,30 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7273860695015137517
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f02d82527904e014b90391278392b148, type: 3}
+  m_Name: SOROutlineVolume
+  m_EditorClassIdentifier: Assembly-CSharp::_Dev.Vincent.ToonShaders.Rendering.SOROutlineVolume
+  active: 1
+  overrideOutlineColor:
+    m_OverrideState: 1
+    m_Value: 1
+  outlineColor:
+    m_OverrideState: 1
+    m_Value: {r: 0.3301887, g: 0.3301887, b: 0.3301887, a: 1}
+  overrideAccentColor:
+    m_OverrideState: 1
+    m_Value: 1
+  accentColor:
+    m_OverrideState: 1
+    m_Value: {r: 0, g: 1, b: 0.05708015, a: 1}
 --- !u!114 &-5524554077854922864
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -96,6 +121,7 @@ MonoBehaviour:
   - {fileID: 5003155988291485670}
   - {fileID: 5184076096000129595}
   - {fileID: -5368820024160398035}
+  - {fileID: -7273860695015137517}
 --- !u!114 &1403791876817539991
 MonoBehaviour:
   m_ObjectHideFlags: 3

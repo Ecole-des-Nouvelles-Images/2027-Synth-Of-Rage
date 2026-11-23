@@ -93,6 +93,11 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                     "SpriteOutlineOccluderDepth"
                 );
 
+            private static readonly ShaderTagId OutlineSurfaceDataShaderTag =
+                new ShaderTagId(
+                    "OutlineSurfaceData"
+                );
+
             // ============================================================
             // GLOBAL TEXTURES
             // ============================================================
@@ -112,6 +117,15 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                     "_Sprite3DOutlineOccluderDepthTexture"
                 );
 
+            private static readonly int SurfaceLocalPositionTextureID =
+                Shader.PropertyToID("_OutlineSurfaceLocalPositionTexture");
+
+            private static readonly int SurfaceLocalNormalTextureID =
+                Shader.PropertyToID("_OutlineSurfaceLocalNormalTexture");
+
+            private static readonly int SurfaceWorldNormalTextureID =
+                Shader.PropertyToID("_OutlineSurfaceWorldNormalTexture");
+
             private LayerMask layerMask;
 
             // ============================================================
@@ -123,6 +137,11 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                 public RendererListHandle rendererList;
 
                 public float clearValue;
+            }
+
+            private sealed class SurfaceDataPassData
+            {
+                public RendererListHandle rendererList;
             }
 
             // ============================================================
@@ -329,6 +348,136 @@ namespace _Dev.Vincent.ToonShaders.RenderFeatures
                     "Sprite3D Outline Occluder Depth",
                     outlineOccluderClearValue
                 );
+
+                // ========================================================
+                // OBJECT-SPACE SURFACE DATA
+                // ========================================================
+                // Captures local position and local/world geometric normals
+                // for the visible Mesh3D + Sprite3D surface. A private depth
+                // attachment resolves visibility between both renderer types.
+                // ========================================================
+
+                RenderTextureDescriptor surfaceDescriptor = baseDescriptor;
+                surfaceDescriptor.graphicsFormat = GraphicsFormat.R16G16B16A16_SFloat;
+                surfaceDescriptor.depthStencilFormat = GraphicsFormat.None;
+                surfaceDescriptor.depthBufferBits = 0;
+
+                TextureHandle surfaceLocalPositionTexture =
+                    UniversalRenderer.CreateRenderGraphTexture(
+                        renderGraph, surfaceDescriptor,
+                        "_OutlineSurfaceLocalPositionTexture",
+                        true, FilterMode.Point, TextureWrapMode.Clamp);
+
+                TextureHandle surfaceLocalNormalTexture =
+                    UniversalRenderer.CreateRenderGraphTexture(
+                        renderGraph, surfaceDescriptor,
+                        "_OutlineSurfaceLocalNormalTexture",
+                        true, FilterMode.Point, TextureWrapMode.Clamp);
+
+                TextureHandle surfaceWorldNormalTexture =
+                    UniversalRenderer.CreateRenderGraphTexture(
+                        renderGraph, surfaceDescriptor,
+                        "_OutlineSurfaceWorldNormalTexture",
+                        true, FilterMode.Point, TextureWrapMode.Clamp);
+
+                RenderTextureDescriptor surfaceDepthDescriptor = baseDescriptor;
+                surfaceDepthDescriptor.graphicsFormat = GraphicsFormat.None;
+                surfaceDepthDescriptor.depthStencilFormat = GraphicsFormat.D32_SFloat;
+                surfaceDepthDescriptor.depthBufferBits = 32;
+
+                TextureHandle surfaceDepthTexture =
+                    UniversalRenderer.CreateRenderGraphTexture(
+                        renderGraph, surfaceDepthDescriptor,
+                        "_OutlineSurfaceDataDepth",
+                        true, FilterMode.Point, TextureWrapMode.Clamp);
+
+                RecordSurfaceDataPass(
+                    renderGraph,
+                    renderingData,
+                    cameraData,
+                    lightData,
+                    surfaceLocalPositionTexture,
+                    surfaceLocalNormalTexture,
+                    surfaceWorldNormalTexture,
+                    surfaceDepthTexture
+                );
+            }
+
+
+            // ================================================================
+            // RECORD OBJECT-SPACE SURFACE DATA
+            // ================================================================
+
+            private void RecordSurfaceDataPass(
+                RenderGraph renderGraph,
+                UniversalRenderingData renderingData,
+                UniversalCameraData cameraData,
+                UniversalLightData lightData,
+                TextureHandle localPositionTexture,
+                TextureHandle localNormalTexture,
+                TextureHandle worldNormalTexture,
+                TextureHandle depthTexture
+            )
+            {
+                DrawingSettings drawingSettings =
+                    RenderingUtils.CreateDrawingSettings(
+                        OutlineSurfaceDataShaderTag,
+                        renderingData,
+                        cameraData,
+                        lightData,
+                        SortingCriteria.CommonOpaque
+                    );
+
+                FilteringSettings filteringSettings =
+                    new FilteringSettings(
+                        RenderQueueRange.all,
+                        layerMask
+                    );
+
+                RendererListParams rendererListParams =
+                    new RendererListParams(
+                        renderingData.cullResults,
+                        drawingSettings,
+                        filteringSettings
+                    );
+
+                using (var builder =
+                    renderGraph.AddRasterRenderPass<SurfaceDataPassData>(
+                        "Outline - Capture Object Space Surface Data",
+                        out SurfaceDataPassData passData))
+                {
+                    passData.rendererList =
+                        renderGraph.CreateRendererList(rendererListParams);
+
+                    builder.UseRendererList(passData.rendererList);
+
+                    builder.SetRenderAttachment(localPositionTexture, 0, AccessFlags.Write);
+                    builder.SetRenderAttachment(localNormalTexture, 1, AccessFlags.Write);
+                    builder.SetRenderAttachment(worldNormalTexture, 2, AccessFlags.Write);
+                    builder.SetRenderAttachmentDepth(depthTexture, AccessFlags.Write);
+
+                    builder.SetGlobalTextureAfterPass(
+                        localPositionTexture, SurfaceLocalPositionTextureID);
+                    builder.SetGlobalTextureAfterPass(
+                        localNormalTexture, SurfaceLocalNormalTextureID);
+                    builder.SetGlobalTextureAfterPass(
+                        worldNormalTexture, SurfaceWorldNormalTextureID);
+
+                    builder.AllowPassCulling(false);
+
+                    builder.SetRenderFunc(
+                        static (SurfaceDataPassData data, RasterGraphContext context) =>
+                        {
+                            context.cmd.ClearRenderTarget(
+                                RTClearFlags.All,
+                                Color.clear,
+                                1.0f,
+                                0
+                            );
+                            context.cmd.DrawRendererList(data.rendererList);
+                        }
+                    );
+                }
             }
 
             // ================================================================

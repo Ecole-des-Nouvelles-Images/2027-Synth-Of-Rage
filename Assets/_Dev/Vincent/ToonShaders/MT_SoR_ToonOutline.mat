@@ -68,7 +68,7 @@ Material:
     - _DirectLightStrength: 1
     - _DirtyFadeEnd: 160
     - _DirtyFadeStart: 16
-    - _DistanceFalloff: 1.15
+    - _DistanceFalloff: 2.04
     - _DistanceFar: 110
     - _DistanceNear: 2
     - _DripBulbSize: 2.25
@@ -94,11 +94,11 @@ Material:
     - _DripWidth: 4
     - _DripWorldSpacing: 0.8
     - _DripWorldWidth: 0.5
-    - _FarDirtyMin: 0.82
+    - _FarDirtyMin: 1
     - _FarGraffitiShellStrength: 0.9
     - _FarGraffitiShellWidth: 2
-    - _FarMacroMinimum: 0.35
-    - _FarThicknessMultiplier: 0.52
+    - _FarMacroMinimum: 1
+    - _FarThicknessMultiplier: 0.4
     - _GrandBoostDistance: 18
     - _HalftoneAngle: 45
     - _HalftoneLevels: 4
@@ -130,7 +130,7 @@ Material:
     - _NormalStrength: 3
     - _NormalThreshold: 1
     - _OpacityJitter: 0.18
-    - _OutlineOpacity: 1
+    - _OutlineOpacity: 0.613
     - _OutlineRadialBlend: 1
     - _OutlineSprites3D: 1
     - _OutlineThickness: 7
@@ -162,14 +162,14 @@ Material:
     - _UseDistanceDirtyFade: 1
     - _UseOutlineImperfections: 1
     m_Colors:
-    - _AccentColor: {r: 0.32941177, g: 0.16470589, b: 0.5764706, a: 1}
+    - _AccentColor: {r: 0.13021998, g: 0.383, b: 0.24577656, a: 1}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _HalftoneColor: {r: 0.03, g: 0.03, b: 0.04, a: 1}
     - _ImperfectionWorldOffset: {r: 0, g: 0, b: 0, a: 0}
     - _MaskOffset: {r: 0, g: 0, b: 0, a: 0}
     - _MaskTiling: {r: 12, g: 12, b: 12, a: 0}
     - _MaskWorldOffset: {r: 0, g: 0, b: 0, a: 0}
-    - _OutlineColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
+    - _OutlineColor: {r: 0.475, g: 0.475, b: 0.475, a: 1}
     - _RimColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0.17999998, g: 0.17999998, b: 0.23999995, a: 1}
     - _SpecularColor: {r: 1, g: 1, b: 1, a: 1}

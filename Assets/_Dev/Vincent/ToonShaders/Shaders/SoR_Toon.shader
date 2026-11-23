@@ -1,5 +1,8 @@
-Shader "Custom/SOR/Toon" {
-    Properties {
+
+Shader "Custom/SOR/Toon"
+{
+    Properties
+    {
         [Header(Base)]
         _BaseMap("Base Color Texture", 2D) = "white" {}
         _BaseColor("Base Color Tint", Color) = (1,1,1,1)
@@ -7,6 +10,15 @@ Shader "Custom/SOR/Toon" {
         [Header(Normal Map)]
         [Normal] _NormalMap("Normal Map", 2D) = "bump" {}
         _NormalStrength("Normal Strength", Range(0,2)) = 1
+
+        [Header(Emission ID Map)]
+        _EmissionIDMap("Emission ID Map (do not forgot off sRGB)", 2D) = "black" {}
+        [HDR] _EmissionColor1("Emission ID 1 - #000000", Color) = (0,0,0,1)
+        [HDR] _EmissionColor2("Emission ID 2 - #404040", Color) = (0,0,0,1)
+        [HDR] _EmissionColor3("Emission ID 3 - #808080", Color) = (0,0,0,1)
+        [HDR] _EmissionColor4("Emission ID 4 - #BFBFBF", Color) = (0,0,0,1)
+        [HDR] _EmissionColor5("Emission ID 5 - #FFFFFF", Color) = (0,0,0,1)
+        _EmissionStrength("Emission Strength", Range(0,10)) = 1
 
         [Header(Toon Lighting)]
         _LightBands("Light Bands", Range(2,32)) = 4
@@ -62,8 +74,10 @@ Shader "Custom/SOR/Toon" {
         _AdditionalLightStrength("Additional Light Strength", Range(0,3)) = 1
     }
 
-    SubShader {
-        Tags {
+    SubShader
+    {
+        Tags
+        {
             "RenderType" = "Opaque"
             "Queue" = "Geometry"
             "RenderPipeline" = "UniversalPipeline"
@@ -80,15 +94,32 @@ Shader "Custom/SOR/Toon" {
 
         Texture2D<float4> _BaseMap;
         SamplerState sampler_BaseMap;
+
         Texture2D<float4> _NormalMap;
         SamplerState sampler_NormalMap;
+
+        Texture2D<float4> _EmissionIDMap;
+        SamplerState sampler_EmissionIDMap;
+
         Texture2D<float4> _StepPattern;
         SamplerState sampler_StepPattern;
 
         CBUFFER_START(UnityPerMaterial)
-        float4 _BaseMap_ST, _NormalMap_ST;
+
+        float4 _BaseMap_ST;
+        float4 _NormalMap_ST;
+        float4 _EmissionIDMap_ST;
+
         float4 _BaseColor;
         float _NormalStrength;
+
+        // Emission ID Colors
+        float4 _EmissionColor1;
+        float4 _EmissionColor2;
+        float4 _EmissionColor3;
+        float4 _EmissionColor4;
+        float4 _EmissionColor5;
+        float _EmissionStrength;
 
         float _LightBands, _LightBias;
         float4 _ShadowColor;
@@ -115,77 +146,213 @@ Shader "Custom/SOR/Toon" {
         float _RimStrength, _RimPower, _RimThreshold;
 
         float _AdditionalLightStrength;
+
         CBUFFER_END
 
-        float Quantize01(float value, float levels) {
+        // ------------------------------------------------------------
+        // EMISSION ID SYSTEM
+        // ------------------------------------------------------------
+
+        float3 GetEmissionColor(float2 uv)
+        {
+            float grayscale = _EmissionIDMap.Sample(
+                sampler_EmissionIDMap,
+                uv
+            ).r;
+
+            // Convert grayscale value to nearest ID.
+            //
+            // 0.00 -> ID 1
+            // 0.25 -> ID 2
+            // 0.50 -> ID 3
+            // 0.75 -> ID 4
+            // 1.00 -> ID 5
+
+            float emissionID =
+                floor(saturate(grayscale) * 4.0 + 0.5);
+
+            float3 emissionColor = _EmissionColor1.rgb;
+
+            if (emissionID < 0.5)
+            {
+                emissionColor = _EmissionColor1.rgb;
+            }
+            else if (emissionID < 1.5)
+            {
+                emissionColor = _EmissionColor2.rgb;
+            }
+            else if (emissionID < 2.5)
+            {
+                emissionColor = _EmissionColor3.rgb;
+            }
+            else if (emissionID < 3.5)
+            {
+                emissionColor = _EmissionColor4.rgb;
+            }
+            else
+            {
+                emissionColor = _EmissionColor5.rgb;
+            }
+
+            return emissionColor * _EmissionStrength;
+        }
+
+        // ------------------------------------------------------------
+        // GENERAL UTILITIES
+        // ------------------------------------------------------------
+
+        float Quantize01(float value, float levels)
+        {
             levels = max(2.0, round(levels));
             value = saturate(value);
+
             float denominator = levels - 1.0;
+
             return floor(value * denominator + 0.5) / denominator;
         }
 
-        float3 PosterizeColor(float3 color, float steps) {
+        float3 PosterizeColor(float3 color, float steps)
+        {
             steps = max(2.0, round(steps));
+
             float denominator = steps - 1.0;
+
             return round(saturate(color) * denominator) / denominator;
         }
 
-        float2 Rotate2D(float2 p, float angleRad) {
+        float2 Rotate2D(float2 p, float angleRad)
+        {
             float s = sin(angleRad);
             float c = cos(angleRad);
-            return float2(c*p.x - s*p.y, s*p.x + c*p.y);
+
+            return float2(
+                c * p.x - s * p.y,
+                s * p.x + c * p.y
+            );
         }
 
-        float HalftoneDotMask(float2 patternPosition, float darkness) {
+        // ------------------------------------------------------------
+        // HALFTONE
+        // ------------------------------------------------------------
+
+        float HalftoneDotMask(float2 patternPosition, float darkness)
+        {
             darkness = Quantize01(darkness, _HalftoneLevels);
 
             if (_HalftoneStrength <= 0.0001 || darkness <= 0.0001)
                 return 0.0;
 
             float2 cell = frac(patternPosition) - 0.5;
+
             float distToCenter = length(cell);
-            float radius = lerp(_HalftoneMinRadius, _HalftoneMaxRadius, darkness);
+
+            float radius = lerp(
+                _HalftoneMinRadius,
+                _HalftoneMaxRadius,
+                darkness
+            );
+
             float aa = max(fwidth(distToCenter), 0.0001);
 
-            return 1.0 - smoothstep(radius-aa, radius+aa, distToCenter);
+            return 1.0 - smoothstep(
+                radius - aa,
+                radius + aa,
+                distToCenter
+            );
         }
 
-        float HalftoneMaskScreen(float2 pixelPosition, float darkness) {
-            float2 p = Rotate2D(pixelPosition, radians(_HalftoneAngle));
+        float HalftoneMaskScreen(float2 pixelPosition, float darkness)
+        {
+            float2 p = Rotate2D(
+                pixelPosition,
+                radians(_HalftoneAngle)
+            );
+
             p /= max(_HalftoneSize, 1.0);
+
             return HalftoneDotMask(p, darkness) * _HalftoneStrength;
         }
 
-        float HalftoneMaskWorld(float3 positionWS, float3 geometricNormalWS, float darkness) {
+        float HalftoneMaskWorld(
+            float3 positionWS,
+            float3 geometricNormalWS,
+            float darkness)
+        {
             if (_HalftoneStrength <= 0.0001)
                 return 0.0;
 
-            float3 p = (positionWS + _HalftoneWorldOffset.xyz) * max(_HalftoneWorldScale, 0.0001);
+            float3 p =
+                (positionWS + _HalftoneWorldOffset.xyz) *
+                max(_HalftoneWorldScale, 0.0001);
+
             float angle = radians(_HalftoneAngle);
 
             float3 weights = abs(normalize(geometricNormalWS));
+
             weights = pow(
-                max(weights, float3(0.0001,0.0001,0.0001)),
+                max(weights, float3(0.0001, 0.0001, 0.0001)),
                 max(_HalftoneWorldProjectionBlend, 1.0)
             );
-            weights /= max(weights.x + weights.y + weights.z, 0.0001);
 
-            float maskX = HalftoneDotMask(Rotate2D(p.zy, angle), darkness);
-            float maskY = HalftoneDotMask(Rotate2D(p.xz, angle), darkness);
-            float maskZ = HalftoneDotMask(Rotate2D(p.xy, angle), darkness);
+            weights /= max(
+                weights.x + weights.y + weights.z,
+                0.0001
+            );
 
-            return (maskX*weights.x + maskY*weights.y + maskZ*weights.z) * _HalftoneStrength;
+            float maskX = HalftoneDotMask(
+                Rotate2D(p.zy, angle),
+                darkness
+            );
+
+            float maskY = HalftoneDotMask(
+                Rotate2D(p.xz, angle),
+                darkness
+            );
+
+            float maskZ = HalftoneDotMask(
+                Rotate2D(p.xy, angle),
+                darkness
+            );
+
+            return (
+                maskX * weights.x +
+                maskY * weights.y +
+                maskZ * weights.z
+            ) * _HalftoneStrength;
         }
 
-        float HalftoneMask(float2 pixelPosition, float3 positionWS, float3 geometricNormalWS, float darkness) {
+        float HalftoneMask(
+            float2 pixelPosition,
+            float3 positionWS,
+            float3 geometricNormalWS,
+            float darkness)
+        {
             #if defined(_HALFTONE_WORLD_SPACE)
-                return HalftoneMaskWorld(positionWS, geometricNormalWS, darkness);
+
+                return HalftoneMaskWorld(
+                    positionWS,
+                    geometricNormalWS,
+                    darkness
+                );
+
             #else
-                return HalftoneMaskScreen(pixelPosition, darkness);
+
+                return HalftoneMaskScreen(
+                    pixelPosition,
+                    darkness
+                );
+
             #endif
         }
 
-        float GetStepPatternSigned(float3 positionWS, float3 geometricNormalWS) {
+        // ------------------------------------------------------------
+        // TOON STEP PATTERN
+        // ------------------------------------------------------------
+
+        float GetStepPatternSigned(
+            float3 positionWS,
+            float3 geometricNormalWS)
+        {
             #if defined(_TOON_STEP_PATTERN)
 
                 float3 patternPosition =
@@ -193,24 +360,50 @@ Shader "Custom/SOR/Toon" {
                     _StepPatternWorldScale;
 
                 float3 weights = abs(normalize(geometricNormalWS));
+
                 weights = pow(
-                    max(weights, float3(0.0001,0.0001,0.0001)),
+                    max(weights, float3(0.0001, 0.0001, 0.0001)),
                     max(_StepPatternProjectionBlend, 1.0)
                 );
 
-                weights /= max(weights.x + weights.y + weights.z, 0.0001);
+                weights /= max(
+                    weights.x + weights.y + weights.z,
+                    0.0001
+                );
 
                 float2 uvX = frac(patternPosition.zy);
                 float2 uvY = frac(patternPosition.xz);
                 float2 uvZ = frac(patternPosition.xy);
 
-                float maskX = _StepPattern.Sample(sampler_StepPattern, uvX).r;
-                float maskY = _StepPattern.Sample(sampler_StepPattern, uvY).r;
-                float maskZ = _StepPattern.Sample(sampler_StepPattern, uvZ).r;
+                float maskX = _StepPattern.Sample(
+                    sampler_StepPattern,
+                    uvX
+                ).r;
 
-                float pattern = maskX*weights.x + maskY*weights.y + maskZ*weights.z;
-                pattern = saturate((pattern - 0.5) * _StepPatternContrast + 0.5);
-                pattern = lerp(pattern, 1.0-pattern, saturate(_StepPatternInvert));
+                float maskY = _StepPattern.Sample(
+                    sampler_StepPattern,
+                    uvY
+                ).r;
+
+                float maskZ = _StepPattern.Sample(
+                    sampler_StepPattern,
+                    uvZ
+                ).r;
+
+                float pattern =
+                    maskX * weights.x +
+                    maskY * weights.y +
+                    maskZ * weights.z;
+
+                pattern = saturate(
+                    (pattern - 0.5) * _StepPatternContrast + 0.5
+                );
+
+                pattern = lerp(
+                    pattern,
+                    1.0 - pattern,
+                    saturate(_StepPatternInvert)
+                );
 
                 return pattern * 2.0 - 1.0;
 
@@ -220,6 +413,10 @@ Shader "Custom/SOR/Toon" {
 
             #endif
         }
+
+        // ------------------------------------------------------------
+        // NORMAL MAPPING
+        // ------------------------------------------------------------
 
         float3 BuildNormalWS(
             float3 baseNormalWS,
@@ -231,34 +428,55 @@ Shader "Custom/SOR/Toon" {
             float3 t = normalize(tangentWS);
             float3 b = tangentSign * cross(n, t);
 
-            float4 normalSample = _NormalMap.Sample(sampler_NormalMap, uvNormal);
-            float3 normalTS = UnpackNormalScale(normalSample, _NormalStrength);
+            float4 normalSample = _NormalMap.Sample(
+                sampler_NormalMap,
+                uvNormal
+            );
+
+            float3 normalTS = UnpackNormalScale(
+                normalSample,
+                _NormalStrength
+            );
+
             float3x3 tangentToWorld = float3x3(t, b, n);
 
             return NormalizeNormalPerPixel(
-                TransformTangentToWorld(normalTS, tangentToWorld)
+                TransformTangentToWorld(
+                    normalTS,
+                    tangentToWorld
+                )
             );
         }
+
+        // ------------------------------------------------------------
+        // ADDITIONAL TOON LIGHTING
+        // ------------------------------------------------------------
 
         float3 EvaluateAdditionalToonLight(
             float3 normalWS,
             Light light,
             float signedPattern)
         {
-            float ndotl = saturate(dot(normalWS, light.direction));
+            float ndotl = saturate(
+                dot(normalWS, light.direction)
+            );
 
             float attenuation =
                 light.distanceAttenuation *
                 light.shadowAttenuation;
 
-            float raw = saturate(ndotl * attenuation + _LightBias);
+            float raw = saturate(
+                ndotl * attenuation + _LightBias
+            );
 
             #if defined(_TOON_STEP_PATTERN)
+
                 raw = saturate(
                     raw +
                     signedPattern *
                     _StepPatternStrength
                 );
+
             #endif
 
             float toon = Quantize01(raw, _LightBands);
@@ -271,7 +489,12 @@ Shader "Custom/SOR/Toon" {
 
         ENDHLSL
 
-        Pass {
+        // ============================================================
+        // FORWARD ONLY
+        // ============================================================
+
+        Pass
+        {
             Name "ToonForwardOnly"
             Tags { "LightMode" = "UniversalForwardOnly" }
 
@@ -282,44 +505,42 @@ Shader "Custom/SOR/Toon" {
             HLSLPROGRAM
 
             #pragma target 4.5
+
             #pragma vertex ToonVert
             #pragma fragment ToonFrag
 
             #pragma multi_compile_fog
 
-            // BUILD SAFE:
-            // Contrairement à shader_feature, ces variantes ne sont
-            // plus supprimées si Unity ne détecte pas correctement
-            // le material pendant le build.
             #pragma multi_compile_local_fragment _ _TOON_STEP_PATTERN
             #pragma multi_compile_local_fragment _ _HALFTONE_WORLD_SPACE
 
-            // URP / Deferred+ : uniquement utilisés au fragment.
-            // Les modes incompatibles sont regroupés pour limiter le
-            // nombre total de variantes.
             #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _LIGHT_COOKIES
 
-            struct ToonAttributes {
+            struct ToonAttributes
+            {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float4 tangentOS : TANGENT;
                 float2 uv : TEXCOORD0;
             };
 
-            struct ToonVaryings {
+            struct ToonVaryings
+            {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
                 float4 tangentWS : TEXCOORD2;
                 float2 uvBase : TEXCOORD3;
                 float2 uvNormal : TEXCOORD4;
-                float fogFactor : TEXCOORD5;
+                float2 uvEmission : TEXCOORD5;
+                float fogFactor : TEXCOORD6;
             };
 
-            ToonVaryings ToonVert(ToonAttributes IN) {
+            ToonVaryings ToonVert(ToonAttributes IN)
+            {
                 ToonVaryings OUT = (ToonVaryings)0;
 
                 VertexPositionInputs posInputs =
@@ -339,182 +560,187 @@ Shader "Custom/SOR/Toon" {
                     IN.tangentOS.w *
                     GetOddNegativeScale();
 
-                OUT.tangentWS =
-                    float4(
-                        normalInputs.tangentWS,
-                        tangentSign
-                    );
+                OUT.tangentWS = float4(
+                    normalInputs.tangentWS,
+                    tangentSign
+                );
 
                 OUT.uvBase =
-                    IN.uv *
-                    _BaseMap_ST.xy +
+                    IN.uv * _BaseMap_ST.xy +
                     _BaseMap_ST.zw;
 
                 OUT.uvNormal =
-                    IN.uv *
-                    _NormalMap_ST.xy +
+                    IN.uv * _NormalMap_ST.xy +
                     _NormalMap_ST.zw;
 
-                OUT.fogFactor =
-                    ComputeFogFactor(
-                        posInputs.positionCS.z
-                    );
+                OUT.uvEmission =
+                    IN.uv * _EmissionIDMap_ST.xy +
+                    _EmissionIDMap_ST.zw;
+
+                OUT.fogFactor = ComputeFogFactor(
+                    posInputs.positionCS.z
+                );
 
                 return OUT;
             }
 
-            half4 ToonFrag(ToonVaryings IN) : SV_Target {
-                float4 baseSample =
-                    _BaseMap.Sample(
-                        sampler_BaseMap,
-                        IN.uvBase
-                    );
+            half4 ToonFrag(ToonVaryings IN) : SV_Target
+            {
+                // ----------------------------------------------------
+                // BASE COLOR
+                // ----------------------------------------------------
+
+                float4 baseSample = _BaseMap.Sample(
+                    sampler_BaseMap,
+                    IN.uvBase
+                );
 
                 float3 albedo =
                     baseSample.rgb *
                     _BaseColor.rgb;
 
-                // Normale géométrique = patterns.
-                float3 geometricNormalWS =
-                    normalize(IN.normalWS);
+                // ----------------------------------------------------
+                // NORMALS
+                // ----------------------------------------------------
 
-                // Normal map artistique = éclairage.
-                float3 normalWS =
-                    BuildNormalWS(
-                        IN.normalWS,
-                        IN.tangentWS.xyz,
-                        IN.tangentWS.w,
-                        IN.uvNormal
-                    );
+                float3 geometricNormalWS = normalize(
+                    IN.normalWS
+                );
+
+                float3 normalWS = BuildNormalWS(
+                    IN.normalWS,
+                    IN.tangentWS.xyz,
+                    IN.tangentWS.w,
+                    IN.uvNormal
+                );
 
                 float3 viewDirWS =
                     GetWorldSpaceNormalizeViewDir(
                         IN.positionWS
                     );
 
-                float signedPattern =
-                    GetStepPatternSigned(
-                        IN.positionWS,
-                        geometricNormalWS
-                    );
+                // ----------------------------------------------------
+                // STEP PATTERN
+                // ----------------------------------------------------
+
+                float signedPattern = GetStepPatternSigned(
+                    IN.positionWS,
+                    geometricNormalWS
+                );
+
+                // ----------------------------------------------------
+                // MAIN LIGHT
+                // ----------------------------------------------------
 
                 float4 shadowCoord =
                     TransformWorldToShadowCoord(
                         IN.positionWS
                     );
 
-                half4 shadowMask =
-                    half4(1,1,1,1);
+                half4 shadowMask = half4(1, 1, 1, 1);
 
-                Light mainLight =
-                    GetMainLight(
-                        shadowCoord,
-                        IN.positionWS,
-                        shadowMask
-                    );
+                Light mainLight = GetMainLight(
+                    shadowCoord,
+                    IN.positionWS,
+                    shadowMask
+                );
 
-                float shadowAtten =
-                    lerp(
-                        1.0,
-                        mainLight.shadowAttenuation,
-                        _ReceiveShadowStrength
-                    );
+                float shadowAtten = lerp(
+                    1.0,
+                    mainLight.shadowAttenuation,
+                    _ReceiveShadowStrength
+                );
 
-                float ndotl =
-                    saturate(
-                        dot(
-                            normalWS,
-                            mainLight.direction
-                        )
-                    );
+                float ndotl = saturate(
+                    dot(
+                        normalWS,
+                        mainLight.direction
+                    )
+                );
 
-                float rawLight =
-                    saturate(
-                        ndotl *
-                        mainLight.distanceAttenuation *
-                        shadowAtten +
-                        _LightBias
-                    );
+                float rawLight = saturate(
+                    ndotl *
+                    mainLight.distanceAttenuation *
+                    shadowAtten +
+                    _LightBias
+                );
 
                 #if defined(_TOON_STEP_PATTERN)
-                    rawLight =
-                        saturate(
-                            rawLight +
-                            signedPattern *
-                            _StepPatternStrength
-                        );
+
+                    rawLight = saturate(
+                        rawLight +
+                        signedPattern *
+                        _StepPatternStrength
+                    );
+
                 #endif
 
-                float toonLight =
-                    Quantize01(
-                        rawLight,
-                        _LightBands
-                    );
+                float toonLight = Quantize01(
+                    rawLight,
+                    _LightBands
+                );
 
-                float3 toonLightColor =
-                    lerp(
-                        _ShadowColor.rgb,
-                        mainLight.color,
-                        toonLight
-                    ) *
-                    _DirectLightStrength;
+                float3 toonLightColor = lerp(
+                    _ShadowColor.rgb,
+                    mainLight.color,
+                    toonLight
+                ) * _DirectLightStrength;
 
-                float3 ambient =
-                    max(
-                        SampleSH(normalWS),
-                        0.0
-                    ) *
-                    _AmbientStrength;
+                // ----------------------------------------------------
+                // AMBIENT LIGHT
+                // ----------------------------------------------------
 
-                float3 color =
-                    albedo *
-                    (
-                        toonLightColor +
-                        ambient
-                    );
+                float3 ambient = max(
+                    SampleSH(normalWS),
+                    0.0
+                ) * _AmbientStrength;
 
-                float darkness =
-                    1.0 -
-                    toonLight;
+                float3 color = albedo * (
+                    toonLightColor +
+                    ambient
+                );
 
-                float halftone =
-                    HalftoneMask(
-                        IN.positionCS.xy,
-                        IN.positionWS,
-                        geometricNormalWS,
-                        darkness
-                    );
+                // ----------------------------------------------------
+                // HALFTONE
+                // ----------------------------------------------------
 
-                color =
-                    lerp(
-                        color,
-                        color *
-                        _HalftoneColor.rgb,
-                        halftone
-                    );
+                float darkness = 1.0 - toonLight;
 
-                InputData inputData =
-                    (InputData)0;
+                float halftone = HalftoneMask(
+                    IN.positionCS.xy,
+                    IN.positionWS,
+                    geometricNormalWS,
+                    darkness
+                );
 
-                inputData.positionWS =
-                    IN.positionWS;
+                color = lerp(
+                    color,
+                    color * _HalftoneColor.rgb,
+                    halftone
+                );
 
-                inputData.normalWS =
-                    normalWS;
+                // ----------------------------------------------------
+                // INPUT DATA
+                // ----------------------------------------------------
 
-                inputData.viewDirectionWS =
-                    viewDirWS;
+                InputData inputData = (InputData)0;
+
+                inputData.positionWS = IN.positionWS;
+                inputData.normalWS = normalWS;
+                inputData.viewDirectionWS = viewDirWS;
 
                 inputData.normalizedScreenSpaceUV =
                     GetNormalizedScreenSpaceUV(
                         IN.positionCS
                     );
 
+                // ----------------------------------------------------
+                // ADDITIONAL LIGHTS
+                // ----------------------------------------------------
+
                 float3 additionalLighting = 0.0;
 
-                // IMPORTANT :
-                // en Deferred+/Cluster, le Player peut définir
-                // _CLUSTER_LIGHT_LOOP SANS définir _ADDITIONAL_LIGHTS.
+                // Deferred+ / Cluster compatibility.
                 #if defined(_ADDITIONAL_LIGHTS) || USE_CLUSTER_LIGHT_LOOP
 
                     #if USE_CLUSTER_LIGHT_LOOP
@@ -530,12 +756,11 @@ Shader "Custom/SOR/Toon" {
                             lightIndex++
                         )
                         {
-                            Light light =
-                                GetAdditionalLight(
-                                    lightIndex,
-                                    inputData.positionWS,
-                                    shadowMask
-                                );
+                            Light light = GetAdditionalLight(
+                                lightIndex,
+                                inputData.positionWS,
+                                shadowMask
+                            );
 
                             additionalLighting +=
                                 EvaluateAdditionalToonLight(
@@ -565,12 +790,11 @@ Shader "Custom/SOR/Toon" {
                             clusterLightIndex +=
                                 URP_FP_DIRECTIONAL_LIGHTS_COUNT;
 
-                            Light light =
-                                GetAdditionalLight(
-                                    clusterLightIndex,
-                                    inputData.positionWS,
-                                    shadowMask
-                                );
+                            Light light = GetAdditionalLight(
+                                clusterLightIndex,
+                                inputData.positionWS,
+                                shadowMask
+                            );
 
                             additionalLighting +=
                                 EvaluateAdditionalToonLight(
@@ -592,12 +816,11 @@ Shader "Custom/SOR/Toon" {
                             lightIndex++
                         )
                         {
-                            Light light =
-                                GetAdditionalLight(
-                                    lightIndex,
-                                    inputData.positionWS,
-                                    shadowMask
-                                );
+                            Light light = GetAdditionalLight(
+                                lightIndex,
+                                inputData.positionWS,
+                                shadowMask
+                            );
 
                             additionalLighting +=
                                 EvaluateAdditionalToonLight(
@@ -611,119 +834,195 @@ Shader "Custom/SOR/Toon" {
 
                 #endif
 
-                color +=
-                    albedo *
-                    additionalLighting;
+                color += albedo * additionalLighting;
 
-                float3 halfDir =
-                    SafeNormalize(
-                        mainLight.direction +
-                        viewDirWS
-                    );
+                // ----------------------------------------------------
+                // TOON SPECULAR
+                // ----------------------------------------------------
 
-                float ndoth =
-                    saturate(
-                        dot(
-                            normalWS,
-                            halfDir
-                        )
-                    );
+                float3 halfDir = SafeNormalize(
+                    mainLight.direction +
+                    viewDirWS
+                );
 
-                float spec =
-                    pow(
-                        ndoth,
-                        max(
-                            _SpecularPower,
-                            1.0
-                        )
-                    );
+                float ndoth = saturate(
+                    dot(normalWS, halfDir)
+                );
 
-                spec =
-                    step(
-                        _SpecularThreshold,
-                        spec
-                    );
+                float spec = pow(
+                    ndoth,
+                    max(_SpecularPower, 1.0)
+                );
 
-                spec *=
-                    toonLight *
-                    _SpecularStrength;
+                spec = step(
+                    _SpecularThreshold,
+                    spec
+                );
+
+                spec *= toonLight * _SpecularStrength;
 
                 color +=
                     _SpecularColor.rgb *
                     mainLight.color *
                     spec;
 
-                float rimRaw =
-                    1.0 -
-                    saturate(
-                        dot(
-                            normalWS,
-                            viewDirWS
-                        )
-                    );
+                // ----------------------------------------------------
+                // RIM LIGHT
+                // ----------------------------------------------------
 
-                rimRaw =
-                    pow(
-                        rimRaw,
-                        max(
-                            _RimPower,
-                            0.0001
-                        )
-                    );
+                float rimRaw = 1.0 - saturate(
+                    dot(normalWS, viewDirWS)
+                );
 
-                float rimThreshold =
-                    _RimThreshold;
+                rimRaw = pow(
+                    rimRaw,
+                    max(_RimPower, 0.0001)
+                );
+
+                float rimThreshold = _RimThreshold;
 
                 #if defined(_TOON_STEP_PATTERN)
-                    rimThreshold =
-                        saturate(
-                            _RimThreshold -
-                            signedPattern *
-                            _RimPatternStrength
-                        );
+
+                    rimThreshold = saturate(
+                        _RimThreshold -
+                        signedPattern *
+                        _RimPatternStrength
+                    );
+
                 #endif
 
-                float rim =
-                    step(
-                        rimThreshold,
-                        rimRaw
-                    ) *
-                    _RimStrength;
+                float rim = step(
+                    rimThreshold,
+                    rimRaw
+                ) * _RimStrength;
 
-                color +=
-                    _RimColor.rgb *
-                    rim;
+                color += _RimColor.rgb * rim;
 
-                float3 posterized =
-                    PosterizeColor(
-                        color,
-                        _PosterizeSteps
-                    );
+                // ----------------------------------------------------
+                // POSTERIZATION
+                // ----------------------------------------------------
 
-                color =
-                    lerp(
-                        color,
-                        posterized,
-                        _PosterizeStrength
-                    );
+                float3 posterized = PosterizeColor(
+                    color,
+                    _PosterizeSteps
+                );
 
-                color =
-                    MixFog(
-                        color,
-                        IN.fogFactor
-                    );
+                color = lerp(
+                    color,
+                    posterized,
+                    _PosterizeStrength
+                );
+
+                // ----------------------------------------------------
+                // EMISSION ID
+                // ----------------------------------------------------
+
+                // Retrieve the emission color associated with
+                // the grayscale ID map.
+                //
+                // This is intentionally evaluated AFTER
+                // posterization so emission colors retain
+                // their full HDR precision.
+
+                float3 emission = GetEmissionColor(
+                    IN.uvEmission
+                );
+
+                color += emission;
+
+                // ----------------------------------------------------
+                // FOG
+                // ----------------------------------------------------
+
+                color = MixFog(
+                    color,
+                    IN.fogFactor
+                );
 
                 return half4(
                     color,
-                    baseSample.a *
-                    _BaseColor.a
+                    baseSample.a * _BaseColor.a
                 );
             }
 
             ENDHLSL
         }
 
-        Pass {
+
+        // ============================================================
+        // OBJECT-SPACE OUTLINE SURFACE DATA
+        // ============================================================
+
+        Pass
+        {
+            Name "OutlineSurfaceData"
+            Tags { "LightMode" = "OutlineSurfaceData" }
+
+            Cull Back
+            ZWrite On
+            ZTest LEqual
+
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma vertex OutlineSurfaceDataVert
+            #pragma fragment OutlineSurfaceDataFrag
+
+            struct OutlineSurfaceDataAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
+            };
+
+            struct OutlineSurfaceDataVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 positionOS : TEXCOORD0;
+                float3 normalOS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+                float eyeDepth : TEXCOORD3;
+            };
+
+            struct OutlineSurfaceDataTargets
+            {
+                float4 localPosition : SV_Target0;
+                float4 localNormal : SV_Target1;
+                float4 worldNormal : SV_Target2;
+            };
+
+            OutlineSurfaceDataVaryings OutlineSurfaceDataVert(
+                OutlineSurfaceDataAttributes IN)
+            {
+                OutlineSurfaceDataVaryings OUT =
+                    (OutlineSurfaceDataVaryings)0;
+
+                float3 positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.positionCS = TransformWorldToHClip(positionWS);
+                OUT.eyeDepth = max(-TransformWorldToView(positionWS).z, 0.0001);
+                OUT.positionOS = IN.positionOS.xyz;
+                OUT.normalOS = normalize(IN.normalOS);
+                OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
+                return OUT;
+            }
+
+            OutlineSurfaceDataTargets OutlineSurfaceDataFrag(
+                OutlineSurfaceDataVaryings IN)
+            {
+                OutlineSurfaceDataTargets OUT;
+                OUT.localPosition = float4(IN.positionOS, IN.eyeDepth);
+                OUT.localNormal = float4(normalize(IN.normalOS), 1);
+                OUT.worldNormal = float4(normalize(IN.normalWS), 1);
+                return OUT;
+            }
+
+            ENDHLSL
+        }
+
+        // ============================================================
+        // SHADOW CASTER
+        // ============================================================
+
+        Pass
+        {
             Name "ShadowCaster"
             Tags { "LightMode" = "ShadowCaster" }
 
@@ -735,23 +1034,29 @@ Shader "Custom/SOR/Toon" {
             HLSLPROGRAM
 
             #pragma target 4.5
+
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
+
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
             float3 _LightDirection;
             float3 _LightPosition;
 
-            struct ShadowAttributes {
+            struct ShadowAttributes
+            {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
             };
 
-            struct ShadowVaryings {
+            struct ShadowVaryings
+            {
                 float4 positionCS : SV_POSITION;
             };
 
-            float4 GetCustomShadowPositionHClip(ShadowAttributes IN) {
+            float4 GetCustomShadowPositionHClip(
+                ShadowAttributes IN)
+            {
                 float3 positionWS =
                     TransformObjectToWorld(
                         IN.positionOS.xyz
@@ -763,50 +1068,52 @@ Shader "Custom/SOR/Toon" {
                     );
 
                 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
-                    float3 lightDirectionWS =
-                        normalize(
-                            _LightPosition -
-                            positionWS
-                        );
+
+                    float3 lightDirectionWS = normalize(
+                        _LightPosition - positionWS
+                    );
+
                 #else
-                    float3 lightDirectionWS =
-                        _LightDirection;
+
+                    float3 lightDirectionWS = _LightDirection;
+
                 #endif
 
-                float4 positionCS =
-                    TransformWorldToHClip(
-                        ApplyShadowBias(
-                            positionWS,
-                            normalWS,
-                            lightDirectionWS
-                        )
-                    );
-
-                return ApplyShadowClamping(
-                    positionCS
+                float4 positionCS = TransformWorldToHClip(
+                    ApplyShadowBias(
+                        positionWS,
+                        normalWS,
+                        lightDirectionWS
+                    )
                 );
+
+                return ApplyShadowClamping(positionCS);
             }
 
-            ShadowVaryings ShadowVert(ShadowAttributes IN) {
-                ShadowVaryings OUT =
-                    (ShadowVaryings)0;
+            ShadowVaryings ShadowVert(ShadowAttributes IN)
+            {
+                ShadowVaryings OUT = (ShadowVaryings)0;
 
                 OUT.positionCS =
-                    GetCustomShadowPositionHClip(
-                        IN
-                    );
+                    GetCustomShadowPositionHClip(IN);
 
                 return OUT;
             }
 
-            half4 ShadowFrag(ShadowVaryings IN) : SV_Target {
+            half4 ShadowFrag(ShadowVaryings IN) : SV_Target
+            {
                 return 0;
             }
 
             ENDHLSL
         }
 
-        Pass {
+        // ============================================================
+        // DEPTH ONLY
+        // ============================================================
+
+        Pass
+        {
             Name "DepthOnly"
             Tags { "LightMode" = "DepthOnly" }
 
@@ -818,37 +1125,45 @@ Shader "Custom/SOR/Toon" {
             HLSLPROGRAM
 
             #pragma target 4.5
+
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
 
-            struct DepthAttributes {
+            struct DepthAttributes
+            {
                 float4 positionOS : POSITION;
             };
 
-            struct DepthVaryings {
+            struct DepthVaryings
+            {
                 float4 positionCS : SV_POSITION;
             };
 
-            DepthVaryings DepthVert(DepthAttributes IN) {
-                DepthVaryings OUT =
-                    (DepthVaryings)0;
+            DepthVaryings DepthVert(DepthAttributes IN)
+            {
+                DepthVaryings OUT = (DepthVaryings)0;
 
-                OUT.positionCS =
-                    TransformObjectToHClip(
-                        IN.positionOS.xyz
-                    );
+                OUT.positionCS = TransformObjectToHClip(
+                    IN.positionOS.xyz
+                );
 
                 return OUT;
             }
 
-            half DepthFrag(DepthVaryings IN) : SV_Target {
+            half DepthFrag(DepthVaryings IN) : SV_Target
+            {
                 return IN.positionCS.z;
             }
 
             ENDHLSL
         }
 
-        Pass {
+        // ============================================================
+        // DEPTH NORMALS ONLY
+        // ============================================================
+
+        Pass
+        {
             Name "DepthNormalsOnly"
             Tags { "LightMode" = "DepthNormalsOnly" }
 
@@ -859,18 +1174,22 @@ Shader "Custom/SOR/Toon" {
             HLSLPROGRAM
 
             #pragma target 4.5
+
             #pragma vertex DepthNormalsVert
             #pragma fragment DepthNormalsFrag
+
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
 
-            struct DepthNormalsAttributes {
+            struct DepthNormalsAttributes
+            {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 float4 tangentOS : TANGENT;
                 float2 uv : TEXCOORD0;
             };
 
-            struct DepthNormalsVaryings {
+            struct DepthNormalsVaryings
+            {
                 float4 positionCS : SV_POSITION;
                 float3 normalWS : TEXCOORD0;
                 float4 tangentWS : TEXCOORD1;
@@ -880,13 +1199,11 @@ Shader "Custom/SOR/Toon" {
             DepthNormalsVaryings DepthNormalsVert(
                 DepthNormalsAttributes IN)
             {
-                DepthNormalsVaryings OUT =
-                    (DepthNormalsVaryings)0;
+                DepthNormalsVaryings OUT = (DepthNormalsVaryings)0;
 
-                OUT.positionCS =
-                    TransformObjectToHClip(
-                        IN.positionOS.xyz
-                    );
+                OUT.positionCS = TransformObjectToHClip(
+                    IN.positionOS.xyz
+                );
 
                 VertexNormalInputs normalInputs =
                     GetVertexNormalInputs(
@@ -894,69 +1211,52 @@ Shader "Custom/SOR/Toon" {
                         IN.tangentOS
                     );
 
-                OUT.normalWS =
-                    normalInputs.normalWS;
+                OUT.normalWS = normalInputs.normalWS;
 
                 float tangentSign =
                     IN.tangentOS.w *
                     GetOddNegativeScale();
 
-                OUT.tangentWS =
-                    float4(
-                        normalInputs.tangentWS,
-                        tangentSign
-                    );
+                OUT.tangentWS = float4(
+                    normalInputs.tangentWS,
+                    tangentSign
+                );
 
                 OUT.uvNormal =
-                    IN.uv *
-                    _NormalMap_ST.xy +
+                    IN.uv * _NormalMap_ST.xy +
                     _NormalMap_ST.zw;
 
                 return OUT;
             }
 
             half4 DepthNormalsFrag(
-                DepthNormalsVaryings IN)
-                : SV_Target
+                DepthNormalsVaryings IN) : SV_Target
             {
-                float3 normalWS =
-                    BuildNormalWS(
-                        IN.normalWS,
-                        IN.tangentWS.xyz,
-                        IN.tangentWS.w,
-                        IN.uvNormal
-                    );
+                float3 normalWS = BuildNormalWS(
+                    IN.normalWS,
+                    IN.tangentWS.xyz,
+                    IN.tangentWS.w,
+                    IN.uvNormal
+                );
 
                 #if defined(_GBUFFER_NORMALS_OCT)
 
                     float2 octNormal =
-                        PackNormalOctQuadEncode(
-                            normalWS
-                        );
+                        PackNormalOctQuadEncode(normalWS);
 
-                    float2 remapped =
-                        saturate(
-                            octNormal *
-                            0.5 +
-                            0.5
-                        );
-
-                    half3 packed =
-                        PackFloat2To888(
-                            remapped
-                        );
-
-                    return half4(
-                        packed,
-                        0
+                    float2 remapped = saturate(
+                        octNormal * 0.5 + 0.5
                     );
+
+                    half3 packed = PackFloat2To888(
+                        remapped
+                    );
+
+                    return half4(packed, 0);
 
                 #else
 
-                    return half4(
-                        normalWS,
-                        0
-                    );
+                    return half4(normalWS, 0);
 
                 #endif
             }
@@ -964,7 +1264,8 @@ Shader "Custom/SOR/Toon" {
             ENDHLSL
         }
     }
-    CustomEditor "SynthOfRage.Editor.SORShaderGUI"
+
+    CustomEditor "_Dev.Vincent.ToonShaders.Editor.SORShaderGUI"
 
     FallBack Off
 }

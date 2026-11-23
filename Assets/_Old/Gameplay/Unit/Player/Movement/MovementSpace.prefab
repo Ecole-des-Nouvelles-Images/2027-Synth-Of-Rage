@@ -253,12 +253,146 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ddeb49873fe81640a954e9f963ae119, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SynthOfRage.Scripts.Player.MovementSpace
-  useDepthLimits: 1
+  useDepthMin: 1
+  useDepthMax: 1
   minDepth: -3.5
   maxDepth: 3.5
-  useSideLimits: 0
+  useSideLeft: 0
+  useSideRight: 0
   minSide: -5
   maxSide: 5
+  depthMinConnection:
+    target: {fileID: 0}
+    blendEnabled: 1
+    blendNormalizedFromSource: -0.25
+    blendNormalizedIntoTarget: 0.25
+    blendCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    targetEntryBoundary: 0
+  depthMaxConnection:
+    target: {fileID: 0}
+    blendEnabled: 1
+    blendNormalizedFromSource: -0.25
+    blendNormalizedIntoTarget: 0.25
+    blendCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    targetEntryBoundary: 0
+  sideLeftConnection:
+    target: {fileID: 0}
+    blendEnabled: 1
+    blendNormalizedFromSource: -0.25
+    blendNormalizedIntoTarget: 0.25
+    blendCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    targetEntryBoundary: 0
+  sideRightConnection:
+    target: {fileID: 0}
+    blendEnabled: 1
+    blendNormalizedFromSource: -0.25
+    blendNormalizedIntoTarget: 0.25
+    blendCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0
+        inSlope: 0
+        outSlope: 1
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 1
+        inSlope: 1
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    targetEntryBoundary: 2
+  showVisualBox: 1
+  visualBoxSize: {x: 10, y: 2, z: 7}
+  visualBoxOffset: {x: 0, y: 1, z: 0}
+  showBoxWire: 1
+  showBoxSolid: 0
+  limitColor: {r: 1, g: 0, b: 0, a: 1}
+  passableColor: {r: 0, g: 1, b: 0, a: 1}
+  boxColor: {r: 1, g: 1, b: 1, a: 0.15}
+  showLabels: 1
+  showBlendDebug: 1
+  blendDebugColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  blendDebugPointRadius: 0.08
 --- !u!1 &8998201854040434545
 GameObject:
   m_ObjectHideFlags: 0
