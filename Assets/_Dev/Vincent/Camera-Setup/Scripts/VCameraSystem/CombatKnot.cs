@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
 using _Old.Gameplay.Unit.Player.Movement.Utils;
+using SynthOfRage.Scripts.Gameplay.SO.Camera;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
@@ -22,19 +24,22 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         [Tooltip("Movement Space utilisé après la fin de ce combat.")]
         [SerializeField] private MovementSpace nextMovementSpace;
 
+        [FormerlySerializedAs("cameraPreset")]
         [Header("Camera")]
         [Tooltip("Preset caméra appliqué lors de l'entrée en combat.")]
-        [SerializeField] private VCameraPreset cameraPreset;
+        [SerializeField] private VCameraPresetSO cameraPresetSo;
 
+        [FormerlySerializedAs("startShakePreset")]
         [Header("Camera Shake")]
         [Tooltip("Shake joué au début du combat.")]
-        [SerializeField] private CameraShakePreset startShakePreset;
+        [SerializeField] private VCameraShakePresetSO startShakePresetSo;
 
         [Tooltip("Délai avant le shake de début de combat.")]
         [SerializeField, Min(0f)] private float startShakeDelay;
 
+        [FormerlySerializedAs("endShakePreset")]
         [Tooltip("Shake joué à la fin du combat.")]
-        [SerializeField] private CameraShakePreset endShakePreset;
+        [SerializeField] private VCameraShakePresetSO endShakePresetSo;
 
         [Tooltip("Délai avant le shake de fin de combat.")]
         [SerializeField, Min(0f)] private float endShakeDelay;
@@ -57,11 +62,11 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
         public Transform CombatCenter => combatCenter;
         public Transform MovementSpace => movementSpace;
         public MovementSpace NextMovementSpace => nextMovementSpace;
-        public VCameraPreset CameraPreset => cameraPreset;
+        public VCameraPresetSO CameraPresetSo => cameraPresetSo;
 
-        public CameraShakePreset StartShakePreset => startShakePreset;
+        public VCameraShakePresetSO StartShakePresetSo => startShakePresetSo;
         public float StartShakeDelay => startShakeDelay;
-        public CameraShakePreset EndShakePreset => endShakePreset;
+        public VCameraShakePresetSO EndShakePresetSo => endShakePresetSo;
         public float EndShakeDelay => endShakeDelay;
 
         public void EnableCombatObjects() => SetObjectsActive(objectsToEnable, true);
@@ -133,10 +138,10 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 
         private void DrawPresetCamera()
         {
-            if (combatCenter == null || cameraPreset == null) return;
+            if (combatCenter == null || cameraPresetSo == null) return;
 
-            Vector3 cameraPosition = combatCenter.TransformPoint(cameraPreset.CameraOffset);
-            Quaternion cameraRotation = combatCenter.rotation * Quaternion.Euler(cameraPreset.CameraRotation);
+            Vector3 cameraPosition = combatCenter.TransformPoint(cameraPresetSo.CameraOffset);
+            Quaternion cameraRotation = combatCenter.rotation * Quaternion.Euler(cameraPresetSo.CameraRotation);
 
             Gizmos.DrawLine(combatCenter.position, cameraPosition);
 
@@ -145,7 +150,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
             Gizmos.DrawLine(Vector3.zero, Vector3.forward * axisLength);
 
             if (showCameraFrustum)
-                Gizmos.DrawFrustum(Vector3.zero, cameraPreset.FieldOfView, 5f, 0.1f, 16f / 9f);
+                Gizmos.DrawFrustum(Vector3.zero, cameraPresetSo.FieldOfView, 5f, 0.1f, 16f / 9f);
 
             Gizmos.matrix = Matrix4x4.identity;
         }

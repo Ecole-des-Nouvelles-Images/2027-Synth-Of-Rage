@@ -1,19 +1,21 @@
+#if UNITY_EDITOR
+#endif
 using System.Collections;
 using System.Collections.Generic;
-using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem;
 using _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes;
+using _Old.BPM_System;
+using _Old.Gameplay;
+using _Old.Gameplay.Core;
+using _Old.Gameplay.Unit.Player;
+using _Old.Gameplay.Unit.Player.Movement.Utils;
+using SynthOfRage.Scripts.Gameplay.SO.Camera;
 using Unity.Cinemachine;
-using UnityEngine;
-#if UNITY_EDITOR
 using UnityEditor;
-#endif
+using UnityEngine;
 using UnityEngine.Splines;
-using SynthOfRage.Scripts.Gameplay.Core;
-using SynthOfRage.Scripts.Gameplay.Unit.Player;
-using SynthOfRage.Scripts.Gameplay.Unit.Player.Movement.Utils;
 using UnityDebug = UnityEngine.Debug;
 
-namespace SynthOfRage.Scripts.CameraSystem
+namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem
 {
     [DefaultExecutionOrder(100)]
     public class VCameraSetup_Follow : MonoBehaviour
@@ -2416,7 +2418,7 @@ namespace SynthOfRage.Scripts.CameraSystem
             ApplyCameraState();
 
             QueueCombatShake(
-                combatKnot.StartShakePreset,
+                combatKnot.StartShakePresetSo,
                 combatKnot.StartShakeDelay
             );
 
@@ -2434,19 +2436,19 @@ namespace SynthOfRage.Scripts.CameraSystem
 
         private void ApplyCombatPreset(CombatKnot combatKnot)
         {
-            VCameraPreset preset = combatKnot.CameraPreset;
+            VCameraPresetSO presetSo = combatKnot.CameraPresetSo;
 
-            if (preset == null)
+            if (presetSo == null)
                 return;
 
             if (combatKnot.CombatCenter != null)
             {
                 Vector3 cameraPosition =
-                    combatKnot.CombatCenter.TransformPoint(preset.CameraOffset);
+                    combatKnot.CombatCenter.TransformPoint(presetSo.CameraOffset);
 
                 Quaternion cameraRotation =
                     combatKnot.CombatCenter.rotation *
-                    Quaternion.Euler(preset.CameraRotation);
+                    Quaternion.Euler(presetSo.CameraRotation);
 
                 combatCamera.ForceCameraPosition(
                     cameraPosition,
@@ -2457,12 +2459,12 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (combatKnot.MovementSpace != null)
             {
                 combatKnot.MovementSpace.localRotation =
-                    Quaternion.Euler(preset.MovementSpaceRotation);
+                    Quaternion.Euler(presetSo.MovementSpaceRotation);
 
                 ApplyMovementSpaceToAllPlayers(combatKnot.MovementSpace);
             }
 
-            combatCamera.Lens.FieldOfView = preset.FieldOfView;
+            combatCamera.Lens.FieldOfView = presetSo.FieldOfView;
         }
 
         private void ApplyInitialMovementSpace()
@@ -2537,7 +2539,7 @@ namespace SynthOfRage.Scripts.CameraSystem
             if (completedCombatKnot != null)
             {
                 QueueCombatShake(
-                    completedCombatKnot.EndShakePreset,
+                    completedCombatKnot.EndShakePresetSo,
                     completedCombatKnot.EndShakeDelay
                 );
             }
@@ -2557,22 +2559,22 @@ namespace SynthOfRage.Scripts.CameraSystem
         // =========================================================
 
         private void QueueCombatShake(
-            CameraShakePreset preset,
+            VCameraShakePresetSO presetSo,
             float delay)
         {
-            if (preset == null)
+            if (presetSo == null)
                 return;
 
             if (pendingCombatShake != null)
                 StopCoroutine(pendingCombatShake);
 
             pendingCombatShake = StartCoroutine(
-                PlayCombatShake(preset, Mathf.Max(0f, delay))
+                PlayCombatShake(presetSo, Mathf.Max(0f, delay))
             );
         }
 
         private IEnumerator PlayCombatShake(
-            CameraShakePreset preset,
+            VCameraShakePresetSO presetSo,
             float delay)
         {
             yield return null;
@@ -2582,14 +2584,14 @@ namespace SynthOfRage.Scripts.CameraSystem
 
             pendingCombatShake = null;
 
-            if (preset == null)
+            if (presetSo == null)
                 yield break;
 
             if (!CameraShakeManager.HasInstance)
             {
                 UnityDebug.LogError(
                     $"[{nameof(VCameraSetup_Follow)}] " +
-                    $"Impossible de jouer '{preset.name}' : " +
+                    $"Impossible de jouer '{presetSo.name}' : " +
                     "aucun CameraShakeManager actif.",
                     this
                 );
@@ -2597,13 +2599,13 @@ namespace SynthOfRage.Scripts.CameraSystem
                 yield break;
             }
 
-            CameraShakeManager.PlayShake(preset);
+            CameraShakeManager.PlayShake(presetSo);
 
             if (debugEnabled)
             {
                 UnityDebug.Log(
                     $"[{nameof(VCameraSetup_Follow)}] " +
-                    $"Combat Shake joué : {preset.name} | " +
+                    $"Combat Shake joué : {presetSo.name} | " +
                     $"Delay={delay:F2}s",
                     this
                 );

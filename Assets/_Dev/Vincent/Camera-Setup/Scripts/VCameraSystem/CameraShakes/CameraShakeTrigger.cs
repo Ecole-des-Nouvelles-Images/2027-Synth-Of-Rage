@@ -1,4 +1,6 @@
+using SynthOfRage.Scripts.Gameplay.SO.Camera;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
 {
@@ -13,8 +15,9 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
             TowardSource
         }
 
+        [FormerlySerializedAs("preset")]
         [Header("Shake")]
-        [SerializeField] private CameraShakePreset preset;
+        [SerializeField] private VCameraShakePresetSO presetSo;
 
         [Header("Trigger")]
         [SerializeField] private string targetTag = "Player";
@@ -35,18 +38,18 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
         {
             if (playOnce && hasPlayed) return;
             if (!other.CompareTag(targetTag)) return;
-            if (preset == null) return;
+            if (presetSo == null) return;
 
             hasPlayed = true;
 
             switch (directionMode)
             {
                 case DirectionMode.Preset:
-                    CameraShakeManager.PlayShake(preset);
+                    CameraShakeManager.PlayShake(presetSo);
                     break;
 
                 case DirectionMode.Custom:
-                    CameraShakeManager.PlayShake(preset, customDirection);
+                    CameraShakeManager.PlayShake(presetSo, customDirection);
                     break;
 
                 case DirectionMode.TowardTarget:
@@ -67,7 +70,7 @@ namespace _Dev.Vincent.Camera_Setup.Scripts.VCameraSystem.CameraShakes
 
             if (reverse) direction = -direction;
 
-            CameraShakeManager.PlayShakeWorld(preset, direction);
+            CameraShakeManager.PlayShakeWorld(presetSo, direction);
         }
 
         private void Reset()

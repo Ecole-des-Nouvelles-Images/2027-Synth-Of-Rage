@@ -1,4 +1,4 @@
-namespace SynthOfRage.Scripts.Gameplay.Unit.Avatar.Inputs
+namespace SynthOfRage.Scripts.Gameplay.Unit.Avatar.Commands
 {
     public class GuardStartedCommand : InputCommand
     {
